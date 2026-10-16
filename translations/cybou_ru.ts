@@ -2,6 +2,19 @@
 <!DOCTYPE TS[]>
 <TS version="2.1" language="ru_RU">
   <context>
+    <name>BrowserStore</name>
+    <message>
+      <location filename="../src/browserstore.h" line="100" />
+      <source>Les adresses contenant un identifiant ou un mot de passe sont bloquées.</source>
+      <translation>Адреса с именем пользователя или паролем заблокированы.</translation>
+    </message>
+    <message>
+      <location filename="../src/browserstore.h" line="102" />
+      <source>Mode HTTPS strict : cette connexion non chiffrée est bloquée. Utilisez une adresse HTTPS.</source>
+      <translation>Строгий режим HTTPS: незашифрованное подключение заблокировано. Используйте адрес HTTPS.</translation>
+    </message>
+  </context>
+  <context>
     <name>CapabilityPopover</name>
     <message>
       <location filename="../qml/CapabilityPopover.qml" line="31" />
@@ -156,137 +169,137 @@
   <context>
     <name>ControlBarController</name>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Caméra</source>
       <translation>Камера</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Microphone</source>
       <translation>Микрофон</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Partage d’écran</source>
       <translation>Демонстрация экрана</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Géolocalisation</source>
       <translation>Геолокация</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Notifications</source>
       <translation>Уведомления</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Presse-papiers</source>
       <translation>Буфер обмена</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>JavaScript</source>
       <translation>JavaScript</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Fenêtres surgissantes</source>
       <translation>Всплывающие окна</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Cookies</source>
       <translation>Cookies</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Stockage du site</source>
       <translation>Хранилище сайта</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="114" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
       <source>Réseau</source>
       <translation>Сеть</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="123" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="143" />
       <source>Ce site · profil</source>
       <translation>Этот сайт · профиль</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="124" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="144" />
       <source>Utilisation réelle non observable. Aucun indicateur d’enregistrement.</source>
       <translation>Текущее использование не определяется. Индикатора записи нет.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="124" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="144" />
       <source>Ouvrez un site HTTP ou HTTPS pour gérer ses permissions.</source>
       <translation>Откройте HTTP- или HTTPS-сайт для управления доступом.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="133" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="153" />
       <source>Sélecteur de capture non intégré. Les demandes sont refusées, sans prétendre observer un partage.</source>
       <translation>Выбор источника экрана не реализован. Запросы отклоняются; использование не отслеживается.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="134" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="154" />
       <source>Permission du site uniquement. Présentation des notifications sur le bureau non intégrée.</source>
       <translation>Управление разрешением сайта. Показ системных уведомлений ещё не реализован.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="135" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="155" />
       <source>Autorisation Qt de lecture/écriture. Tous les accès au presse-papiers ne sont pas observables.</source>
       <translation>Разрешение Qt на чтение и запись. Не все обращения к буферу видны браузеру.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="139" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="159" />
       <source>Politique par origine, appliquée à la navigation. Recharger pour retirer les effets des scripts déjà exécutés.</source>
       <translation>Политика для origin применяется при навигации. Для удаления эффектов выполненных скриптов перезагрузите страницу.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="139" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="159" />
       <source>Contrôle de localStorage uniquement. Aucun comptage ni effacement complet d’IndexedDB ou des service workers.</source>
       <translation>Только localStorage. Подсчёт и полное удаление IndexedDB и service workers не поддерживаются.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="140" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="160" />
       <source>Ce site · paramètres de la vue</source>
       <translation>Этот сайт · настройки страницы</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="145" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="165" />
       <source>Seuls les liens ouverts par un geste explicite deviennent des onglets.</source>
       <translation>Новые вкладки открываются только по явному действию пользователя.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="145" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="165" />
       <source>Politique des nouvelles fenêtres de ce site. Aucun comptage des tentatives supprimées en interne par Chromium.</source>
       <translation>Политика окон этого сайта. Попытки, подавленные самим Chromium, не подсчитываются.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="149" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="169" />
       <source>Tous les profils ouverts</source>
       <translation>Все открытые профили</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="150" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="170" />
       <source>Cookies tiers bloqués par le filtre du profil. Cookies internes autorisés. Pas de comptage exhaustif.</source>
       <translation>Сторонние cookies блокируются фильтром профиля. Собственные cookies разрешены. Полного подсчёта нет.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="150" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="170" />
       <source>Cookies tiers autorisés dans ce profil. Pas de comptage exhaustif.</source>
       <translation>Сторонние cookies разрешены в профиле. Полного подсчёта нет.</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="163" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="183" />
       <source>Profil entier · observation seulement</source>
       <translation>Весь профиль · только наблюдение</translation>
     </message>
     <message>
-      <location filename="../src/controlbar/ControlBarController.cpp" line="164" />
+      <location filename="../src/controlbar/ControlBarController.cpp" line="184" />
       <source>Échantillon borné de requêtes HTTP(S) : origine, type et heure. Aucun contenu, secret, volume ni attribution certaine à cet onglet.</source>
       <translation>Ограниченная выборка HTTP(S): origin, тип и время. Содержимое, секреты и объём не читаются. Привязка к вкладке не гарантируется.</translation>
     </message>
@@ -337,22 +350,22 @@
       <translation>Положение панели</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="14" />
+      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
       <source>Haut</source>
       <translation>Сверху</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="14" />
+      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
       <source>Droite</source>
       <translation>Справа</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="14" />
+      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
       <source>Bas</source>
       <translation>Снизу</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="14" />
+      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
       <source>Gauche</source>
       <translation>Слева</translation>
     </message>
@@ -360,23 +373,23 @@
   <context>
     <name>Main</name>
     <message>
-      <location filename="../qml/Main.qml" line="816" />
-      <location filename="../qml/Main.qml" line="834" />
+      <location filename="../qml/Main.qml" line="828" />
+      <location filename="../qml/Main.qml" line="846" />
       <source>La modification n’a pas pu être confirmée.</source>
       <translation>Не удалось подтвердить изменение.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="829" />
+      <location filename="../qml/Main.qml" line="841" />
       <source>Modifier la politique de ce site ?</source>
       <translation>Изменить политику сайта?</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="832" />
+      <location filename="../qml/Main.qml" line="844" />
       <source>Ce choix modifie l’ouverture de nouvelles fenêtres pour cette origine. Autoriser inclut les fenêtres sans geste utilisateur.</source>
       <translation>Изменяется политика окон этого origin. Разрешение также допускает окна без действия пользователя.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="832" />
+      <location filename="../qml/Main.qml" line="844" />
       <source>Le changement sera appliqué lors de la prochaine navigation ou après un rechargement explicite. Bloquer JavaScript ou localStorage peut perturber les connexions et paiements.</source>
       <translation>Изменение применяется при навигации или перезагрузке. Запрет JavaScript и localStorage может нарушить вход на сайты и оплату.</translation>
     </message>
@@ -407,6 +420,21 @@
       <location filename="../qml/SettingsPanel.qml" line="69" />
       <source>La dernière icône du panneau permet de choisir sa position. Les indicateurs ne prouvent pas qu’un appareil enregistre.</source>
       <translation>Последняя иконка меняет положение панели. Индикаторы не подтверждают запись с устройств.</translation>
+    </message>
+    <message>
+      <location filename="../qml/SettingsPanel.qml" line="70" />
+      <source>SÉCURITÉ</source>
+      <translation>БЕЗОПАСНОСТЬ</translation>
+    </message>
+    <message>
+      <location filename="../qml/SettingsPanel.qml" line="71" />
+      <source>Connexions HTTPS uniquement</source>
+      <translation>Только защищённые подключения HTTPS</translation>
+    </message>
+    <message>
+      <location filename="../qml/SettingsPanel.qml" line="72" />
+      <source>Bloque HTTP et les WebSocket non chiffrés dans tous les profils, y compris sur le réseau local. Aucun repli HTTP. Rechargez les onglets pour interrompre les connexions déjà ouvertes. Les protocoles externes sont désactivés et WebRTC utilise uniquement les interfaces publiques.</source>
+      <translation>Блокирует HTTP и незашифрованные WebSocket во всех профилях, включая локальную сеть. Перехода на HTTP нет. Перезагрузите вкладки, чтобы прервать уже открытые соединения. Внешние протоколы отключены; WebRTC использует только публичные интерфейсы.</translation>
     </message>
   </context>
 </TS>

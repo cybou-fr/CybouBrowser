@@ -16,6 +16,7 @@
 #include <QTranslator>
 #include <memory>
 #include "browserstore.h"
+#include "security/SecurityTests.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 
@@ -26,7 +27,8 @@ int main(int argc, char *argv[])
     app.setApplicationName("CYBOU");
     app.setOrganizationName("CYBOU");
     const bool controlBarTest = app.arguments().contains("--controlbar-test");
-    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest;
+    const bool securityTest = app.arguments().contains("--security-test");
+    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
     app.setApplicationVersion("0.6.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
@@ -68,6 +70,7 @@ int main(int argc, char *argv[])
         });
         QDir().mkpath("build/test-downloads");
     }
+    if (securityTest) return runSecurityTests(app, testServer.serverPort());
     BrowserStore store;
     if (smokeTest) {
         for (const auto &argument : app.arguments()) if (argument.startsWith("--test-position=")) store.setControlBarPosition(argument.mid(16));

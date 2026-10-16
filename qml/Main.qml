@@ -749,8 +749,19 @@ ApplicationWindow {
             settings.localContentCanAccessRemoteUrls: false
             settings.localContentCanAccessFileUrls: false
             settings.allowRunningInsecureContent: false
+            settings.unknownUrlSchemePolicy: WebEngineSettings.DisallowUnknownUrlSchemes
+            settings.webRTCPublicInterfacesOnly: true
             settings.fullScreenSupportEnabled: true
-            onNavigationRequested: function(request) { if (pendingPermissionView === web) window.cancelPermission(); window.applyViewPolicy(web, request.url) }
+            onNavigationRequested: function(request) {
+                if (pendingPermissionView === web) window.cancelPermission()
+                const reason = browserStore.navigationBlockReason(request.url)
+                if (reason.length > 0) {
+                    request.reject()
+                    if (request.isMainFrame && web === currentView) { errorText.text = reason; errorNotice.open() }
+                    return
+                }
+                window.applyViewPolicy(web, request.url)
+            }
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())

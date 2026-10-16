@@ -31,6 +31,7 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool restoreSession READ restoreSession WRITE setRestoreSession NOTIFY preferencesChanged)
     Q_PROPERTY(bool blockThirdPartyCookies READ blockThirdPartyCookies WRITE setBlockThirdPartyCookies NOTIFY preferencesChanged)
     Q_PROPERTY(bool cacheBusy READ cacheBusy NOTIFY cacheBusyChanged)
+    Q_PROPERTY(bool httpsOnly READ httpsOnly WRITE setHttpsOnly NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
     Q_PROPERTY(bool highContrast READ highContrast NOTIFY preferencesChanged)
@@ -87,6 +88,20 @@ public:
     bool restoreSession() const { return settings.value("preferences/restoreSession", true).toBool(); }
     bool blockThirdPartyCookies() const { return settings.value("preferences/blockThirdPartyCookies", true).toBool(); }
     bool cacheBusy() const { return m_cacheBusy; }
+    bool httpsOnly() const { return settings.value("preferences/httpsOnly", false).toBool(); }
+    void setHttpsOnly(bool enabled) {
+        if (enabled == httpsOnly()) return;
+        settings.setValue("preferences/httpsOnly", enabled);
+        for (auto observer : observers) observer->setHttpsOnly(enabled);
+        emit preferencesChanged();
+    }
+    Q_INVOKABLE QString navigationBlockReason(const QUrl &url) const {
+        if (NetworkPolicy::hasWebCredentials(url))
+            return tr("Les adresses contenant un identifiant ou un mot de passe sont bloquées.");
+        if (NetworkPolicy::blocks(url, httpsOnly()))
+            return tr("Mode HTTPS strict : cette connexion non chiffrée est bloquée. Utilisez une adresse HTTPS.");
+        return {};
+    }
     QString controlBarPosition() const { return settings.value("ui/controlBar/position", "right").toString(); }
     void setControlBarPosition(const QString &value) {
         if (!QStringList{"top", "right", "bottom", "left"}.contains(value) || value == controlBarPosition()) return;
@@ -145,6 +160,7 @@ public:
         if (!profile || profiles.contains(profile)) return;
         profiles.append(profile); applyCookieFilter(profile);
         auto observer = new RequestObserver(profile);
+        observer->setHttpsOnly(httpsOnly());
         observers.insert(profile, observer);
         profile->setUrlRequestInterceptor(observer);
         connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); });

@@ -49,6 +49,14 @@ Cleanup supports cookies, HTTP cache, history, permission decisions and saved ta
 
 Development build, not security audited. Passwords, extensions UI, physical-printer UI, automatic updates, installer, crash recovery, platform polish and comprehensive security/accessibility testing remain outstanding. Keep Qt/Chromium patched.
 
+### Strict transport mode
+
+Settings → Sécurité offers an opt-in HTTPS-only mode, persisted globally and applied immediately to the interceptors of all open ordinary/private profiles and to future profiles. It blocks HTTP and unencrypted WebSocket (`ws:`) requests, including subresources, local hosts and LAN addresses. There are no automatic upgrades, fallback or hidden host exceptions. Existing connections and already rendered/cached content are not terminated or erased; reload open tabs after enabling. Sites requiring HTTP will stop working while this mode is enabled. A blocked foreground navigation shows an explanation; subresource failures are handled by the page.
+
+HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. Control Bar placement is unchanged pending the next specification.
+
+Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after explicit opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, and credential-URL denial. The fixture listens only on loopback and no security preferences are changed by this test.
+
 ## Integrated smoke test
 
 ```powershell

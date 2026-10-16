@@ -67,6 +67,9 @@ Drawer {
                 CheckBox { text: qsTr("Réduire les animations"); checked: browserStore.reduceMotion; onToggled: browserStore.reduceMotion = checked }
                 CheckBox { text: qsTr("Désactiver les pulsations"); checked: browserStore.disableGlow; onToggled: browserStore.disableGlow = checked }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: qsTr("La dernière icône du panneau permet de choisir sa position. Les indicateurs ne prouvent pas qu’un appareil enregistre."); color: "#65758E"; font.pixelSize: 12 }
+                Label { text: qsTr("SÉCURITÉ"); color: "#65758E"; font.letterSpacing: 2; font.pixelSize: 11 }
+                CheckBox { text: qsTr("Connexions HTTPS uniquement"); checked: browserStore.httpsOnly; onToggled: browserStore.httpsOnly = checked }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#65758E"; font.pixelSize: 12; text: qsTr("Bloque HTTP et les WebSocket non chiffrés dans tous les profils, y compris sur le réseau local. Aucun repli HTTP. Rechargez les onglets pour interrompre les connexions déjà ouvertes. Les protocoles externes sont désactivés et WebRTC utilise uniquement les interfaces publiques.") }
                 Label { text: "CONFIDENTIALITÉ"; color: "#65758E"; font.letterSpacing: 2; font.pixelSize: 11 }
                 Switch {
                     id: cookieSwitch
