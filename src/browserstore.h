@@ -7,6 +7,9 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QPointer>
+#include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
 #include <memory>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
@@ -15,7 +18,8 @@ class BrowserStore : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList bookmarks READ bookmarks NOTIFY changed)
     Q_PROPERTY(QVariantList history READ history NOTIFY changed)
-    Q_PROPERTY(QString downloadsPath READ downloadsPath CONSTANT)
+    Q_PROPERTY(QString downloadsPath READ downloadsPath NOTIFY preferencesChanged)
+    Q_PROPERTY(bool askDownloadLocation READ askDownloadLocation WRITE setAskDownloadLocation NOTIFY preferencesChanged)
     Q_PROPERTY(QString searchEngine READ searchEngine WRITE setSearchEngine NOTIFY preferencesChanged)
     Q_PROPERTY(bool restoreSession READ restoreSession WRITE setRestoreSession NOTIFY preferencesChanged)
     Q_PROPERTY(bool blockThirdPartyCookies READ blockThirdPartyCookies WRITE setBlockThirdPartyCookies NOTIFY preferencesChanged)
@@ -24,7 +28,42 @@ public:
     explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {}
     QVariantList bookmarks() const { return settings.value("bookmarks").toList(); }
     QVariantList history() const { return settings.value("history").toList(); }
-    QString downloadsPath() const { return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation); }
+    QString downloadsPath() const { return settings.value("preferences/downloadsPath", QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString(); }
+    bool askDownloadLocation() const { return settings.value("preferences/askDownloadLocation", false).toBool(); }
+    void setAskDownloadLocation(bool value) { settings.setValue("preferences/askDownloadLocation", value); emit preferencesChanged(); }
+    Q_INVOKABLE bool setDownloadFolder(const QUrl &url) {
+        const QFileInfo folder(url.toLocalFile());
+        if (!url.isLocalFile() || !folder.isDir() || !folder.isWritable()) return false;
+        settings.setValue("preferences/downloadsPath", folder.absoluteFilePath()); emit preferencesChanged(); return true;
+    }
+    Q_INVOKABLE QUrl fileUrl(const QString &path) const { return QUrl::fromLocalFile(path); }
+    Q_INVOKABLE QString localPath(const QUrl &url) const { return url.isLocalFile() ? url.toLocalFile() : QString(); }
+    Q_INVOKABLE QString fileName(const QUrl &url) const { return QFileInfo(url.toLocalFile()).fileName(); }
+    Q_INVOKABLE QString fileDirectory(const QUrl &url) const { return QFileInfo(url.toLocalFile()).absolutePath(); }
+    Q_INVOKABLE QString safeFileName(QString title) const {
+        title.replace(QRegularExpression("[<>:\"/\\\\|?*\\x00-\\x1f]"), "_");
+        title = title.trimmed().left(100);
+        while (title.endsWith('.') || title.endsWith(' ')) title.chop(1);
+        return title.isEmpty() ? "CYBOU-page" : "CYBOU-" + title;
+    }
+    Q_INVOKABLE QString nextDownloadPath(const QString &directory, const QString &name) const {
+        const QFileInfo file(QFileInfo(name).fileName());
+        const auto base = file.completeBaseName().isEmpty() ? "download" : file.completeBaseName();
+        const auto suffix = file.suffix().isEmpty() ? QString() : "." + file.suffix();
+        QDir dir(directory);
+        auto candidate = dir.filePath(base + suffix);
+        for (int i = 1; QFileInfo::exists(candidate); ++i) candidate = dir.filePath(base + " (" + QString::number(i) + ")" + suffix);
+        return candidate;
+    }
+    Q_INVOKABLE QString openableFile(const QUrl &url) const {
+        const QFileInfo file(url.toLocalFile());
+        if (!url.isLocalFile() || !file.isFile() || !QStringList{"html", "htm", "txt", "pdf", "png", "jpg", "jpeg", "gif", "webp", "svg"}.contains(file.suffix().toLower())) return {};
+        return QUrl::fromLocalFile(file.canonicalFilePath()).toString();
+    }
+    Q_INVOKABLE bool openDownloadedFile(const QString &path) {
+        return QFileInfo(path).isFile() && QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    }
+    Q_INVOKABLE void showFileFolder(const QString &path) { QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(path).absolutePath())); }
     QString searchEngine() const { return settings.value("preferences/searchEngine", "DuckDuckGo").toString(); }
     bool restoreSession() const { return settings.value("preferences/restoreSession", true).toBool(); }
     bool blockThirdPartyCookies() const { return settings.value("preferences/blockThirdPartyCookies", true).toBool(); }

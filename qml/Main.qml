@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import QtQuick.Dialogs as NativeDialogs
 import QtWebEngine
 
 ApplicationWindow {
@@ -27,6 +28,80 @@ ApplicationWindow {
     property bool privateMode: false
     property var closedTabs: []
     property var downloadItems: []
+    property var downloadQueue: []
+    property var pendingDownload: null
+    property var pdfTarget: null
+    property bool pdfBusy: false
+    property bool closingApproved: false
+    property var draggedTab: null
+    property real dragPointerX: 0
+    function showStatus(message) { statusLabel.text = message; statusPopup.open(); statusTimer.restart() }
+    function activeDownloads() {
+        for (const item of downloadItems) if (item && !item.isFinished) return true
+        return false
+    }
+    function downloadPath(item) { return item.downloadDirectory + "/" + item.downloadFileName }
+    function downloadStatus(item) {
+        if (item.state === WebEngineDownloadRequest.DownloadRequested) return "En attente du dossier…"
+        if (item.state === WebEngineDownloadRequest.DownloadCompleted) return "Terminé"
+        if (item.state === WebEngineDownloadRequest.DownloadCancelled) return "Annulé"
+        if (item.state === WebEngineDownloadRequest.DownloadInterrupted) return item.interruptReasonString
+        const received = (item.receivedBytes / 1048576).toFixed(1)
+        const total = item.totalBytes > 0 ? " / " + (item.totalBytes / 1048576).toFixed(1) + " Mo" : " Mo"
+        return (item.isPaused ? "En pause · " : "") + received + total
+    }
+    function presentNextDownload() {
+        if (pendingDownload || !downloadQueue.length) return
+        pendingDownload = downloadQueue[0]
+        downloadQueue = downloadQueue.slice(1)
+        if (!pendingDownload || pendingDownload.isFinished) { pendingDownload = null; Qt.callLater(presentNextDownload); return }
+        saveDownloadDialog.currentFolder = browserStore.fileUrl(browserStore.downloadsPath)
+        saveDownloadDialog.selectedFile = browserStore.fileUrl(browserStore.nextDownloadPath(browserStore.downloadsPath, pendingDownload.downloadFileName))
+        saveDownloadDialog.open()
+    }
+    function finishDownloadChoice(file) {
+        const item = pendingDownload
+        pendingDownload = null
+        if (item && !item.isFinished) {
+            if (file && browserStore.localPath(file).length) {
+                item.downloadDirectory = browserStore.fileDirectory(file)
+                item.downloadFileName = browserStore.fileName(file)
+                item.accept()
+            } else item.cancel()
+        }
+        Qt.callLater(presentNextDownload)
+    }
+    function exportPdf() {
+        if (!currentView || currentView.loading || currentView.url.toString() === "about:blank" || pdfBusy) return
+        pdfTarget = currentView
+        pdfDialog.currentFolder = browserStore.fileUrl(browserStore.downloadsPath)
+        pdfDialog.selectedFile = browserStore.fileUrl(browserStore.downloadsPath + "/" + browserStore.safeFileName(currentView.title) + ".pdf")
+        pdfDialog.open()
+    }
+    function openLocalFile(file) {
+        const url = browserStore.openableFile(file)
+        if (url) addTab(url)
+        else showStatus("Ce fichier ne peut pas être ouvert dans le navigateur.")
+    }
+    function dragTabAt(item, x) {
+        dragPointerX = x
+        const position = x + tabStrip.contentX
+        const targetIndex = tabStrip.indexAt(position, tabStrip.height / 2)
+        if (targetIndex < 0 || targetIndex === item.index) return
+        const target = tabStrip.itemAtIndex(targetIndex)
+        if (target && ((targetIndex > item.index && position > target.x + target.width / 2)
+            || (targetIndex < item.index && position < target.x + target.width / 2))) moveTab(item.index, targetIndex)
+    }
+    Timer {
+        interval: 30; repeat: true; running: window.draggedTab !== null
+        onTriggered: {
+            const direction = dragPointerX < 24 ? -1 : dragPointerX > tabStrip.width - 24 ? 1 : 0
+            if (direction) {
+                tabStrip.contentX = Math.max(0, Math.min(Math.max(0, tabStrip.contentWidth - tabStrip.width), tabStrip.contentX + direction * 12))
+                if (draggedTab) dragTabAt(draggedTab, dragPointerX)
+            }
+        }
+    }
     property string librarySection: "Favoris"
     property bool findVisible: false
     property string findResult: ""
@@ -77,7 +152,20 @@ ApplicationWindow {
     function runPrivateSmokeTest() {
         return privateMode && privateProfile && privateProfile.offTheRecord && persistentProfile === null && tabs.count === 1
     }
+    function prepareDragSmokeTest() {
+        tabs.clear()
+        for (let i = 0; i < 3; ++i) addTab(smokeBaseUrl + "/drag" + i)
+        tabStrip.forceLayout()
+        const first = tabStrip.itemAtIndex(0)
+        const last = tabStrip.itemAtIndex(2)
+        const start = first.mapToItem(null, first.width / 2, first.height / 2)
+        const end = last.mapToItem(null, last.width / 2 + 10, last.height / 2)
+        return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
+    }
+    function verifyDragSmokeTest() { return activeTab === 2 && currentView.url.toString() === smokeBaseUrl + "/drag0" }
     property int smokeStage: 0
+    property int smokePdfResult: 0
+    property bool smokeLocalLoaded: false
     property bool smokeCookiePresent: false
     property bool smokeCookieRead: false
     function pollSmokeTest() {
@@ -128,8 +216,39 @@ ApplicationWindow {
         }
         if (smokeStage === 7 && smokeCookieRead) {
             if (smokeCookiePresent) return -1
+            pdfTarget = currentView; pdfBusy = true
+            currentView.printToPdf(smokeDownloadPath + "/cybou-smoke.pdf")
+            smokeStage = 8
+            return 0
+        }
+        if (smokeStage === 8 && smokePdfResult !== 0) {
+            if (smokePdfResult !== 1) return -1
+            openLocalFile(browserStore.fileUrl(smokeDownloadPath + "/" + downloadItems[0].downloadFileName))
+            smokeStage = 9
+            return 0
+        }
+        if (smokeStage === 9 && smokeLocalLoaded) {
+            currentView.url = smokeBaseUrl + "/slow-download"
+            smokeStage = 10
+            return 0
+        }
+        if (smokeStage === 10 && downloadItems[0].downloadFileName.startsWith("cybou-slow") && downloadItems[0].receivedBytes > 0 && !downloadItems[0].isFinished) {
+            downloadItems[0].pause(); smokeStage = 11
+            return 0
+        }
+        if (smokeStage === 11 && downloadItems[0].isPaused) {
+            window.close()
+            if (!closeWorkDialog.visible) return -1
+            closeWorkDialog.reject()
+            downloadItems[0].resume(); smokeStage = 12
+            return 0
+        }
+        if (smokeStage === 12 && downloadItems[0].isFinished) {
+            if (downloadItems[0].state !== WebEngineDownloadRequest.DownloadCompleted || downloadItems[0].receivedBytes !== 4194304) return -1
+            library.close()
             currentView.url = "about:blank"; saveSession()
             settingsPanel.close()
+            statusPopup.close()
             return 2
         }
         return 0
@@ -184,6 +303,7 @@ ApplicationWindow {
     }
     function closeTab(index) {
         const view = views.itemAt(index)
+        if (pdfBusy && view === pdfTarget) { showStatus("L’export PDF est en cours."); return }
         if (view === pendingPermissionView) cancelPermission()
         if (!privateMode && view) closedTabs = closedTabs.concat([view.url.toString()])
         const next = activeTab > index ? activeTab - 1 : Math.min(activeTab, tabs.count - 2)
@@ -238,12 +358,19 @@ ApplicationWindow {
     function handleDownload(download) {
         download.downloadDirectory = smokeMode ? smokeDownloadPath : browserStore.downloadsPath
         downloadItems = [download].concat(downloadItems)
-        download.accept()
         showLibrary("Téléchargements")
+        if (browserStore.askDownloadLocation && !smokeMode) {
+            downloadQueue = downloadQueue.concat([download]); presentNextDownload()
+        } else download.accept()
     }
     Timer { id: saveTimer; interval: 700; onTriggered: saveSession() }
     onActiveTabChanged: { refreshAddress(); findVisible = false; cancelPermission() }
-    onClosing: { cancelPermission(); saveSession() }
+    onClosing: function(event) {
+        if (!closingApproved && (activeDownloads() || pdfBusy)) {
+            event.accepted = false; closeWorkDialog.open(); return
+        }
+        cancelPermission(); saveSession()
+    }
     Connections { target: browserStore; function onChanged() { window.refreshAddress() } }
     property var persistentProfile: null
     property var privateProfile: null
@@ -281,6 +408,8 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+F"; onActivated: { findVisible = true; findInput.forceActiveFocus(); findInput.selectAll() } }
     Shortcut { sequence: "Ctrl+Shift+N"; onActivated: browserStore.newPrivateWindow() }
     Shortcut { sequence: "Ctrl+,"; onActivated: settingsPanel.open() }
+    Shortcut { sequence: "Ctrl+O"; onActivated: openFileDialog.open() }
+    Shortcut { sequence: "Ctrl+P"; onActivated: exportPdf() }
     Shortcut { sequence: "Alt+Left"; onActivated: if (currentView) currentView.goBack() }
     Shortcut { sequence: "Alt+Right"; onActivated: if (currentView) currentView.goForward() }
     Shortcut { sequence: "F11"; onActivated: visibility === Window.FullScreen ? showNormal() : showFullScreen() }
@@ -291,8 +420,7 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight
             color: privateMode ? "#D9DDEC" : "#E5EBF3"
-            DragHandler { target: null; onActiveChanged: if (active) window.startSystemMove() }
-            TapHandler { onDoubleTapped: window.maximizeToggle() }
+            MouseArea { anchors.fill: parent; onPressed: window.startSystemMove(); onDoubleClicked: window.maximizeToggle() }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: 8
                 spacing: 4
@@ -316,7 +444,23 @@ ApplicationWindow {
                         MouseArea {
                             id: tabMouse
                             anchors.fill: parent; hoverEnabled: true
+                            preventStealing: true
                             acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                            property real pressX: 0
+                            onPressed: function(mouse) {
+                                pressX = mapToItem(tabStrip, mouse.x, mouse.y).x
+                                if (mouse.button === Qt.LeftButton) activeTab = tabItem.index
+                            }
+                            onPositionChanged: function(mouse) {
+                                if (!(pressedButtons & Qt.LeftButton)) return
+                                const position = mapToItem(tabStrip, mouse.x, mouse.y)
+                                if (window.draggedTab === tabItem || Math.abs(position.x - pressX) > 8) {
+                                    window.draggedTab = tabItem
+                                    window.dragTabAt(tabItem, position.x)
+                                }
+                            }
+                            onReleased: window.draggedTab = null
+                            onCanceled: window.draggedTab = null
                             onClicked: function(mouse) {
                                 if (mouse.button === Qt.MiddleButton) closeTab(tabItem.index)
                                 else if (mouse.button === Qt.RightButton) tabContext.popup()
@@ -393,6 +537,8 @@ ApplicationWindow {
                     MenuItem { text: "Historique                                Ctrl+H"; onTriggered: showLibrary("Historique") }
                     MenuItem { text: "Téléchargements                      Ctrl+J"; onTriggered: showLibrary("Téléchargements") }
                     MenuItem { text: "Rechercher dans la page           Ctrl+F"; onTriggered: { findVisible = true; findInput.forceActiveFocus() } }
+                    MenuItem { text: "Ouvrir un fichier…                        Ctrl+O"; onTriggered: openFileDialog.open() }
+                    MenuItem { text: "Enregistrer en PDF…                   Ctrl+P"; enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
                     MenuSeparator {}
                     MenuItem { text: "Zoom +"; onTriggered: currentView.zoomFactor = Math.min(3, currentView.zoomFactor + 0.1) }
                     MenuItem { text: "Zoom −"; onTriggered: currentView.zoomFactor = Math.max(0.3, currentView.zoomFactor - 0.1) }
@@ -439,12 +585,18 @@ ApplicationWindow {
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
             onUrlChanged: { if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
             onCertificateError: function(error) { error.rejectCertificate() }
+            onPdfPrintingFinished: function(path, success) {
+                pdfBusy = false; pdfTarget = null
+                showStatus(success ? "PDF enregistré : " + path : "Échec de l’enregistrement PDF.")
+                if (smokeMode) smokePdfResult = success ? 1 : -1
+            }
             onPermissionRequested: function(permission) { window.askPermission(permission, web) }
             onFindTextFinished: function(result) { if (index === activeTab) findResult = result.activeMatch + " / " + result.numberOfMatches }
             onNewWindowRequested: function(request) {
                 if (request.userInitiated && /^https?:\/\//i.test(request.requestedUrl.toString())) addTab(request.requestedUrl.toString())
             }
             onLoadingChanged: function(info) {
+                if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) smokeLocalLoaded = true
                 if (info.status === WebEngineView.LoadSucceededStatus && !privateMode) browserStore.recordVisit(url.toString(), title)
                 if (info.status === WebEngineView.LoadFailedStatus && index === activeTab) {
                     errorText.text = "Impossible de charger cette page. Vérifiez l’adresse et votre connexion.\n\n" + info.errorString
@@ -480,7 +632,7 @@ ApplicationWindow {
             }
             Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#8491A5"; font.pixelSize: 12 }
         }
-        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.3"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
+        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.4"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
     }
     Drawer {
         id: library
@@ -508,22 +660,77 @@ ApplicationWindow {
                     required property var modelData
                     property bool download: librarySection === "Téléchargements"
                     property bool matches: download || (modelData.title + " " + modelData.url).toLowerCase().includes(librarySearch.text.toLowerCase())
-                    width: ListView.view.width; height: matches ? (download ? 112 : 82) : 0; visible: matches
+                    width: ListView.view.width; height: matches ? (download ? 152 : 82) : 0; visible: matches
                     radius: 12; color: "white"; border.color: "#E1E7EF"
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: 12; spacing: 4
                         Label { Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: "#0D2547"; elide: Text.ElideRight; font.bold: true }
-                        Label { Layout.fillWidth: true; text: entry.download ? (entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted ? "Terminé" : entry.modelData.isFinished ? "Interrompu / annulé" : Math.round(entry.modelData.receivedBytes / 1024) + " Ko reçus") : entry.modelData.url; elide: Text.ElideRight; color: "#65758E"; font.pixelSize: 11 }
+                        Label { Layout.fillWidth: true; text: entry.download ? window.downloadStatus(entry.modelData) : entry.modelData.url; elide: Text.ElideRight; color: "#65758E"; font.pixelSize: 11 }
                         ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                         RowLayout {
-                            Button { text: entry.download ? "Annuler" : "Ouvrir"; enabled: !entry.download || !entry.modelData.isFinished; onClicked: { if (entry.download) entry.modelData.cancel(); else { addTab(entry.modelData.url); library.close() } } }
+                            Button { text: "Ouvrir"; visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) { if (!browserStore.openDownloadedFile(window.downloadPath(entry.modelData))) showStatus("Impossible d’ouvrir le fichier.") } else { addTab(entry.modelData.url); library.close() } } }
+                            Button { text: "Dossier"; visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
                             Button { text: "Retirer"; visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
+                        }
+                        RowLayout {
+                            visible: entry.download && !entry.modelData.isFinished
+                            Button { text: entry.download && entry.modelData.isPaused ? "Reprendre" : "Pause"; enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
+                            Button { text: "Annuler"; onClicked: entry.modelData.cancel() }
                         }
                     }
                 }
                 Label { anchors.centerIn: parent; visible: parent.count === 0; text: "Rien ici pour le moment"; color: "#8491A5" }
             }
         }
+    }
+    NativeDialogs.FileDialog {
+        id: openFileDialog
+        title: "Ouvrir un fichier"
+        fileMode: NativeDialogs.FileDialog.OpenFile
+        nameFilters: ["Documents web (*.html *.htm *.txt *.pdf)", "Images (*.png *.jpg *.jpeg *.gif *.webp *.svg)"]
+        onAccepted: window.openLocalFile(selectedFile)
+    }
+    NativeDialogs.FileDialog {
+        id: saveDownloadDialog
+        title: "Enregistrer le téléchargement"
+        fileMode: NativeDialogs.FileDialog.SaveFile
+        onAccepted: window.finishDownloadChoice(selectedFile)
+        onRejected: window.finishDownloadChoice(null)
+    }
+    NativeDialogs.FileDialog {
+        id: pdfDialog
+        title: "Enregistrer la page en PDF"
+        fileMode: NativeDialogs.FileDialog.SaveFile
+        nameFilters: ["Document PDF (*.pdf)"]
+        defaultSuffix: "pdf"
+        onAccepted: {
+            const path = browserStore.localPath(selectedFile)
+            if (pdfTarget && path.length) { pdfBusy = true; pdfTarget.printToPdf(path) }
+            else { pdfTarget = null; window.showStatus("La page a été fermée.") }
+        }
+        onRejected: pdfTarget = null
+    }
+    Dialog {
+        id: closeWorkDialog
+        anchors.centerIn: parent; width: 420; modal: true
+        title: "Fermer cette fenêtre ?"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        Label { width: parent.width; wrapMode: Text.WordWrap; text: "Des téléchargements ou un export PDF sont en cours. Fermer cette fenêtre les interrompra." }
+        onAccepted: {
+            for (const item of downloadItems) if (item && !item.isFinished) item.cancel()
+            downloadQueue = []; pendingDownload = null
+            saveDownloadDialog.close()
+            closingApproved = true; window.close()
+        }
+    }
+    Timer { id: statusTimer; interval: 6000; onTriggered: statusPopup.close() }
+    Popup {
+        id: statusPopup
+        x: Math.max(12, (window.width - width) / 2)
+        y: window.contentItem.height - height - 24
+        width: Math.min(620, window.width - 32); padding: 14
+        background: Rectangle { radius: 10; color: "#0D2547" }
+        contentItem: Label { id: statusLabel; color: "white"; wrapMode: Text.WordWrap; font.pixelSize: 12 }
     }
     Dialog {
         id: permissionDialog
@@ -566,7 +773,7 @@ ApplicationWindow {
         Label { width: parent.width; wrapMode: Text.WordWrap; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
     }
     Dialog {
-        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.3"; modal: true; standardButtons: Dialog.Ok
+        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.4"; modal: true; standardButtons: Dialog.Ok
         Label { width: parent.width; wrapMode: Text.WordWrap; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {

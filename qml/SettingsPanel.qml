@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs as NativeDialogs
 
 Drawer {
     id: panel
@@ -51,6 +52,11 @@ Drawer {
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#65758E"; text: "Les fenêtres privées démarrent toujours sur un nouvel onglet."; font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#DFE5ED" }
+                Label { text: "TÉLÉCHARGEMENTS"; color: "#65758E"; font.letterSpacing: 2; font.pixelSize: 11 }
+                Label { Layout.fillWidth: true; text: browserStore.downloadsPath; wrapMode: Text.WrapAnywhere; color: "#65758E"; font.pixelSize: 12 }
+                Button { text: "Choisir le dossier…"; onClicked: downloadFolder.open() }
+                CheckBox { text: "Toujours demander où enregistrer"; checked: browserStore.askDownloadLocation; onToggled: browserStore.askDownloadLocation = checked }
+                Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#DFE5ED" }
                 Label { text: "CONFIDENTIALITÉ"; color: "#65758E"; font.letterSpacing: 2; font.pixelSize: 11 }
                 Switch {
                     id: cookieSwitch
@@ -90,6 +96,12 @@ Drawer {
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#65758E"; font.pixelSize: 12; text: panel.privateMode ? "Profil privé : les données de cette fenêtre restent en mémoire. Elles sont supprimées à sa fermeture. Les téléchargements et favoris restent sur le disque." : "Les paramètres et favoris sont partagés entre les fenêtres. Les données privées restent séparées." }
             }
         }
+    }
+    NativeDialogs.FolderDialog {
+        id: downloadFolder
+        title: "Dossier des téléchargements"
+        currentFolder: browserStore.fileUrl(browserStore.downloadsPath)
+        onAccepted: if (!browserStore.setDownloadFolder(selectedFolder)) panel.statusText = "Ce dossier n’est pas accessible en écriture."
     }
     Dialog {
         id: clearDialog
