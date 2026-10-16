@@ -11,6 +11,25 @@
 #include <QFile>
 
 inline int runSecurityTests(QGuiApplication &app, quint16 port) {
+    const struct { const char *url; const char *host; } addresses[] = {
+        {"https://a.b.example.org/long/path?q=full", "a.b.example.org"},
+        {"http://user:secret@example.org:8080/path", "example.org:8080"},
+        {"https://example.org:443/", "example.org"},
+        {"http://localhost:8000/", "localhost:8000"},
+        {"https://[2001:db8::1]:8443/path", "[2001:db8::1]:8443"},
+        {"https://xn--bcher-kva.example/", "xn--bcher-kva.example"},
+        {"about:blank", ""}, {"file:///C:/docs/report.pdf", "file: report.pdf"},
+        {"data:text/html,hello", "data:"}
+    };
+    for (const auto &test : addresses) {
+        const QUrl url(QString::fromUtf8(test.url)); const auto raw = url.toString();
+        if (AddressDisplay::host(url) != QString::fromUtf8(test.host) || url.toString() != raw) {
+            qCritical() << "ADDRESS_DISPLAY_TEST FAIL" << test.url << AddressDisplay::host(url); return 2;
+        }
+    }
+    const QUrl unicode(QString::fromUtf8("https://b\xC3\xBC" "cher.example/path?secret=1"));
+    if (AddressDisplay::host(unicode) != "xn--bcher-kva.example") return 2;
+    qInfo() << "ADDRESS_DISPLAY_TEST PASS: exact host, port, IPv6, ACE/IDN, file and blank";
     for (const auto &name : QStringList{"tool.exe", "image.png.exe", "setup.msi", "script.ps1", "script.js", "script.bat", "link.lnk", "link.url", "app.desktop", "page.html", "drawing.svg", "macro.docm", "archive.zip", "unknown", "image.png.", "image.png ", "image.png:payload.exe"}) {
         if (DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL" << name; return 2; }
     }

@@ -21,6 +21,7 @@
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include "controlbar/RequestObserver.h"
 #include "security/DownloadPolicy.h"
+#include "ui/AddressDisplay.h"
 
 class BrowserStore : public QObject {
     Q_OBJECT
@@ -59,6 +60,7 @@ public:
     }
     Q_INVOKABLE QUrl fileUrl(const QString &path) const { return QUrl::fromLocalFile(path); }
     Q_INVOKABLE QString localPath(const QUrl &url) const { return url.isLocalFile() ? url.toLocalFile() : QString(); }
+    Q_INVOKABLE QString displayHost(const QUrl &url) const { return AddressDisplay::host(url); }
     Q_INVOKABLE QString fileName(const QUrl &url) const { return QFileInfo(url.toLocalFile()).fileName(); }
     Q_INVOKABLE QString fileDirectory(const QUrl &url) const { return QFileInfo(url.toLocalFile()).absolutePath(); }
     Q_INVOKABLE QString safeFileName(QString title) const {
