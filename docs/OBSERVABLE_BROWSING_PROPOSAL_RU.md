@@ -1,5 +1,7 @@
 # CYBOU Browser — Observable Browsing / Direct Capability Control
 
+> **Историческое предложение (исходный аудит 16.10.2026, коммит `0be4370`).** Сведения ниже о C++17, незавершённом PermissionCoordinator, временном HTTP и первоначальных вариантах Control Bar описывают **старую базу**, а не нынешний код. Сегодня используется C++20, независимые permission leases, HTTP-профиль и **11 кнопок в одной строке с интерактивными стеклянными hover-панелями**. Не применять исторические макеты вместо этих решений. Источник актуального состояния: [ROADMAP](ROADMAP.md), [VALIDATION](VALIDATION.md), [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), [CONTROL_BAR_UX](CONTROL_BAR_UX.md).
+
 **Статус:** план реализации, не отчёт об уже выполненных изменениях.  
 **Аудит:** `cybou-fr/CybouBrowser`, `main`, commit `0be4370ec65d13340aa0c2b80b7940d41d87292f`, 16.10.2026.  
 **Технология:** C++17, Qt 6.9+/6.12 WebEngine, Qt Quick/QML.  
