@@ -10,3 +10,21 @@ Expiry refresh timer is single-shot (60 seconds), not 250 ms network polling. Mo
 HTTP exceptions use a dedicated off-the-record profile per view, with an interceptor-owned mutex-protected HttpNavigationLease. The exact main-frame URL is consumed once; same-origin HTTP resources require a matching firstParty origin. A native 60-second timer and absolute deadline enforce expiry. QML consent captures tab UID/navigation epoch. Subsequent navigation, revoke or expiry replaces the view with a blank normal-profile view; profile deletion is deferred until delegate teardown. No page-controlled navigation is replayed with normal-profile cookies.
 
 TrackerExceptionLease similarly owns an exact document navigation and a 60-second deadline in a separate profile. Tracker exceptions apply only to matching firstParty origins, after the initial document request; transport/credential checks precede any exception. Main.qml maps both kinds of temporary profiles by tab UID and tears them down through one view replacement path. Network samples add translated resource labels, categories and explicit filter decisions. The model exposes bounded per-category rows and profile-sample counts. A one-second UI countdown runs only while the current tab has a tracker exception; native expiry remains independent of QML timers.
+
+## Запланированная архитектурная эволюция (не реализована)
+
+Сохранить существующие `ControlBarInline.qml`, интерактивный `CapabilityPopover.qml` и сетевую визуализацию; менять реальные источники политики/данных и их контракты, не делать ещё одну панель.
+
+| Будущий компонент | Обязанности и boundaries |
+| --- | --- |
+| `EffectivePermissionPolicy` | Совместная проверка пользовательского explicit deny по top origin и requester iframe до C++ grant; без автоматического pregrant |
+| `PermissionSessionUX` | Изучить native media revoke на реальном устройстве; UX предупреждения/завершения или ограниченного явного продления только при доказанном fail-closed |
+| `RuleEngine` + `RuleSetStore` | Immutable snapshots index/rules ad/tracker с проверяемым источником, целостностью, bounded lookup в interceptor, атомарным update/rollback |
+| `SiteFilterException` + `PolicyTransaction` | Независимые Ads/Trackers изменения scoped по tab UID, top origin, profile, navigation epoch, TTL; проверяемые Undo/reload и expiry, не глобальные отключения |
+| `ActivityAggregator` | Подтверждённые permission/popup/transport/network events с явной областью `tab`/`profile`/`unknown`, ограниченные памятью и временем; без query/paths/headers |
+| `NavigationGuard` | URL/IDN/redirect/private-network checks до опасного перехода; нет внешней передачи полного URL по умолчанию |
+| `RestrictedContextFactory` | JS-off до первой загрузки при достаточных risk signals; ограничения permissions/popups/downloads; separate profile не равен separate process |
+
+Порядок принятия решения: **обязательные network denies HTTPS/URL credentials** → независимые verified tracker/ad rules с временными site exceptions → результат block/allow с подтверждаемой причиной → bounded sanitized event → QML model/hover. Интерцептор не обращается к QML и не компилирует крупные правила на горячем пути. Внутренний `firstParty` текущего request сам по себе не устанавливает вкладку. Измерять CPU/memory/latency при burst, ложные срабатывания и отмену действий после смены контекста.
+
+До фактического внедрения остаются существующие `PermissionCoordinator`, `ControlBarController`, `TrackerBlocker`, `RequestObserver`. Этапы описаны в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md) и [ROADMAP](ROADMAP.md).
