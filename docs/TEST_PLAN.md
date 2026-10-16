@@ -21,3 +21,20 @@ Record actual test outcomes and unverified cases in VALIDATION.md. Never label m
 C++ permission coverage (`--security-test`): view/profile/tab/top-origin/navigation-epoch mismatch; cross-origin requester preserved; destroyed weak context; invalid native request; monotonic ceiling despite wall-clock rollback and expiry after forward jump.
 
 Native coordinator coverage (`--controlbar-test`): stale same-origin epoch denies the actual request; old request ID cannot resolve a later native request; a real reset-icon click replaces the denied view at the same URL without adding a tab; notification and geolocation grants have independent deadlines; later grant does not renew the first; earliest deadline destroys the WebEngineView and replaces its slot with a new UID; a new document must ask again; 15-second unanswered request is denied.
+
+## Следующие security/UX gates (план тестов, ЕЩЁ НЕ выполнены)
+
+| Gate | Fixture / действие | Ожидаемое подтверждение |
+| --- | --- | --- |
+| Explicit iframe deny | Top origin A, cross-origin iframe B; блок A и независимый запрет B | Запрос B не обходит блок A; requester deny тоже действует; нет grant без живого запроса |
+| Request identity | Switch tabs/profiles, navigation epoch, long press/release, native invalidation | Старый request ID не разрешает новый; отказ fail-closed |
+| Реальные media | Mic, camera, combined AV, 5–30 минут звонка, sleep/resume, background | Нет ложного active indicator; отзыв/истечение действительно защищают; целевой UX предупреждает до разрушения документа |
+| Qt/Chromium | Обновление поддерживаемой Qt WebEngine, runtime sandbox, release flags | Нет insecure flags; security/smoke/permission/network регрессия пройдена |
+| Ads/tracker engine | Verified rules, corrupted update, rollback; login/video/payment/CAPTCHA/CDN | Категории соответствуют фактическим правилам; ограниченный CPU/memory; false positives проверены |
+| Site exception | 2 таба одного origin и 1 другой; независимые Ads/Trackers, TTL, Undo, close, reload | Только нужная категория и контекст; strict HTTPS и другие вкладки не затронуты |
+| Semantic events | Pending permission, grant, confirmed block, profile-only network sample, burst | Цвет и текст не выдают grant за recording; профильные данные не подписаны per-tab; bounded memory |
+| Navigation Guard | IDN homograph, redirect, IPv4/IPv6 LAN/loopback, DNS rebinding, обычный сайт | Проверяемые блокировки без навязчивых ложных тревог и без внешней утечки URL |
+| Restricted mode | Risk signal до перехода, скрипт с side effect, popups/download attempt | JS disabled до первого выполнения; ограничения отработали; профильная изоляция не объявлена proxy/process isolation |
+| UI preservation | 820/1024/1360/1920, DPI 100/150/200, FR/RU, keyboard, mouse corridor | 11 иконок в одной строке при Ctrl+L; стеклянный hover поддерживает интерактивные действия |
+
+**Требование к качеству:** вести test log с exact toolchain, фактическим результатом PASS/FAIL/SKIP и ссылкой на код/fixture; отдельно фиксировать реальные media/manual проверки. Не переносить PASS из прежних `--controlbar-test` или `--surface-test` на ещё не реализованные adblock, guard или lifecycle изменения. Полная программа: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
