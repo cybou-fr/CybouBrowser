@@ -1,3 +1,5 @@
+> Historical report. Current normative contracts: [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md), [ROADMAP](ROADMAP.md). Implementation claims below describe the previous version.
+
 # CYBOU 0.7.1 — Adaptive Omnibox & Control Bar integration
 
 > [!NOTE]

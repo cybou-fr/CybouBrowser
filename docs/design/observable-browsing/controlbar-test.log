@@ -1,0 +1,49 @@
+ENGINE 6.12.0 6.140.0 140.0.7339.225 security patch 152.0.7977.83
+TAB_DRAG_TEST PASS
+ADDRESS_SUGGESTIONS_TEST PASS
+PRIVATE_CONTROL_POLICY_TEST PASS
+PRIVATE_WINDOW_TEST PASS
+qml: DOWNLOAD_REVIEW_TEST PASS: real completed download, source, cancellation and state cleanup
+qml: DOWNLOAD_BLOCKED_TYPE_TEST PASS
+qml: OBSERVABLE_PHASE 1
+qml: OBSERVABLE_PHASE 2
+qml: OBSERVABLE_PHASE 3
+qml: OBSERVABLE_PHASE 4
+CONTROL_BAR_SNAPSHOT "observable-browse-820" DPR 1
+qml: OBSERVABLE_ADDRESS {"navWidth":804,"fixedWidth":208,"addressWidth":222,"editing":true,"visibleKeys":["camera","mic","screen","location","notifications","clipboard","javascript","popups","cookies","storage","network"],"overflowKeys":[],"overflowVisible":false,"controlWidth":374,"downloadX":740,"menuX":774,"currentTabId":"tab-19","displayHost":"127.0.0.1:47141","rawUrl":"http://127.0.0.1:47141/controls","input":"http://127.0.0.1:47141/controls","selectedText":"http://127.0.0.1:47141/controls"}
+qml: OBSERVABLE_PHASE 5
+CONTROL_BAR_SNAPSHOT "observable-edit-820" DPR 1
+qml: OBSERVABLE_PHASE 3
+qml: OBSERVABLE_PHASE 4
+CONTROL_BAR_SNAPSHOT "observable-browse-1024" DPR 1
+qml: OBSERVABLE_ADDRESS {"navWidth":1008,"fixedWidth":208,"addressWidth":426,"editing":true,"visibleKeys":["camera","mic","screen","location","notifications","clipboard","javascript","popups","cookies","storage","network"],"overflowKeys":[],"overflowVisible":false,"controlWidth":374,"downloadX":944,"menuX":978,"currentTabId":"tab-19","displayHost":"127.0.0.1:47141","rawUrl":"http://127.0.0.1:47141/controls","input":"http://127.0.0.1:47141/controls","selectedText":"http://127.0.0.1:47141/controls"}
+qml: OBSERVABLE_PHASE 5
+CONTROL_BAR_SNAPSHOT "observable-edit-1024" DPR 1
+qml: OBSERVABLE_PHASE 3
+qml: OBSERVABLE_PHASE 4
+CONTROL_BAR_SNAPSHOT "observable-browse-1360" DPR 1
+qml: OBSERVABLE_ADDRESS {"navWidth":1344,"fixedWidth":208,"addressWidth":762,"editing":true,"visibleKeys":["camera","mic","screen","location","notifications","clipboard","javascript","popups","cookies","storage","network"],"overflowKeys":[],"overflowVisible":false,"controlWidth":374,"downloadX":1280,"menuX":1314,"currentTabId":"tab-19","displayHost":"127.0.0.1:47141","rawUrl":"http://127.0.0.1:47141/controls","input":"http://127.0.0.1:47141/controls","selectedText":"http://127.0.0.1:47141/controls"}
+qml: OBSERVABLE_PHASE 5
+CONTROL_BAR_SNAPSHOT "observable-edit-1360" DPR 1
+qml: OBSERVABLE_PHASE 3
+qml: OBSERVABLE_PHASE 4
+CONTROL_BAR_SNAPSHOT "observable-browse-1920" DPR 1
+qml: OBSERVABLE_ADDRESS {"navWidth":1904,"fixedWidth":208,"addressWidth":1322,"editing":true,"visibleKeys":["camera","mic","screen","location","notifications","clipboard","javascript","popups","cookies","storage","network"],"overflowKeys":[],"overflowVisible":false,"controlWidth":374,"downloadX":1840,"menuX":1874,"currentTabId":"tab-19","displayHost":"127.0.0.1:47141","rawUrl":"http://127.0.0.1:47141/controls","input":"http://127.0.0.1:47141/controls","selectedText":"http://127.0.0.1:47141/controls"}
+qml: OBSERVABLE_PHASE 5
+CONTROL_BAR_SNAPSHOT "observable-edit-1920" DPR 1
+qml: OBSERVABLE_PHASE 17
+qml: OBSERVABLE_PHASE 18
+qml: OBSERVABLE_PHASE 6
+qml: OBSERVABLE_PHASE 7
+qml: OBSERVABLE_PHASE 8
+qml: OBSERVABLE_PHASE 9
+qml: OBSERVABLE_PHASE 10
+qml: OBSERVABLE_PHASE 13
+qml: OBSERVABLE_PHASE 14
+qml: OBSERVABLE_PHASE 15
+qml: OBSERVABLE_PHASE 16
+qml: OBSERVABLE_PHASE 11
+qml: CONTROL_BAR_TEST PASS elapsedMs 82208
+qml: OBSERVABLE_PHASE 12
+CYBOU_SMOKE_TEST PASS
+PDF_EXPORT_TEST PASS

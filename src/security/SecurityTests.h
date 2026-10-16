@@ -119,6 +119,14 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
     QObject::connect(&page, &QWebEnginePage::loadFinished, &app, [&](bool ok) {
         const bool expected = step == 1;
         if (ok != expected) { qCritical() << "SECURITY_NETWORK_TEST FAIL" << step << ok; app.exit(2); return; }
+        if (step == 0) {
+            const auto events = interceptor.sample();
+            if (events.isEmpty() || !events.last().toMap().value("blocked").toBool()
+                || events.last().toMap().value("reason").toString() != "insecure-transport") {
+                qCritical() << "BLOCKED_NETWORK_EVENT_TEST FAIL"; app.exit(2); return;
+            }
+            qInfo() << "BLOCKED_NETWORK_EVENT_TEST PASS: strict deny recorded with reason and profile scope";
+        }
         ++step;
         if (step == 3) { qInfo() << "SECURITY_NETWORK_TEST PASS: strict HTTP denied, explicit opt-out loaded, URL credentials denied"; app.exit(0); return; }
         if (step == 2) {

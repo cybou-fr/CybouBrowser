@@ -8,17 +8,29 @@ using State = QWebEnginePermission::State;
 ControlBarController::ControlBarController(QObject *parent) : QObject(parent), m_model(this) {
     connect(this, &ControlBarController::contextChanged, this, &ControlBarController::refresh);
     connect(&m_timer, &QTimer::timeout, this, &ControlBarController::refresh);
-    m_timer.start(250);
+    m_timer.setSingleShot(true);
+    m_timer.setInterval(60001);
+    m_settings.remove("controlPolicies");
     refresh();
 }
 QObject *ControlBarController::store() const { return m_store.data(); }
 void ControlBarController::setStore(QObject *object) {
     if (m_store) disconnect(m_store, nullptr, this, nullptr);
     m_store = qobject_cast<BrowserStore *>(object);
-    if (m_store) connect(m_store, &BrowserStore::preferencesChanged, this, &ControlBarController::refresh);
+    if (m_store) connect(m_store, &BrowserStore::preferencesChanged, this, [this] {
+        if (auto observer = m_profile ? m_store->observerFor(m_profile) : nullptr)
+            connect(observer, &RequestObserver::activityAvailable, this, &ControlBarController::refresh, Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+        refresh();
+    });
     refresh();
 }
-void ControlBarController::setProfile(QObject *object) { m_profile = qobject_cast<QQuickWebEngineProfile *>(object); refresh(); }
+void ControlBarController::setProfile(QObject *object) {
+    if (m_profile) { if (auto observer = m_store ? m_store->observerFor(m_profile) : nullptr) disconnect(observer, nullptr, this, nullptr); }
+    m_profile = qobject_cast<QQuickWebEngineProfile *>(object);
+    if (auto observer = m_store && m_profile ? m_store->observerFor(m_profile) : nullptr)
+        connect(observer, &RequestObserver::activityAvailable, this, &ControlBarController::refresh, Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+    refresh();
+}
 QString ControlBarController::origin(const QUrl &url) {
     if (url.scheme() != "https" && url.scheme() != "http") return {};
     QUrl value; value.setScheme(url.scheme().toLower()); value.setHost(url.host().toLower());
@@ -26,32 +38,21 @@ QString ControlBarController::origin(const QUrl &url) {
     if (port != -1 && !(port == 443 && value.scheme() == "https") && !(port == 80 && value.scheme() == "http")) value.setPort(port);
     return value.toString();
 }
-QVariant ControlBarController::policyValue(const QUrl &url, const QString &key, const QVariant &fallback) const {
+QVariant ControlBarController::policyValue(const QUrl &url, const QString &key, const QVariant &fallback, const QString &tab) const {
     const auto subject = origin(url);
     if (subject.isEmpty() || !m_profile) return fallback;
     const auto storageKey = QString::fromLatin1(subject.toUtf8().toBase64(QByteArray::Base64UrlEncoding)) + "/" + key;
-    if (m_profile->isOffTheRecord()) return m_privatePolicies.value(storageKey, fallback);
-    return m_settings.value("controlPolicies/" + storageKey, fallback);
+    return m_privatePolicies.value((tab.isEmpty() ? m_tabId : tab) + "/" + storageKey, fallback);
 }
 bool ControlBarController::writePolicy(const QUrl &url, const QString &key, const QVariant &value) {
     const auto subject = origin(url);
     if (subject.isEmpty() || !m_profile) return false;
     const auto storageKey = QString::fromLatin1(subject.toUtf8().toBase64(QByteArray::Base64UrlEncoding)) + "/" + key;
-    if (m_profile->isOffTheRecord()) m_privatePolicies[storageKey] = value;
-    else {
-        const auto fullKey = "controlPolicies/" + storageKey;
-        const bool existed = m_settings.contains(fullKey);
-        const auto previous = m_settings.value(fullKey);
-        m_settings.setValue(fullKey, value); m_settings.sync();
-        if (m_settings.status() != QSettings::NoError) {
-            if (existed) m_settings.setValue(fullKey, previous); else m_settings.remove(fullKey);
-            return false;
-        }
-    }
+    m_privatePolicies[m_tabId + "/" + storageKey] = value;
     emit policyChanged(subject, key); refresh(); return true;
 }
-bool ControlBarController::settingFor(const QUrl &url, const QString &key) const { return policyValue(url, key, true).toBool(); }
-int ControlBarController::popupMode(const QUrl &url) const { return policyValue(url, "popups", 0).toInt(); }
+bool ControlBarController::settingFor(const QUrl &url, const QString &key, const QString &tab) const { return policyValue(url, key, true, tab).toBool(); }
+int ControlBarController::popupMode(const QUrl &url, const QString &tab) const { return policyValue(url, "popups", 0, tab).toInt(); }
 bool ControlBarController::setBehavior(const QString &key, int mode) {
     if (key == "popups" && mode >= 0 && mode <= 2) return writePolicy(m_url, key, mode);
     if ((key == "javascript" || key == "storage") && (mode == 1 || mode == 2)) return writePolicy(m_url, key, mode == 1);
@@ -78,15 +79,11 @@ QStringList ControlBarController::keysFor(Type type) {
     }
 }
 bool ControlBarController::setPermissionPolicy(const QString &key, int mode) {
-    const auto type = typeFor(key);
-    if (!m_profile || origin(m_url).isEmpty() || type == Type::Unsupported || mode < 0 || mode > 2) return false;
-    if (!QWebEnginePermission::isPersistent(type)) return mode != 1 && writePolicy(m_url, key, mode);
-    auto permission = m_profile->queryPermission(QUrl(origin(m_url)), type);
-    if (!permission.isValid()) return false;
-    if (mode == 0) permission.reset(); else if (mode == 1) permission.grant(); else permission.deny();
-    const auto state = m_profile->queryPermission(QUrl(origin(m_url)), type).state();
-    refresh(); return state == (mode == 0 ? State::Ask : mode == 1 ? State::Granted : State::Denied);
+    // Never manufacture a grant through queryPermission: only a live request can grant.
+    if (typeFor(key) == Type::Unsupported || (mode != 0 && mode != 2)) return false;
+    return writePolicy(m_url, key, mode);
 }
+
 bool ControlBarController::shouldDeny(const QWebEnginePermission &permission) const {
     for (const auto &key : keysFor(permission.permissionType()))
         if (key == "screen" || policyValue(permission.origin(), key, 0).toInt() == 2) return true;
@@ -112,17 +109,17 @@ void ControlBarController::notePopup(const QString &tab, const QUrl &url, bool b
 }
 void ControlBarController::abandonPending(const QString &tab) {
     for (auto &event : m_observations) if (event.tab == tab) event.pending = false;
+
+    refresh();
+}
+void ControlBarController::expireContext(const QString &tab) {
+    for (const auto &key : m_privatePolicies.keys()) if (key.startsWith(tab + "/")) m_privatePolicies.remove(key);
+    m_observations.removeIf([&](const Observation &event) { return event.tab == tab; });
     refresh();
 }
 void ControlBarController::clearPermissionPolicies() {
-    if (!m_profile) return;
-    if (m_profile->isOffTheRecord()) {
-        for (const auto &key : m_privatePolicies.keys()) if (key.endsWith("/camera") || key.endsWith("/mic")) m_privatePolicies.remove(key);
-    } else {
-        m_settings.beginGroup("controlPolicies");
-        for (const auto &key : m_settings.allKeys()) if (key.endsWith("/camera") || key.endsWith("/mic")) m_settings.remove(key);
-        m_settings.endGroup(); m_settings.sync();
-    }
+    m_privatePolicies.clear();
+    m_settings.remove("controlPolicies"); // Migrate obsolete persistent origin privileges.
     refresh();
 }
 QVariantList ControlBarController::networkSample() const {
@@ -136,19 +133,17 @@ void ControlBarController::refresh() {
     const auto subject = origin(m_url);
     const bool valid = m_profile && !subject.isEmpty();
     const auto now = QDateTime::currentMSecsSinceEpoch();
+    m_observations.removeIf([now](const Observation &event) { return !event.pending && now - event.time > 60000; });
     const auto sample = networkSample();
     for (int i = 0; i < keys.size(); ++i) {
         const auto key = keys[i];
         PolicyState state = PolicyState::Unavailable;
-        QString scope = tr("Ce site · profil");
+        QString scope = tr("Cet onglet · session temporaire");
         QString reason = valid ? tr("Utilisation réelle non observable. Aucun indicateur d’enregistrement.") : tr("Ouvrez un site HTTP ou HTTPS pour gérer ses permissions.");
         bool canAct = valid, persistent = false;
         if (valid && i < 6 && key != "screen") {
-            const auto type = typeFor(key); persistent = QWebEnginePermission::isPersistent(type);
-            if (persistent) {
-                const auto native = m_profile->queryPermission(QUrl(subject), type).state();
-                state = native == State::Granted ? PolicyState::Allow : native == State::Denied ? PolicyState::Deny : PolicyState::Ask;
-            } else state = policyValue(m_url, key, 0).toInt() == 2 ? PolicyState::Deny : PolicyState::Ask;
+            state = grantedKeys.contains(key) ? PolicyState::Allow : PolicyState::Deny;
+            persistent = false;
         }
         if (key == "screen") { canAct = false; reason = tr("Sélecteur de capture non intégré. Les demandes sont refusées, sans prétendre observer un partage."); }
         if (key == "notifications" && valid) reason = tr("Permission du site uniquement. Présentation des notifications sur le bureau non intégrée.");
@@ -161,7 +156,7 @@ void ControlBarController::refresh() {
         }
         if (key == "popups" && valid) {
             const auto mode = popupMode(m_url);
-            state = mode == 2 ? PolicyState::Deny : mode == 1 ? PolicyState::Allow : PolicyState::Ask;
+            state = mode == 1 ? PolicyState::Allow : PolicyState::Deny;
             reason = mode == 0 ? tr("Seuls les liens ouverts par un geste explicite deviennent des onglets.") : tr("Politique des nouvelles fenêtres de ce site. Aucun comptage des tentatives supprimées en interne par Chromium.");
         }
         if (key == "cookies") {
@@ -190,5 +185,6 @@ void ControlBarController::refresh() {
                                 {"persistent", persistent}, {"canAct", canAct}, {"pending", pending}, {"recent", recent}, {"blocked", blocked}, {"requester", requester}, {"events", eventRows},
                                 {"sampleCount", key == "network" ? sample.size() : eventRows.size()}});
     }
+    if ((!m_observations.isEmpty() || !sample.isEmpty()) && !m_timer.isActive()) m_timer.start();
     if (m_model.update(rows)) { ++m_revision; emit changed(); }
 }

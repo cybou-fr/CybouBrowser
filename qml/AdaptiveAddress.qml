@@ -25,6 +25,6 @@ TextField {
     MouseArea {
         anchors.fill: parent; enabled: !field.activeFocus
         cursorShape: Qt.IBeamCursor
-        onClicked: { field.forceActiveFocus(); field.selectAll() }
+        onClicked: { field.forceActiveFocus(); Qt.callLater(function() { field.selectAll() }) }
     }
 }

@@ -1,6 +1,8 @@
 # CYBOU Browser 0.8.0
 
-Native C++17 / Qt Quick browser using Qt WebEngine. Features an approved Dark Glass UI theme (navy base, glass surface, fine borders) and Alpine Dawn new tab page. The compass/shield icon originates strictly from `assets/cybou.png`. `assets/cybou.ico` contains 16–256 px Windows icon sizes embedded through `assets/cybou.rc`.
+CYBOU is a browser for Observable Browsing: a visible capability bar provides direct control over page permissions and behavior. Built with C++17 / Qt Quick / Qt WebEngine.
+
+Current implementation and limitations: [product vision](docs/PRODUCT_VISION.md), [security model](docs/SECURITY_MODEL.md), [capability contracts](docs/CAPABILITY_CONTRACT.md), [roadmap](docs/ROADMAP.md). The static tracker suffix list is a limited network filter, not a complete ad-blocking system. Risk-adaptive restrictions, temporary HTTP opt-in and verified proxy isolation remain planned.
 
 ## Windows build
 
@@ -15,11 +17,15 @@ C:/Qt/6.12.0/msvc2022_64/bin/windeployqt.exe --release --qmldir qml --no-transla
 
 Linux/macOS: configure with the matching Qt kit and compiler. Source structure is portable; builds, window integration and packaging on these platforms remain unverified. macOS bundle icon packaging is outstanding.
 
-## Features
+## Implemented today
+
+The following older feature inventory is being reconciled with the normative contracts linked above.
 
 - **Dark Glass UI & Alpine Dawn**: In 0.8.0, all browser-owned chrome (tab strip, navigation row, omnibox, control bar icons, overflow menu, capability popover, library drawer, settings panel, search suggestions, and modal dialogs) is unified under the CYBOU Dark Glass visual language (`CybouTheme`). The `about:blank` new tab page features the high-resolution Alpine Dawn landscape (`assets/cybou-alpine-dawn-1920x1080.jpg`), original CYBOU branding, centered floating glass card, and responsive layout. Untrusted third-party web content is left unmodified.
-- **Adaptive Omnibox & Control Bar**: Site capability controls and permission indicators are integrated directly into the navigation row between the address field and Downloads. In BROWSE mode, the address displays a compact, verified hostname while capability icons are shown inline (with overflow into `···`). In EDIT mode (focus or Ctrl+L), capability icons hide to give the full URL maximum editing width. Color semantics are calm by default: icons stay slate-neutral until a live request occurs (amber pulse) or an explicit block is active (red). Content policies (JavaScript, storage, popups) toggle instantly with an interactive glass Undo/Reload banner instead of disruptive modal confirmations.
-- **Native In-Memory Tracker & Ad Blocker**: Integrated directly into `QWebEngineUrlRequestInterceptor` (`TrackerBlocker`). Drops third-party analytics scripts, telemetry beacons, and advertising network requests in-memory before network transmission, accelerating page loads and preventing cross-site profiling without external cloud dependencies.
+- **Capability-first chrome**: eleven compact controls remain visible in the navigation row while the full URL is edited. Hover provides a tooltip; supported policies and live requests use direct clicks.
+- **Temporary permissions**: AskEveryTime engine policy, no arbitrary native pregrants, no modal ASK, 15-second pending timeout and a 60-second document deadline after the last grant. No claim of active-device monitoring.
+- **Network observation**: bounded, sanitized profile-scoped events include blocked outcomes and reasons. A small built-in tracker suffix list blocks selected third-party requests.
+
 
 
 - Combined draggable tab/title bar; minimize, maximize/restore, close, edge resizing and F11 fullscreen.
@@ -33,7 +39,7 @@ Linux/macOS: configure with the matching Qt kit and compiler. Source structure i
 - Native local-file picker for HTML, text, PDF and images (Ctrl+O). Local page access to other local files and remote resources stays blocked.
 - Save the current loaded page as a PDF via a native save dialog (Ctrl+P), with asynchronous completion/error feedback. Ctrl+P currently exports PDF rather than presenting a physical-printer dialog.
 - Find in page with match counts and previous/next.
-- Settings: DuckDuckGo/Google/Bing/Brave, startup restoration, third-party cookie blocking, per-profile cleanup and saved site permissions.
+- Settings: DuckDuckGo/Google/Bing/Brave, startup restoration, third-party cookie blocking, per-profile cleanup and permission reset.
 - Icon in Windows executable, application window, tab fallback and start page.
 
 Shortcuts: Ctrl+L address, Ctrl+T new tab, Ctrl+W close, Ctrl+Shift+T reopen, Ctrl+Tab / Ctrl+Shift+Tab switch, Ctrl+D bookmark, Ctrl+H history, Ctrl+J downloads, Ctrl+F find, Ctrl+Shift+N private window, Ctrl+, settings, Ctrl+O local file, Ctrl+P PDF export, Ctrl+M mute tab, Ctrl+R reload, Alt+Left/Right navigation, F11 fullscreen. Start directly in private mode with --private.
@@ -42,7 +48,7 @@ Shortcuts: Ctrl+L address, Ctrl+T new tab, Ctrl+W close, Ctrl+Shift+T reopen, Ct
 
 Certificate errors are rejected; insecure mixed content and local file access from web content are disabled. Only user-initiated HTTP(S) new-window requests become tabs. Chromium sandboxing remains enabled.
 
-Foreground sites can request supported permissions through an origin-labelled allow/deny dialog. Background requests and unimplemented capture types are denied. Persistent ordinary-profile decisions can be reset in Settings; private decisions stay within their window. Revoking a decision does not terminate an existing capture: close the tab to stop it. Native notification presentation remains outstanding.
+Foreground supported requests appear on their capability icon. One click grants the current request; unattended requests are denied after 15 seconds. Both profiles use AskEveryTime. A view-owned 60-second deadline unloads the document after the last grant. Actual camera/microphone activity is not observable. Native notification presentation remains outstanding.
 
 Control Bar never equates a permission grant with active device use. Permission events and the profile-wide HTTP(S) metadata sample are memory-only and bounded. No bodies, headers, query strings or URL paths are retained by this observer. Cookie filtering remains a global preference affecting all open profiles, rather than a fictional site-only control. New panel strings can be switched FR/RU in Settings; unrelated legacy UI remains French.
 
@@ -56,16 +62,16 @@ Development build, not security audited. Passwords, extensions UI, physical-prin
 
 Settings → Sécurité offers two complementary transport protection modes:
 1. **HTTPS-First (Enabled by default)**: All web navigations typed in the address bar or clicked as links are automatically upgraded from `http://` to `https://`. Local development hosts (`localhost`, `127.0.0.1`, `::1`, `.local`) are preserved so local development works without TLS barriers. If an upgraded public HTTPS connection fails (due to certificate errors or connection refusal), CYBOU shows a clear, informative security dialog allowing the user to either return to safety or opt-in to HTTP for that session.
-2. **HTTPS-Only mode (Strict opt-in)**: Persisted globally and applied immediately to the interceptors of all open ordinary/private profiles. It unconditionally blocks all HTTP and unencrypted WebSocket (`ws:`) requests, including subresources and LAN addresses, with zero fallback.
+2. **HTTPS-Only mode (Enabled by default for new settings)**: Persisted globally and applied immediately to the interceptors of all open ordinary/private profiles. It unconditionally blocks all HTTP and unencrypted WebSocket (`ws:`) requests, including subresources and LAN addresses, with zero fallback.
 
-HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. In 0.7.1+, Control Bar controls are integrated directly into the navigation bar (Adaptive Omnibox).
+HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. Control Bar stays inline with navigation and never moves into a separate row.
 
 ### Architecture and modularity
 
 The UI layer is modularized into discrete, reusable QML components:
 - `AdaptiveAddress.qml`: Context-aware omnibox supporting BROWSE and EDIT modes.
 - `ControlBarInline.qml` & `ControlBarOverflow.qml`: Responsive permission and privacy indicators.
-- `CapabilityPopover.qml`: 1-click permission and tracker blocking popover.
+- `CapabilityPopover.qml`: capability details; global tracker disabling is unavailable from site details.
 - `PolicyBanner.qml`: Slide-down notification banner for 1-click policy application with instant undo and reload actions.
 - `FindBar.qml`: Dedicated in-page search bar with match count and cycling.
 - `GlassButton.qml` & `GlassDialogBackground.qml`: Shared frosted glass design tokens and interactive components.

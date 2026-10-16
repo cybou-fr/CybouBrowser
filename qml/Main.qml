@@ -194,9 +194,9 @@ ApplicationWindow {
     property string pendingRequestOrigin: ""
     property int nextTabUid: 0
     function applyViewPolicy(view, target) {
-        view.settings.javascriptEnabled = controlState.settingFor(target, "javascript")
-        view.settings.localStorageEnabled = controlState.settingFor(target, "storage")
-        view.settings.javascriptCanOpenWindows = controlState.popupMode(target) !== 2
+        view.settings.javascriptEnabled = controlState.settingFor(target, "javascript", view.tabUid)
+        view.settings.localStorageEnabled = controlState.settingFor(target, "storage", view.tabUid)
+        view.settings.javascriptCanOpenWindows = controlState.popupMode(target, view.tabUid) !== 2
         view.policyNeedsReload = false
     }
     ControlBarController {
@@ -207,16 +207,18 @@ ApplicationWindow {
         tabId: window.currentView ? window.currentView.tabUid : ""
         javascriptEnabled: window.currentView ? window.currentView.settings.javascriptEnabled : true
         storageEnabled: window.currentView ? window.currentView.settings.localStorageEnabled : true
+        grantedKeys: window.currentView && window.currentView.permissionLease.running ? window.currentView.grantedKeys : []
         reloadRequired: window.currentView ? window.currentView.policyNeedsReload : false
         onPolicyChanged: function(origin, key) {
             for (let i = 0; i < views.count; ++i) {
                 const view = views.itemAt(i)
-                if (!view || browserStore.origin(view.url.toString()) !== origin) continue
+                if (!view || view !== currentView || browserStore.origin(view.url.toString()) !== origin) continue
                 if (key === "javascript" || key === "storage") view.policyNeedsReload = true
                 if (key === "popups") view.settings.javascriptCanOpenWindows = controlState.popupMode(view.url) !== 2
             }
         }
     }
+    Timer { id: permissionTimeout; interval: 15000; onTriggered: window.cancelPermission() }
     function cancelPermission() {
         if (pendingPermission && pendingPermission.isValid) {
             controlState.finishPermission(pendingPermission, pendingPermissionView ? pendingPermissionView.tabUid : "", false)
@@ -225,23 +227,24 @@ ApplicationWindow {
         if (pendingPermissionView) controlState.abandonPending(pendingPermissionView.tabUid)
         pendingPermission = null
         pendingPermissionView = null
-        permissionDialog.close()
+        permissionTimeout.stop()
     }
     function resolvePermission(allow) {
         if (pendingPermission && pendingPermission.isValid) {
             const valid = allow && pendingPermissionView === currentView && pendingPermissionView.profile === activeProfile
                 && browserStore.origin(currentView.url.toString()) === pendingTopOrigin
                 && browserStore.origin(pendingPermission.origin.toString()) === pendingRequestOrigin
+            const granted = controlBar.visibleKeys.filter(key => controlState.capability(key).pending)
             controlState.finishPermission(pendingPermission, pendingPermissionView ? pendingPermissionView.tabUid : "", valid)
-            if (valid) pendingPermission.grant(); else pendingPermission.deny()
+            if (valid) { pendingPermissionView.grantedKeys = pendingPermissionView.grantedKeys.concat(granted); pendingPermission.grant(); pendingPermissionView.permissionLease.restart() } else pendingPermission.deny()
         }
         if (pendingPermissionView) controlState.abandonPending(pendingPermissionView.tabUid)
-        pendingPermission = null; pendingPermissionView = null; permissionDialog.close()
+        pendingPermission = null; pendingPermissionView = null; permissionTimeout.stop()
     }
     function askPermission(permission, view) {
         if (!permission.isValid) return
         const types = WebEnginePermission.PermissionType
-        const supported = [types.MediaAudioCapture, types.MediaVideoCapture, types.MediaAudioVideoCapture, types.MouseLock, types.Notifications, types.Geolocation, types.ClipboardReadWrite]
+        const supported = [types.MediaAudioCapture, types.MediaVideoCapture, types.MediaAudioVideoCapture, types.Notifications, types.Geolocation, types.ClipboardReadWrite]
         const blocked = view !== currentView || pendingPermission || !supported.includes(permission.permissionType) || controlState.shouldDeny(permission)
         controlState.notePermission(permission, view.tabUid, view.url, !!blocked)
         if (blocked) {
@@ -251,7 +254,7 @@ ApplicationWindow {
         pendingPermissionView = view
         pendingTopOrigin = browserStore.origin(view.url.toString())
         pendingRequestOrigin = browserStore.origin(permission.origin.toString())
-        permissionDialog.open()
+        permissionTimeout.restart()
     }
     function clearBrowsingData(cookies, cache, history, permissions, session) {
         cancelPermission()
@@ -384,7 +387,7 @@ ApplicationWindow {
             if (pendingPermission.permissionType !== WebEnginePermission.PermissionType.Notifications) return -1
             if (!controlState.capability("notifications").pending || controlState.capability("notifications").requester !== browserStore.origin(smokeBaseUrl)) return -1
             resolvePermission(true)
-            if (activeProfile.queryPermission(smokeBaseUrl, WebEnginePermission.PermissionType.Notifications).state !== WebEnginePermission.State.Granted) return -1
+            if (!currentView.permissionLease.running || !currentView.grantedKeys.includes("notifications")) return -1
             smokeStage = 4
             currentView.runJavaScript("document.cookie", function(value) { smokeCookiePresent = value.includes("cybou_smoke=present"); smokeCookieRead = true })
             return 0
@@ -604,7 +607,7 @@ ApplicationWindow {
         } else download.accept()
     }
     Timer { id: saveTimer; interval: 700; onTriggered: saveSession() }
-    onActiveTabChanged: { refreshAddress(); findVisible = false; cancelPermission(); if (controlBar) controlBar.dismiss() }
+    onActiveTabChanged: { policyBanner.close(); refreshAddress(); findVisible = false; cancelPermission(); if (controlBar) controlBar.dismiss() }
     onCurrentViewChanged: { if (suggestionsPopup) suggestionsPopup.close(); if (controlBar) controlBar.dismiss(); if (address) { address.focus = false; refreshAddress() } }
     onClosing: function(event) {
         if (!closingApproved && (activeDownloads() || pdfBusy)) {
@@ -620,10 +623,10 @@ ApplicationWindow {
         WebEngineProfilePrototype {
             storageName: smokeMode ? "CybouSmokeTest" : "Cybou"
             persistentCookiesPolicy: WebEngineProfile.AllowPersistentCookies
-            persistentPermissionsPolicy: WebEngineProfile.StoreOnDisk
+            persistentPermissionsPolicy: WebEngineProfile.AskEveryTime
         }
     }
-    Component { id: privatePrototype; WebEngineProfilePrototype {} }
+    Component { id: privatePrototype; WebEngineProfilePrototype { persistentPermissionsPolicy: WebEngineProfile.AskEveryTime } }
     Connections { target: persistentProfile; function onDownloadRequested(download) { window.handleDownload(download) } }
     Connections { target: privateProfile; function onDownloadRequested(download) { window.handleDownload(download) } }
     ListModel { id: tabs }
@@ -640,7 +643,7 @@ ApplicationWindow {
         if (initialSettingsOpen) settingsPanel.open()
         if (initialMenuOpen) menu.popup(menuButton, 0, menuButton.height)
     }
-    Shortcut { sequence: "Ctrl+L"; onActivated: { address.forceActiveFocus(); address.selectAll() } }
+    Shortcut { sequence: "Ctrl+L"; onActivated: { address.forceActiveFocus(); Qt.callLater(function() { address.selectAll() }) } }
     Shortcut { sequence: "Ctrl+T"; onActivated: addTab("") }
     Shortcut { sequence: "Ctrl+W"; onActivated: closeTab(activeTab) }
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: reopenTab() }
@@ -851,19 +854,19 @@ ApplicationWindow {
                 ControlBarInline {
                     id: controlBar
                     controller: controlState; popupHost: Overlay.overlay
-                    editing: address.activeFocus
-                    widthBudget: smokeMode && window.testControlBudget >= 0 ? window.testControlBudget : Math.max(0, navRow.width - 6 * 30 - 7 * navRow.spacing - 160)
+                    editing: false
+                    widthBudget: 374
                     Layout.preferredWidth: effectiveWidth; Layout.minimumWidth: effectiveWidth; Layout.maximumWidth: effectiveWidth
-                    visible: !editing
-                    interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible && !permissionDialog.visible
+                    visible: true
+                    interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible
                     onPolicyRequested: function(key, mode) {
                         if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
                         if (currentView) {
                             const origin = browserStore.origin(currentView.url.toString())
-                            const prevMode = controlState.settingFor(currentView.url, key)
+                            const prevMode = key === "popups" ? controlState.popupMode(currentView.url) : (controlState.settingFor(currentView.url, key) ? 1 : 2)
                             if (controlState.setBehavior(key, mode)) {
                                 if (key === "javascript" || key === "storage" || key === "popups") {
-                                    policyBanner.show(origin, key, mode, prevMode)
+                                    policyBanner.contextEpoch = currentView.navigationEpoch; policyBanner.contextTab = currentView.tabUid; policyBanner.contextUrl = currentView.url.toString(); policyBanner.show(origin, key, mode, prevMode)
                                 } else {
                                     window.showStatus(qsTr("Politique mise à jour pour %1").arg(origin))
                                 }
@@ -928,13 +931,13 @@ ApplicationWindow {
         PolicyBanner {
             id: policyBanner
             onReloadRequested: {
-                if (currentView) {
+                if (currentView && currentView.tabUid === policyBanner.contextTab && currentView.navigationEpoch === policyBanner.contextEpoch && currentView.url.toString() === policyBanner.contextUrl) {
                     window.applyViewPolicy(currentView, currentView.url)
                     currentView.reload()
                 }
             }
             onUndoRequested: function(key, prevMode) {
-                if (key.length && currentView) {
+                if (key.length && currentView && currentView.tabUid === policyBanner.contextTab && currentView.navigationEpoch === policyBanner.contextEpoch && currentView.url.toString() === policyBanner.contextUrl) {
                     controlState.setBehavior(key, prevMode)
                     window.applyViewPolicy(currentView, currentView.url)
                 }
@@ -961,6 +964,12 @@ ApplicationWindow {
             required property string initialUrl
             required property bool isMuted
             required property string tabUid
+            property string policyOrigin: ""
+            property int navigationEpoch: 0
+            property var grantedKeys: []
+            property alias permissionLease: leaseTimer
+            Timer { id: leaseTimer; interval: 60000; onTriggered: { controlState.expireContext(web.tabUid); web.policyOrigin = ""; web.url = "about:blank"; window.showStatus(qsTr("Accès temporaire expiré. Rouvrez la page pour continuer.")) } }
+            Component.onDestruction: { if (window.pendingPermissionView === web) window.cancelPermission(); controlState.expireContext(tabUid) }
             property bool policyNeedsReload: false
             property string upgradedFromHttpUrl: ""
             anchors.fill: parent
@@ -969,9 +978,9 @@ ApplicationWindow {
             profile: privateMode ? privateProfile : persistentProfile
             audioMuted: isMuted
             onRecentlyAudibleChanged: function(value) { if (index < tabs.count) tabs.setProperty(index, "audible", value) }
-            settings.javascriptEnabled: controlState.settingFor(initialUrl, "javascript")
-            settings.localStorageEnabled: controlState.settingFor(initialUrl, "storage")
-            settings.javascriptCanOpenWindows: controlState.popupMode(initialUrl) !== 2
+            settings.javascriptEnabled: controlState.settingFor(initialUrl, "javascript", tabUid)
+            settings.localStorageEnabled: controlState.settingFor(initialUrl, "storage", tabUid)
+            settings.javascriptCanOpenWindows: controlState.popupMode(initialUrl, tabUid) !== 2
             settings.localContentCanAccessRemoteUrls: false
             settings.localContentCanAccessFileUrls: false
             settings.allowRunningInsecureContent: false
@@ -979,7 +988,11 @@ ApplicationWindow {
             settings.webRTCPublicInterfacesOnly: true
             settings.fullScreenSupportEnabled: true
             onNavigationRequested: function(request) {
-                if (pendingPermissionView === web) window.cancelPermission()
+                if (request.isMainFrame) {
+                    web.navigationEpoch++
+                    if (web === currentView) { policyBanner.close(); controlBar.dismiss() }
+                }
+                if (request.isMainFrame && pendingPermissionView === web) window.cancelPermission()
                 const reason = browserStore.navigationBlockReason(request.url)
                 if (reason.length > 0) {
                     request.reject()
@@ -993,13 +1006,18 @@ ApplicationWindow {
                         web.url = browserStore.upgradeToHttps(request.url)
                         return
                     }
+                    const nextOrigin = browserStore.origin(request.url.toString())
+                    if (web.policyOrigin !== nextOrigin) controlState.expireContext(web.tabUid)
+                    web.policyOrigin = nextOrigin
+                    web.grantedKeys = []
+                    leaseTimer.stop()
                     window.applyViewPolicy(web, request.url)
                 }
             }
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
-            onUrlChanged: { if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
+            onUrlChanged: { if (browserStore.origin(web.url.toString()).length === 0) { controlState.expireContext(web.tabUid); web.policyOrigin = "" }; if (web === currentView) policyBanner.close(); if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
             onCertificateError: function(error) {
                 if (web.upgradedFromHttpUrl.length > 0 && !browserStore.httpsOnly && index === activeTab) {
                     error.rejectCertificate()
@@ -1019,7 +1037,7 @@ ApplicationWindow {
             onPermissionRequested: function(permission) { window.askPermission(permission, web) }
             onFindTextFinished: function(result) { if (index === activeTab) findResult = result.activeMatch + " / " + result.numberOfMatches }
             onNewWindowRequested: function(request) {
-                const mode = controlState.popupMode(url)
+                const mode = controlState.popupMode(url, tabUid)
                 const permitted = mode !== 2 && (request.userInitiated || mode === 1) && /^https?:\/\//i.test(request.requestedUrl.toString())
                 controlState.notePopup(tabUid, url, !permitted)
                 if (permitted) addTab(request.requestedUrl.toString())
@@ -1345,33 +1363,6 @@ ApplicationWindow {
         width: Math.min(620, window.width - 32); padding: 14
         background: GlassDialogBackground { radius: 10 }
         contentItem: Label { id: statusLabel; color: CybouTheme.mainText; wrapMode: Text.WordWrap; font.pixelSize: 12 }
-    }
-    Dialog {
-        id: permissionDialog
-        anchors.centerIn: parent; width: Math.min(460, window.width - 40)
-        title: "Autorisation du site"; modal: true
-        closePolicy: Popup.CloseOnEscape
-        background: GlassDialogBackground {}
-        header: Label { text: permissionDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
-        contentItem: ColumnLayout {
-            spacing: 14
-            Label { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; font.bold: true; color: CybouTheme.mainText; text: pendingPermission ? pendingPermission.origin.toString() : "" }
-            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: pendingPermission ? "Ce site demande : " + browserStore.permissionName(pendingPermission.permissionType) : "" }
-            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: CybouTheme.secondaryText; font.pixelSize: 12; text: privateMode ? "Décision limitée à cette fenêtre privée." : "Les décisions persistantes sont révocables dans Paramètres → Autorisations des sites." }
-        }
-        footer: DialogButtonBox {
-            background: Rectangle { color: "transparent" }
-            Button {
-                text: "Refuser"; DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
-                onClicked: window.cancelPermission()
-            }
-            Button {
-                text: "Autoriser"; DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-                onClicked: window.resolvePermission(true)
-            }
-        }
-        onRejected: window.cancelPermission()
-        onClosed: if (pendingPermission) window.cancelPermission()
     }
     SettingsPanel {
         id: settingsPanel

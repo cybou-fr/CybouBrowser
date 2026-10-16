@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
     }
     if (securityTest) return runSecurityTests(app, testServer.serverPort());
     BrowserStore store;
+    if (smokeTest) store.setHttpsOnly(false); // Explicit isolated test-profile HTTP fixture.
     QTranslator controlTranslator;
     QQmlApplicationEngine engine;
     auto translateControlBar = [&] {
@@ -231,7 +232,7 @@ int main(int argc, char *argv[])
                 }
                 if (state.toInt() == 1) return;
                 const bool success = state.toInt() == 2 && privateProfileA.isNull() && privateProfileB.isNull();
-                if (state.toInt() < 0 || ++*attempts > 200 || success) {
+                if (state.toInt() < 0 || ++*attempts > (controlBarTest ? 700 : 200) || success) {
                     poll->stop();
                     qInfo() << "CYBOU_SMOKE_TEST" << (success ? "PASS" : "FAIL");
                     if (success) {

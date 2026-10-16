@@ -18,6 +18,7 @@ class ControlBarController : public QObject {
     Q_PROPERTY(QString tabId READ tabId WRITE setTabId NOTIFY changed)
     Q_PROPERTY(bool javascriptEnabled MEMBER javascriptEnabled NOTIFY contextChanged)
     Q_PROPERTY(bool storageEnabled MEMBER storageEnabled NOTIFY contextChanged)
+    Q_PROPERTY(QStringList grantedKeys MEMBER grantedKeys NOTIFY contextChanged)
     Q_PROPERTY(bool reloadRequired MEMBER reloadRequired NOTIFY contextChanged)
     Q_PROPERTY(QAbstractItemModel *model READ model CONSTANT)
     Q_PROPERTY(int revision READ revision NOTIFY changed)
@@ -39,10 +40,11 @@ public:
     int revision() const { return m_revision; }
     bool javascriptEnabled = true;
     bool storageEnabled = true;
+    QStringList grantedKeys;
     bool reloadRequired = false;
     Q_INVOKABLE QVariantMap capability(const QString &key) const { return m_model.row(key); }
-    Q_INVOKABLE bool settingFor(const QUrl &url, const QString &key) const;
-    Q_INVOKABLE int popupMode(const QUrl &url) const;
+    Q_INVOKABLE bool settingFor(const QUrl &url, const QString &key, const QString &tab = {}) const;
+    Q_INVOKABLE int popupMode(const QUrl &url, const QString &tab = {}) const;
     Q_INVOKABLE bool setBehavior(const QString &key, int mode);
     Q_INVOKABLE bool setPermissionPolicy(const QString &key, int mode);
     Q_INVOKABLE bool shouldDeny(const QWebEnginePermission &permission) const;
@@ -50,6 +52,7 @@ public:
     Q_INVOKABLE void finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed);
     Q_INVOKABLE void abandonPending(const QString &tab);
     Q_INVOKABLE void clearPermissionPolicies();
+    Q_INVOKABLE void expireContext(const QString &tab);
     Q_INVOKABLE void notePopup(const QString &tab, const QUrl &url, bool blocked);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE QVariantList networkSample() const;
@@ -60,7 +63,7 @@ signals:
     void policyChanged(const QString &origin, const QString &key);
 private:
     struct Observation { QString key, tab, top, requester; qint64 time; bool pending = false, blocked = false; };
-    QVariant policyValue(const QUrl &url, const QString &key, const QVariant &fallback) const;
+    QVariant policyValue(const QUrl &url, const QString &key, const QVariant &fallback, const QString &tab = {}) const;
     bool writePolicy(const QUrl &url, const QString &key, const QVariant &value);
     static QStringList keysFor(QWebEnginePermission::PermissionType type);
     static QWebEnginePermission::PermissionType typeFor(const QString &key);

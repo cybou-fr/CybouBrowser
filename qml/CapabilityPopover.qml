@@ -115,7 +115,7 @@ Popup {
             }
         }
         Label { Layout.fillWidth: true; text: card.capability.scope || ""; color: "#94A3B8"; font.pixelSize: 11; wrapMode: Text.WordWrap }
-        Label { Layout.fillWidth: true; text: card.capability.pending ? qsTr("Demande d’accès reçue") : card.capability.key === "network" ? qsTr("Observation du profil") : card.capability.key === "cookies" ? qsTr("Politique du profil") : [qsTr("Toujours demander"), qsTr("Autorisé"), qsTr("Bloqué pour les prochaines demandes"), qsTr("Fonction indisponible"), qsTr("Recharger pour appliquer")][card.capability.policy || 0]; color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true }
+        Label { Layout.fillWidth: true; text: card.capability.pending ? qsTr("Demande d’accès reçue") : card.capability.key === "network" ? qsTr("Observation du profil") : card.capability.key === "cookies" ? qsTr("Politique du profil") : [qsTr("Accès bloqué sans demande"), qsTr("Autorisé"), qsTr("Bloqué pour les prochaines demandes"), qsTr("Fonction indisponible"), qsTr("Recharger pour appliquer")][card.capability.policy || 0]; color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true }
         Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
         Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
@@ -126,8 +126,7 @@ Popup {
         Flow {
             Layout.fillWidth: true; spacing: 5
             visible: !!card.capability.canAct && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key)
-            GlassBtn { text: qsTr("Demander"); onClicked: card.permissionRequested(card.capability.key, 0) }
-            GlassBtn { visible: !!card.capability.persistent; text: qsTr("Toujours autoriser"); onClicked: card.permissionRequested(card.capability.key, 1) }
+            GlassBtn { text: qsTr("Réinitialiser le refus"); onClicked: card.permissionRequested(card.capability.key, 0) }
             GlassBtn { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2) }
         }
         Flow {
@@ -144,7 +143,7 @@ Popup {
             visible: card.capability.key === "network"
             Layout.fillWidth: true; spacing: 4
             Label {
-                text: qsTr("Traqueurs & pubs bloqués : %1").arg(browserStore.totalBlockedTrackers())
+                text: qsTr("Requêtes filtrées · tous les profils : %1").arg(browserStore.totalBlockedTrackers())
                 color: "#38BDF8"; font.pixelSize: 12; font.bold: true
             }
             Label {
@@ -153,7 +152,7 @@ Popup {
             }
             GlassBtn {
                 text: browserStore.blockTrackers ? qsTr("Désactiver le bloqueur") : qsTr("Activer le bloqueur de traqueurs")
-                onClicked: browserStore.blockTrackers = !browserStore.blockTrackers
+                enabled: false
             }
         }
         Label { visible: !!card.capability.recent && card.capability.key !== "network"; Layout.fillWidth: true; text: qsTr("Événements Qt récents (60 s), pas une preuve d’utilisation active."); color: "#A9C1DC"; font.pixelSize: 11; wrapMode: Text.WordWrap }
@@ -162,7 +161,7 @@ Popup {
             delegate: Label {
                 required property var modelData
                 Layout.fillWidth: true
-                text: new Date(modelData.time).toLocaleTimeString(Qt.locale(), "HH:mm:ss") + "  " + modelData.origin + (modelData.resourceType !== undefined ? " · type " + modelData.resourceType : modelData.blocked ? " · " + qsTr("Refus") : "")
+                text: new Date(modelData.time).toLocaleTimeString(Qt.locale(), "HH:mm:ss") + "  " + modelData.origin + (modelData.resourceType !== undefined ? " · type " + modelData.resourceType : "") + (modelData.blocked ? " · " + qsTr("Bloqué") + " · " + (modelData.reason || "") : "")
                 textFormat: Text.PlainText; color: "#BBD2EA"; font.pixelSize: 10; wrapMode: Text.WrapAnywhere
             }
         }

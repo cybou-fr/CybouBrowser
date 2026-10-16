@@ -11,6 +11,9 @@ Rectangle {
     color: "#E80B1F38"
 
     property bool bannerVisible: false
+    property int contextEpoch: -1
+    property string contextTab: ""
+    property string contextUrl: ""
     property string lastKey: ""
     property int lastPrevMode: 0
     property string lastOrigin: ""

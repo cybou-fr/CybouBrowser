@@ -30,7 +30,7 @@ Button {
         if (policy === 3) return "#64748B"
         return "#8FA3BF"
     }
-    readonly property string stateText: capability.pending ? qsTr("Demande en attente") : [qsTr("Demander"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
+    readonly property string stateText: capability.pending ? qsTr("Demande en attente") : [qsTr("Indisponible sans demande"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
     signal hoverChanged(bool inside)
     signal focusStep(int direction)
     implicitWidth: 40; implicitHeight: 28
@@ -38,7 +38,10 @@ Button {
     scale: icon.down ? 0.93 : icon.hovered ? 1.05 : 1.0
     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
     focusPolicy: tabStop || activeFocus ? Qt.StrongFocus : Qt.ClickFocus
-    Accessible.name: (capability.title || "") + " · " + stateText + " · " + (capability.scope || "") + " · " + (capability.reason || "") + " · " + qsTr("Ouvrir les détails")
+    Accessible.name: (capability.title || "") + " · " + stateText + " · " + (capability.scope || "") + " · " + (capability.reason || "") + " · " + qsTr("Gérer cet accès temporaire")
+    ToolTip.visible: hovered
+    ToolTip.delay: 250
+    ToolTip.text: (capability.title || "") + " · " + stateText + "\n" + (capability.requester || capability.scope || "") + "\n" + (capability.reason || "")
     onHoveredChanged: hoverChanged(hovered)
     Keys.onPressed: function(event) {
         if ([Qt.Key_Left, Qt.Key_Up, Qt.Key_Right, Qt.Key_Down].includes(event.key)) {

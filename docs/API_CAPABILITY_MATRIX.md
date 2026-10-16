@@ -1,3 +1,22 @@
+# Observable Browsing capability matrix — current working tree
+
+| Area | Real observation | Control | Scope | Limitation |
+|---|---|---|---|---|
+| camera/mic/location/notifications/clipboard | native permissionRequested, originating request object | current grant only, no queryPermission pregrant | document, requester, tab, profile; 15s pending / 60s after last grant | grant does not prove use |
+| screen | unsupported native capture request | deny | request | chooser unavailable |
+| JS/localStorage | view setting readback | toggle + guarded reload/undo | tab + origin, memory | no DOM/storage inventory |
+| popups | newWindowRequested | gesture default; temporary allow/deny | tab + origin | Chromium-suppressed attempts unknown |
+| cookies | profile cookie filter | explicit global setting | all open profiles | no complete count |
+| network | sanitized interceptor events incl. blocked result/reason | strict HTTPS preference + limited built-in tracker rules | profile; firstParty metadata, never proven tab attribution | no bodies, exhaustive ad rules or proxy guarantee |
+
+Normative details: [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md). Build/test evidence: [VALIDATION](VALIDATION.md).
+
+---
+
+## Historical matrix (preserved)
+
+> Historical report. Current normative contracts: [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md), [ROADMAP](ROADMAP.md). Implementation claims below describe the previous version.
+
 # Control Bar integration — installed Qt capability audit
 
 Baseline: local main `687c1d10463128554698a31798d26a5afc3d2691`, CYBOU 0.5, C++17, Qt 6.12.0 MSVC 2022 x64. The supplied alignment audit targets older 0.3; existing 0.5 features and independent private windows take precedence for integration.

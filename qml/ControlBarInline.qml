@@ -8,8 +8,8 @@ Item {
     property real widthBudget: 0
     property bool editing: false
     property bool interactionsEnabled: true
-    readonly property int slotWidth: 40
-    readonly property int visibleCount: editing ? 0 : widthBudget >= icons.count * slotWidth ? icons.count : Math.max(0, Math.min(icons.count, Math.floor(widthBudget / slotWidth) - 1))
+    readonly property int slotWidth: 34
+    readonly property int visibleCount: icons.count
     readonly property bool overflowVisible: !editing && visibleCount < icons.count
     readonly property real effectiveWidth: editing ? 0 : (visibleCount + (overflowVisible ? 1 : 0)) * slotWidth
     readonly property bool hasPopup: card.visible || overflow.visible
@@ -68,12 +68,18 @@ Item {
         model: control.controller.model
         delegate: ControlBarIcon {
             required property int index
+            enabled: control.interactionsEnabled
             x: index * control.slotWidth; width: control.slotWidth; height: 28
             visible: index < control.visibleCount && !control.editing
             tabStop: control.rovingIndex === index
             onActiveFocusChanged: if (activeFocus) control.rovingIndex = index
-            onHoverChanged: function(inside) { control.hoverIcon(this, inside) }
-            onClicked: control.openKey(capability.key, this, true)
+            onHoverChanged: function(inside) { }
+            onClicked: {
+                if (capability.pending) control.decisionRequested(true)
+                else if (["javascript", "storage", "popups"].includes(capability.key)) control.policyRequested(capability.key, capability.policy === 1 ? 2 : 1)
+                else if (["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key)) { controller.setPermissionPolicy(capability.key, 0); control.reloadRequested() }
+                else control.openKey(capability.key, this, true)
+            }
             onFocusStep: function(direction) { control.stepFocus(index, direction) }
             Component.onCompleted: control.readyRevision++
         }

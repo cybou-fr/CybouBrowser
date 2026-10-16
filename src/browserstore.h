@@ -101,7 +101,7 @@ public:
     bool restoreSession() const { return settings.value("preferences/restoreSession", true).toBool(); }
     bool blockThirdPartyCookies() const { return settings.value("preferences/blockThirdPartyCookies", true).toBool(); }
     bool cacheBusy() const { return m_cacheBusy; }
-    bool httpsOnly() const { return settings.value("preferences/httpsOnly", false).toBool(); }
+    bool httpsOnly() const { return settings.value("preferences/httpsOnly", true).toBool(); }
     void setHttpsOnly(bool enabled) {
         if (enabled == httpsOnly()) return;
         settings.setValue("preferences/httpsOnly", enabled);
@@ -245,6 +245,7 @@ public:
         observer->setBlockTrackers(blockTrackers());
         observers.insert(profile, observer);
         profile->setUrlRequestInterceptor(observer);
+        emit preferencesChanged();
         connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); });
     }
     Q_INVOKABLE bool clearCookies(QObject *object) {
