@@ -17,3 +17,17 @@
 | Network | URL interceptor | tracker rules + постоянный HTTPS strict | категории/причины, HTTP и tracker opt-in/revoke | bounded profile sample; исключения: отдельный профиль, один документ, 60 с; tracker только HTTPS |
 
 Reload/Undo действуют только при совпадении исходной вкладки, полного URL и navigation epoch; смена контекста закрывает баннер. Request IDs, независимые PermissionLease и проверки SiteContext реализованы в C++. Typed C++ policy transactions остаются в roadmap.
+
+## Следующий контракт UX и защиты (planned; не реализован)
+
+Текущие `policy / pending / blocked / recent` не следует смешивать с фактической активностью сенсора. Grant camera/mic не гарантирует «идёт запись». По умолчанию нейтральная закрытая capability — не ошибка или произошедшая атака. Hover должен оставаться полноценной **интерактивной стеклянной панелью**, не краткой подсказкой.
+
+| Контроль | Следующее проверяемое поведение | Что запрещено утверждать |
+| --- | --- | --- |
+| Camera/Mic/Location | Показать срок действующего grant, предупреждать о последствиях истечения; улучшение без внезапного обрыва лишь после real-media/revoke API proof | Что grant означает активную запись или что можно безопасно отозвать работающий stream без проверки |
+| Requests из iframe | Запрет top-level origin распространяется на nested requester; показываются оба origin; конкретный request ID обязательный | Что посещение сайта или разрешение для родителя автоматически разрешает iframe |
+| Network (Ads/Trackers) | Две *backend-подтверждённые* категории и независимые временные действия **в существующей Network hover-карточке** | Что старый единый tracker suffix list уже даёт полноценный adblock или отдельные per-tab счётчики |
+| Журнал | Ограниченные по времени confirmed events с явным scope profile/tab/unknown | Что `firstParty` одного сетевого запроса точно определяет tab |
+| Навигация | Локальные проверки IDN/URL/redirect/private-network, при реальном риске restricted mode и JS-off before-load | Что неизвестный сайт опасен или что off-the-record profile анонимен |
+
+**Существующие ограничения сохраняются:** Screen chooser не интегрирован; Notifications presentation не готова; cookies глобальны по нескольким профилям; Storage контролирует localStorage, не полный инвентарь IndexedDB/Service Workers; Network наблюдает только доступные ему HTTP(S)/ws события. Новые таблицы — acceptance criteria, а не shipped API. Подробнее: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
