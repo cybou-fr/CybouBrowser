@@ -1,6 +1,6 @@
-# CYBOU Browser 0.7.1
+# CYBOU Browser 0.8.0
 
-Native C++17 / Qt Quick browser using Qt WebEngine. Navy, white and red identity follows the supplied CYBOU sheet. The compass/shield icon was reconstructed from that reference with the built-in imagegen tool. assets/cybou.png is embedded in the app; assets/cybou.ico contains 16–256 px Windows icon sizes embedded through assets/cybou.rc.
+Native C++17 / Qt Quick browser using Qt WebEngine. Features an approved Dark Glass UI theme (navy base, glass surface, fine borders) and Alpine Dawn new tab page. The compass/shield icon originates strictly from `assets/cybou.png`. `assets/cybou.ico` contains 16–256 px Windows icon sizes embedded through `assets/cybou.rc`.
 
 ## Windows build
 
@@ -17,7 +17,8 @@ Linux/macOS: configure with the matching Qt kit and compiler. Source structure i
 
 ## Features
 
-- Adaptive Omnibox & Control Bar: in 0.7.1, site capability controls and permission indicators are integrated directly into the browser's navigation row between the address field and Downloads, replacing the previous floating page overlay rail. In BROWSE mode, the address displays a compact, verified hostname while available capability icons are shown inline (with hidden controls accessible via an overflow menu ···). In EDIT mode (focus or Ctrl+L), all capability controls hide to give the full URL maximum width. Hover/pinned detail cards, FR/RU strings, keyboard navigation and separate policy/event marks are preserved. See [integration report](docs/CONTROL_BAR_INTEGRATION.md), [omnibox integration](docs/OMNIBOX_071_INTEGRATION.md) and [capability matrix](docs/API_CAPABILITY_MATRIX.md).
+- **Dark Glass UI & Alpine Dawn**: In 0.8.0, all browser-owned chrome (tab strip, navigation row, omnibox, control bar icons, overflow menu, capability popover, library drawer, settings panel, search suggestions, and modal dialogs) is unified under the CYBOU Dark Glass visual language (`CybouTheme`). The `about:blank` new tab page features the high-resolution Alpine Dawn landscape (`assets/cybou-alpine-dawn-1920x1080.jpg`), original CYBOU branding, centered floating glass card, and responsive layout. Untrusted third-party web content is left unmodified.
+- **Adaptive Omnibox & Control Bar**: Site capability controls and permission indicators are integrated directly into the navigation row between the address field and Downloads. In BROWSE mode, the address displays a compact, verified hostname while capability icons are shown inline (with overflow into `···`). In EDIT mode (focus or Ctrl+L), capability icons hide to give the full URL maximum editing width. See [integration report](docs/CONTROL_BAR_INTEGRATION.md), [omnibox integration](docs/OMNIBOX_071_INTEGRATION.md) and [capability matrix](docs/API_CAPABILITY_MATRIX.md).
 
 - Combined draggable tab/title bar; minimize, maximize/restore, close, edge resizing and F11 fullscreen.
 - Scrollable tabs, mouse drag reordering with edge autoscroll, favicons, middle-click close, duplicate and move-left/right menu, reopen closed tabs and keyboard switching. Both browser bars remain 36 logical px high, with 28 px tab/address controls.

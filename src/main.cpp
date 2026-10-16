@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     const bool securityTest = app.arguments().contains("--security-test");
     const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
-    app.setApplicationVersion("0.7.1");
+    app.setApplicationVersion("0.8.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
     if (smokeTest) qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
@@ -99,8 +99,31 @@ int main(int argc, char *argv[])
     });
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
-    if (app.arguments().contains("--private")) engine.setInitialProperties({{"privateMode", true}});
+    QString initialUrl;
+    QString screenshotPath;
+    for (int i = 1; i < app.arguments().size(); ++i) {
+        const QString arg = app.arguments().at(i);
+        if (arg == "--screenshot" && i + 1 < app.arguments().size()) {
+            screenshotPath = app.arguments().at(++i);
+        } else if (arg.startsWith("http://") || arg.startsWith("https://") || arg.startsWith("file://")) {
+            initialUrl = arg;
+        }
+    }
+    QVariantMap initialProps;
+    if (app.arguments().contains("--private")) initialProps["privateMode"] = true;
+    if (!initialUrl.isEmpty()) initialProps["initialUrlArgument"] = initialUrl;
+    if (!initialProps.isEmpty()) engine.setInitialProperties(initialProps);
     engine.loadFromModule("Cybou", "Main");
+    if (!screenshotPath.isEmpty() && !engine.rootObjects().isEmpty()) {
+        auto root = engine.rootObjects().first();
+        QTimer::singleShot(4000, &app, [root, &app, screenshotPath] {
+            if (auto window = qobject_cast<QQuickWindow *>(root)) {
+                window->grabWindow().save(screenshotPath);
+                qInfo() << "SCREENSHOT_SAVED" << screenshotPath;
+            }
+            app.exit(0);
+        });
+    }
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
         QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest] {
@@ -208,15 +231,24 @@ int main(int argc, char *argv[])
                 if (state.toInt() < 0 || ++*attempts > 200 || success) {
                     poll->stop();
                     qInfo() << "CYBOU_SMOKE_TEST" << (success ? "PASS" : "FAIL");
-                    if (success) QMetaObject::invokeMethod(root, "prepareFeaturePreview");
-                    QTimer::singleShot(700, &app, [root, &app, success] {
-                        QFile pdf("build/test-downloads/cybou-smoke.pdf");
-                        const bool validPdf = pdf.open(QIODevice::ReadOnly) && pdf.size() > 1000 && pdf.read(5) == "%PDF-";
-                        qInfo() << "PDF_EXPORT_TEST" << (validPdf ? "PASS" : "FAIL");
-                        if (auto window = qobject_cast<QQuickWindow *>(root)) window->grabWindow().save("build/smoke-preview.png");
-                        if (success) QMetaObject::invokeMethod(root, "cleanFeaturePreview");
-                        app.exit(success && validPdf ? 0 : 2);
-                    });
+                    if (success) {
+                        QMetaObject::invokeMethod(root, "prepareFeaturePreview");
+                        QTimer::singleShot(500, &app, [root, &app, success] {
+                            if (auto window = qobject_cast<QQuickWindow *>(root))
+                                window->grabWindow().save("build/cybou-08-alpine-dawn.png");
+                            QMetaObject::invokeMethod(root, "showSuggestionsPreview");
+                            QTimer::singleShot(500, &app, [root, &app, success] {
+                                QFile pdf("build/test-downloads/cybou-smoke.pdf");
+                                const bool validPdf = pdf.open(QIODevice::ReadOnly) && pdf.size() > 1000 && pdf.read(5) == "%PDF-";
+                                qInfo() << "PDF_EXPORT_TEST" << (validPdf ? "PASS" : "FAIL");
+                                if (auto window = qobject_cast<QQuickWindow *>(root)) window->grabWindow().save("build/smoke-preview.png");
+                                if (success) QMetaObject::invokeMethod(root, "cleanFeaturePreview");
+                                app.exit(success && validPdf ? 0 : 2);
+                            });
+                        });
+                    } else {
+                        app.exit(2);
+                    }
                 }
             });
             poll->start(300);
