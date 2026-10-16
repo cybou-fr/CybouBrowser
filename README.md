@@ -91,6 +91,13 @@ An unfamiliar website is not automatically malicious. CYBOU must base stronger r
 
 **Security disclosure:** CYBOU is an experimental browser, not independently security-audited. The current suffix-list filter is **not** a complete ad blocker. Network observation cannot reveal every action executed by a page. Private mode does not anonymize the connection. Keep the underlying Qt/Chromium engine patched.
 
+
+## Security and UX: what we are building next
+
+The current eleven-icon **single-row** Control Bar and its interactive glass hover panels stay exactly where they are. Planned improvements focus on *real enforcement*: explicit deny rules across cross-origin iframes, verified and usable temporary camera/microphone permissions, a patched/sandboxed WebEngine, a versioned ad/tracker rules engine, temporary independent site exceptions **inside the existing Network hover panel**, truthful events/colors, and carefully gated navigation-risk checks.
+
+**These are engineering plans, not shipped capabilities.** Profile-scoped traffic is not a tab counter; permission grants are not proof of physical capture; off-the-record HTTP sessions are not proxy/process isolation. See the [Security & UX Evolution Plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
+
 ## Everyday browser features
 
 The current application also includes draggable/reorderable tabs; pinned and muted tabs; bookmarks and history; local address suggestions; private windows with independent off-the-record profiles; a download library with an explicit review before external opening; PDF export; find in page; local file opening; and configurable search providers.
@@ -99,9 +106,23 @@ The browser-owned UI uses the CYBOU navy/red/white brand and the Dark Glass / Al
 
 **No permanent site permission does not mean no local data is saved.** Bookmarks, history, session URLs, cookies, downloaded files, and ordinary first-party storage can persist. History and session URLs are saved in QSettings without encryption. The current cleanup command does not comprehensively erase localStorage, IndexedDB, or service workers.
 
+### Temporary HTTP access
+
+Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. After a blocked HTTP attempt or failed known HTTPS upgrade, the Network panel offers explicit access to that exact address. Consent creates a separate off-the-record profile without normal cookies/cache for at most 60 seconds. One exact main-frame URL and same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and ws remain blocked. Reload, later navigation, revoke and expiry destroy the temporary view/profile; HTTP requires fresh consent. Page-controlled navigation is never automatically replayed with normal cookies. This separates profile data, not processes or proxy routes.
+
+The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
+
+The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
+
+### Temporary tracker exception
+
+The Network glass panel groups HTTP, tracker and other events, using resource names and clear explanations. Passing a filter is not proof of a successful load. Counts are scoped to the current profile's recent sample.
+
+If filtering breaks a loaded HTTPS page, explicit consent recreates that exact page in a separate off-the-record profile without ordinary cookies/cache. Tracker-list requests with matching firstParty origin pass for at most 60 seconds. Existing behavior restrictions are inherited, while device grants are not copied. The panel shows remaining seconds and immediate revoke. Reload, later navigation, expiry or revoke destroy the temporary context; other tabs retain tracker filtering. This mode does not combine with HTTP exceptions. See [ADR 0004](docs/ADR/0004-temporary-tracker-exceptions.md).
+
 ## Build on Windows
 
-**Build requirements:** a C++20-capable compiler, CMake 3.24+, and Qt 6.9+ with Quick, Quick Controls 2, WebEngine Quick/Core, Network, LinguistTools and Test. The previously tested Windows toolchain is Qt 6.12.0 with MSVC 2022 x64 (19.44); the C++20 migration still requires a fresh local build and regression-test run.
+**Build requirements:** a C++20-capable compiler, CMake 3.24+, and Qt 6.9+ with Quick, Quick Controls 2, WebEngine Quick/Core, Network, LinguistTools and Test. The recorded Windows validation includes a successful C++20 Release build and security suite with Qt 6.12.0 and MSVC 2022 x64 (19.44); this is not an independently audited release.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
@@ -138,6 +159,7 @@ Use the built-in local fixtures for deterministic regression checks:
 ./build/Release/cybou.exe --security-test
 ./build/Release/cybou.exe --controlbar-test
 ./build/Release/cybou.exe --smoke-test
+./build/Release/cybou.exe --surface-test
 ```
 
 These suites exercise policy rules, layout and interaction, and browsing workflows. The test harness also produces local screenshots. Passing a local suite is **not** equivalent to verifying permissions on real devices or auditing web-engine security. See the [Capability Audit](docs/API_CAPABILITY_MATRIX.md) and [Roadmap](docs/ROADMAP.md) for gaps.
@@ -152,6 +174,7 @@ These suites exercise policy rules, layout and interaction, and browsing workflo
 | [Control Bar UX](docs/CONTROL_BAR_UX.md) | Permanent, inline **single-row** interaction rules |
 | [Architecture](docs/ARCHITECTURE.md) | WebEngine, observation, models and QML |
 | [Roadmap](docs/ROADMAP.md) | Implementation state and verification gates |
+| [Security & UX Evolution (RU)](docs/SECURITY_UX_EVOLUTION.md) | Current security/UX direction, planned features and test gates |
 | [Engineering proposal (RU)](docs/OBSERVABLE_BROWSING_PROPOSAL_RU.md) | Detailed plan — not a report of completed features |
 
 Older design mockups and integration reports are retained in the repository for history. The documents above describe the current product direction.
@@ -162,16 +185,3 @@ Older design mockups and integration reports are retained in the repository for 
   <strong>CYBOU — Observe. Restrict. Control. Revoke.</strong><br />
   <sub>A capability-first browser designed to make page behavior visible — not to ask for blind trust.</sub>
 </p>
-### Temporary HTTP access
-
-Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. After a blocked HTTP attempt or failed known HTTPS upgrade, the Network panel offers explicit access to that exact address. Consent creates a separate off-the-record profile without normal cookies/cache for at most 60 seconds. One exact main-frame URL and same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and ws remain blocked. Reload, later navigation, revoke and expiry destroy the temporary view/profile; HTTP requires fresh consent. Page-controlled navigation is never automatically replayed with normal cookies. This separates profile data, not processes or proxy routes.
-
-The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
-
-The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
-
-### Temporary tracker exception
-
-The Network glass panel groups HTTP, tracker and other events, using resource names and clear explanations. Passing a filter is not proof of a successful load. Counts are scoped to the current profile's recent sample.
-
-If filtering breaks a loaded HTTPS page, explicit consent recreates that exact page in a separate off-the-record profile without ordinary cookies/cache. Tracker-list requests with matching firstParty origin pass for at most 60 seconds. Existing behavior restrictions are inherited, while device grants are not copied. The panel shows remaining seconds and immediate revoke. Reload, later navigation, expiry or revoke destroy the temporary context; other tabs retain tracker filtering. This mode does not combine with HTTP exceptions. See [ADR 0004](docs/ADR/0004-temporary-tracker-exceptions.md).
