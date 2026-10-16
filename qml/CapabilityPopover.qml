@@ -7,13 +7,14 @@ Popup {
     property var capability: ({})
     property bool pinned: false
     property bool pointerInside: hover.hovered
+    property real minimumY: 0
     signal policyRequested(string key, int mode)
     signal permissionRequested(string key, int mode)
     signal decisionRequested(bool allow)
     signal reloadRequested()
     signal cookieRequested()
     width: 330; padding: 16
-    height: Math.min(implicitHeight, parent.height - 16)
+    height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     background: Rectangle { color: "#F0203550"; radius: 15; border.color: "#70B6CDE5" }
