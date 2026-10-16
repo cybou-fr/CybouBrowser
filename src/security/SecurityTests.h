@@ -7,11 +7,13 @@
 #include "../controlbar/RequestObserver.h"
 #include "DownloadPolicy.h"
 #include "PermissionTests.h"
+#include "HttpLeaseTests.h"
 #include "../browserstore.h"
 #include <QTemporaryDir>
 #include <QFile>
 
 inline int runSecurityTests(QGuiApplication &app, quint16 port) {
+    if (!runHttpLeaseTests()) { qCritical() << "HTTP_LEASE_TEST FAIL"; return 2; }
     if (!runPermissionContextTests()) { qCritical() << "PERMISSION_CONTEXT_TEST FAIL"; return 2; }
     const struct { const char *url; const char *host; } addresses[] = {
         {"https://a.b.example.org/long/path?q=full", "a.b.example.org"},
@@ -97,9 +99,8 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         const QUrl upgraded = store.upgradeToHttps(publicHttp);
         if (upgraded != QUrl("https://example.org/path?q=1")) { qCritical() << "HTTPS_FIRST_TEST: upgradeToHttps mismatch" << upgraded; return 2; }
 
-        store.allowHttpFallback("example.org");
-        if (store.shouldUpgradeToHttps(publicHttp)) { qCritical() << "HTTPS_FIRST_TEST: fallback origin not exempted"; return 2; }
-        qInfo() << "HTTPS_FIRST_TEST PASS: automatic upgrade of public HTTP, local hosts excluded, fallback supported";
+        if (store.navigationBlockReason(publicHttp).isEmpty()) return 2;
+        qInfo() << "HTTPS_FIRST_TEST PASS: upgrade retained, public HTTP denied, no host fallback";
     }
 
     QWebEngineProfile profile;

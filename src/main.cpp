@@ -28,8 +28,9 @@ int main(int argc, char *argv[])
     app.setApplicationName("CYBOU");
     app.setOrganizationName("CYBOU");
     const bool controlBarTest = app.arguments().contains("--controlbar-test");
+    const bool transportTest = app.arguments().contains("--transport-test");
     const bool securityTest = app.arguments().contains("--security-test");
-    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest;
+    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest || transportTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
     app.setApplicationVersion("0.8.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
@@ -61,8 +62,9 @@ int main(int argc, char *argv[])
                         transfer->start(40); return;
                     }
                     const bool download = request.startsWith("GET /download ");
+                    const bool transport = request.startsWith("GET /transport-document?");
                     const bool controls = request.startsWith("GET /controls ");
-                    const QByteArray body = download ? QByteArray("CYBOU download test\n") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
+                    const QByteArray body = download ? QByteArray("CYBOU download test\n") : transport ? QByteArray("<!doctype html><title>Transport document</title><h1>Temporary HTTP fixture</h1><script>Promise.all([fetch('/transport-asset'),fetch('http://localhost:") + QByteArray::number(socket->localPort()) + QByteArray("/cross-origin-http').catch(()=>null)]).then(()=>document.title='Transport ready')</script>") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
                     const auto cookie = request.startsWith("GET /page ") ? QByteArray("Set-Cookie: cybou_smoke=present; Path=/; SameSite=Lax\r\n") : QByteArray();
                     socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: " + QByteArray(download ? "application/octet-stream" : "text/html") + "\r\n" + cookie + (download ? QByteArray("Content-Disposition: attachment; filename=cybou-smoke.txt\r\n") : QByteArray()) + "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
                     socket->disconnectFromHost();
@@ -73,7 +75,10 @@ int main(int argc, char *argv[])
     }
     if (securityTest) return runSecurityTests(app, testServer.serverPort());
     BrowserStore store;
-    if (smokeTest) store.setHttpsOnly(false); // Explicit isolated test-profile HTTP fixture.
+    if (smokeTest) {
+        store.setHttpsOnly(false); // Explicit isolated test-profile HTTP fixture.
+        store.setHttpsFirst(true);
+    }
     QTranslator controlTranslator;
     QQmlApplicationEngine engine;
     auto translateControlBar = [&] {
@@ -130,7 +135,7 @@ int main(int argc, char *argv[])
     }
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
-        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest] {
+        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest, transportTest] {
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->requestActivate(); QCoreApplication::processEvents();
             QTest::mouseMove(dragWindow, QPoint(80, 300));
@@ -195,19 +200,26 @@ int main(int argc, char *argv[])
             auto poll = new QTimer(&app);
             auto attempts = std::make_shared<int>(0);
             auto controlStarted = std::make_shared<bool>(false);
-            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, controlStarted] {
+            auto retiredHttpProfile = std::make_shared<QPointer<QObject>>();
+            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, controlStarted, retiredHttpProfile] {
                 QVariant state;
                 if (*controlStarted) {
-                    QMetaObject::invokeMethod(root, "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
+                    QMetaObject::invokeMethod(root, transportTest ? "pollTransportTest" : "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
+                    if (transportTest) {
+                        const auto value = root->property("transportTestProfile");
+                        QObject *profile = value.value<QObject *>();
+                        if (!profile) profile = value.value<QJSValue>().toQObject();
+                        if (profile) *retiredHttpProfile = profile;
+                    }
                     QVariant screenshot;
-                    QMetaObject::invokeMethod(root, "takeControlBarScreenshot", Q_RETURN_ARG(QVariant, screenshot));
+                    QMetaObject::invokeMethod(root, transportTest ? "takeTransportScreenshot" : "takeControlBarScreenshot", Q_RETURN_ARG(QVariant, screenshot));
                     if (!screenshot.toString().isEmpty()) {
                         auto window = qobject_cast<QQuickWindow *>(root);
                         window->grabWindow().save("build/" + screenshot.toString() + ".png");
                         qInfo() << "CONTROL_BAR_SNAPSHOT" << screenshot.toString() << "DPR" << window->devicePixelRatio();
                     }
                     QVariant input;
-                    QMetaObject::invokeMethod(root, "takeControlBarInput", Q_RETURN_ARG(QVariant, input));
+                    QMetaObject::invokeMethod(root, transportTest ? "takeTransportInput" : "takeControlBarInput", Q_RETURN_ARG(QVariant, input));
                     auto data = input.toMap();
                     if (data.isEmpty()) data = input.value<QJSValue>().toVariant().toMap();
                     auto window = qobject_cast<QQuickWindow *>(root);
@@ -226,13 +238,13 @@ int main(int argc, char *argv[])
                         if (auto window = qobject_cast<QQuickWindow *>(root))
                             window->grabWindow().save(smokeStage == 21 ? "build/download-review.png" : "build/download-blocked.png");
                     QMetaObject::invokeMethod(root, "pollSmokeTest", Q_RETURN_ARG(QVariant, state));
-                    if (state.toInt() == 2 && controlBarTest) {
-                        QMetaObject::invokeMethod(root, "beginControlBarTest"); *controlStarted = true; state = 0;
+                    if (state.toInt() == 2 && (controlBarTest || transportTest)) {
+                        QMetaObject::invokeMethod(root, transportTest ? "beginTransportTest" : "beginControlBarTest"); *controlStarted = true; state = 0;
                     }
                 }
                 if (state.toInt() == 1) return;
-                const bool success = state.toInt() == 2 && privateProfileA.isNull() && privateProfileB.isNull();
-                if (state.toInt() < 0 || ++*attempts > (controlBarTest ? 700 : 200) || success) {
+                const bool success = state.toInt() == 2 && privateProfileA.isNull() && privateProfileB.isNull() && (!transportTest || retiredHttpProfile->isNull());
+                if (state.toInt() < 0 || ++*attempts > ((controlBarTest || transportTest) ? 700 : 200) || success) {
                     poll->stop();
                     qInfo() << "CYBOU_SMOKE_TEST" << (success ? "PASS" : "FAIL");
                     if (success) {

@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QTimer>
 #include <QSettings>
 #include <QVariantList>
 #include <QDateTime>
@@ -46,6 +47,7 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool blockTrackers READ blockTrackers WRITE setBlockTrackers NOTIFY preferencesChanged)
 public:
     explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {
+        settings.remove("preferences/httpsOnly"); // Retire the old persistent global HTTP opt-out.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
         connect(QGuiApplication::styleHints()->accessibility(), &QAccessibilityHints::contrastPreferenceChanged, this, &BrowserStore::preferencesChanged);
 #endif
@@ -101,10 +103,14 @@ public:
     bool restoreSession() const { return settings.value("preferences/restoreSession", true).toBool(); }
     bool blockThirdPartyCookies() const { return settings.value("preferences/blockThirdPartyCookies", true).toBool(); }
     bool cacheBusy() const { return m_cacheBusy; }
-    bool httpsOnly() const { return settings.value("preferences/httpsOnly", true).toBool(); }
+    bool httpsOnly() const { return !m_testHttp; }
     void setHttpsOnly(bool enabled) {
+        const auto arguments = QCoreApplication::arguments();
+        const bool test = arguments.contains("--smoke-test") || arguments.contains("--controlbar-test")
+            || arguments.contains("--security-test") || arguments.contains("--transport-test");
+        if (!enabled && !test) return;
         if (enabled == httpsOnly()) return;
-        settings.setValue("preferences/httpsOnly", enabled);
+        m_testHttp = !enabled;
         for (auto observer : observers) observer->setHttpsOnly(enabled);
         emit preferencesChanged();
     }
@@ -122,7 +128,6 @@ public:
         if (!httpsFirst()) return false;
         if (url.scheme().compare("http", Qt::CaseInsensitive) != 0) return false;
         if (isLocalHost(url)) return false;
-        if (hasHttpFallback(origin(url.toString()))) return false;
         return true;
     }
     Q_INVOKABLE QUrl upgradeToHttps(const QUrl &url) const {
@@ -131,15 +136,42 @@ public:
         if (upgraded.port() == 80) upgraded.setPort(-1);
         return upgraded;
     }
-    Q_INVOKABLE void allowHttpFallback(const QString &hostOrOrigin) {
-        QUrl u(hostOrOrigin);
-        const QString h = u.host().isEmpty() ? hostOrOrigin.trimmed().toLower() : u.host().toLower();
-        m_httpFallbackHosts.insert(h);
+    Q_INVOKABLE bool canRequestTemporaryHttp(const QUrl &url) const {
+        return url.scheme() == "http" && !url.host().isEmpty() && url.userInfo().isEmpty();
     }
-    Q_INVOKABLE bool hasHttpFallback(const QString &hostOrOrigin) const {
-        QUrl u(hostOrOrigin);
-        const QString h = u.host().isEmpty() ? hostOrOrigin.trimmed().toLower() : u.host().toLower();
-        return m_httpFallbackHosts.contains(h);
+    Q_INVOKABLE QObject *createTemporaryHttpProfile(const QUrl &url) {
+        if (!canRequestTemporaryHttp(url)) return nullptr;
+        auto profile = new QQuickWebEngineProfile(this);
+        profile->setPersistentPermissionsPolicy(QQuickWebEngineProfile::PersistentPermissionsPolicy::AskEveryTime);
+        configureProfile(profile);
+        auto observer = observers.value(profile);
+        observer->setHttpsOnly(true);
+        if (!profile->isOffTheRecord() || !observer->allowHttpNavigation(url)) { profile->deleteLater(); return nullptr; }
+        m_temporaryHttpProfiles.insert(profile);
+        auto expiry = new QTimer(profile);
+        expiry->setSingleShot(true);
+        expiry->setTimerType(Qt::PreciseTimer);
+        connect(expiry, &QTimer::timeout, this, [this, guarded = QPointer<QQuickWebEngineProfile>(profile)] {
+            if (!guarded || !m_temporaryHttpProfiles.contains(guarded)) return;
+            if (auto observer = observers.value(guarded)) observer->revokeHttpNavigation();
+            emit temporaryTransportExpired(guarded);
+        });
+        expiry->start(60000);
+        return profile;
+    }
+    Q_INVOKABLE bool isTemporaryHttpProfile(QObject *object) const {
+        return m_temporaryHttpProfiles.contains(qobject_cast<QQuickWebEngineProfile *>(object));
+    }
+    Q_INVOKABLE bool canStartTemporaryHttp(QObject *object, const QUrl &url) const {
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        const auto observer = observers.value(profile);
+        return m_temporaryHttpProfiles.contains(profile) && observer && observer->canStartHttpNavigation(url);
+    }
+    Q_INVOKABLE void releaseTemporaryHttpProfile(QObject *object) {
+        auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        if (!m_temporaryHttpProfiles.remove(profile)) return;
+        if (auto observer = observers.value(profile)) observer->revokeHttpNavigation();
+        profile->deleteLater();
     }
     bool blockTrackers() const { return settings.value("preferences/blockTrackers", true).toBool(); }
     void setBlockTrackers(bool enabled) {
@@ -153,10 +185,11 @@ public:
         for (auto observer : observers) total += observer->blockedCount();
         return total;
     }
-    Q_INVOKABLE QString navigationBlockReason(const QUrl &url) const {
+    Q_INVOKABLE QString navigationBlockReason(const QUrl &url, QObject *profile = nullptr, bool mainFrame = true) const {
         if (NetworkPolicy::hasWebCredentials(url))
             return tr("Les adresses contenant un identifiant ou un mot de passe sont bloquées.");
-        if (NetworkPolicy::blocks(url, httpsOnly()))
+        if (NetworkPolicy::blocks(url, httpsOnly())
+            && !(isTemporaryHttpProfile(profile) && url.scheme() == "http" && (!mainFrame || canStartTemporaryHttp(profile, url))))
             return tr("Mode HTTPS strict : cette connexion non chiffrée est bloquée. Utilisez une adresse HTTPS.");
         return {};
     }
@@ -246,7 +279,7 @@ public:
         observers.insert(profile, observer);
         profile->setUrlRequestInterceptor(observer);
         emit preferencesChanged();
-        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); });
+        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); m_temporaryHttpProfiles.remove(profile); });
     }
     Q_INVOKABLE bool clearCookies(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
@@ -328,6 +361,7 @@ public:
     Q_INVOKABLE void saveSession(const QVariantList &urls) { settings.setValue("session", urls); settings.sync(); }
     Q_INVOKABLE void openDownloads() { QDesktopServices::openUrl(QUrl::fromLocalFile(downloadsPath())); }
 signals:
+    void temporaryTransportExpired(QObject *profile);
     void changed();
     void preferencesChanged();
     void cacheBusyChanged();
@@ -347,6 +381,7 @@ private:
     static bool isWebUrl(const QString &url) {
         const auto scheme = QUrl(url).scheme(); return scheme == "http" || scheme == "https";
     }
-    QSet<QString> m_httpFallbackHosts;
+    bool m_testHttp = false;
+    QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
     mutable QSettings settings;
 };

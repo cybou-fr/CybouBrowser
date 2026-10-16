@@ -8,16 +8,22 @@ Popup {
     id: card
     property var capability: ({})
     property bool pinned: false
-    property bool pointerInside: hover.hovered
+    property double requestId: 0
+    property bool pointerInside: hover.hovered || surfaceHover.hovered
     property real minimumY: 0
     signal policyRequested(string key, int mode)
     signal permissionRequested(string key, int mode)
-    signal decisionRequested(bool allow)
+    signal decisionRequested(bool allow, double requestId)
     signal reloadRequested()
     signal cookieRequested()
+    signal allowHttpRequested(string token)
+    signal revokeHttpRequested(string token)
 
     component GlassBtn: Button {
         id: gbtn
+        property double pressedRequestId: 0
+        property string pressedHttpToken: ""
+        onPressed: { pressedRequestId = card.requestId; pressedHttpToken = card.capability.httpToken || "" }
         scale: down ? 0.95 : hovered ? 1.02 : 1.0
         Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
         contentItem: Text {
@@ -39,15 +45,18 @@ Popup {
             }
         }
     }
+    function testHttpAllowPoint() { const p = httpAllow.mapToItem(null, httpAllow.width/2, httpAllow.height/2); return {kind:"click",x:p.x,y:p.y} }
+    function testHttpRevokePoint() { const p = httpRevoke.mapToItem(null, httpRevoke.width/2, httpRevoke.height/2); return {kind:"click",x:p.x,y:p.y} }
     width: 330; padding: 16
     height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     background: Rectangle {
+        HoverHandler { id: surfaceHover }
         radius: 16
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#F00E223D" }
-            GradientStop { position: 1.0; color: "#F8061120" }
+            GradientStop { position: 0.0; color: "#D81B3554" }
+            GradientStop { position: 1.0; color: "#EB081629" }
         }
         border.color: "#497DA5CC"
         border.width: 1.5
@@ -120,13 +129,13 @@ Popup {
         Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
             visible: !!card.capability.pending
-            GlassBtn { text: qsTr("Autoriser cette demande"); onClicked: card.decisionRequested(true) }
-            GlassBtn { text: qsTr("Refuser"); onClicked: card.decisionRequested(false) }
+            GlassBtn { text: qsTr("Autoriser cette demande"); onClicked: card.decisionRequested(true, pressedRequestId) }
+            GlassBtn { text: qsTr("Refuser"); onClicked: card.decisionRequested(false, pressedRequestId) }
         }
         Flow {
             Layout.fillWidth: true; spacing: 5
             visible: !!card.capability.canAct && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key)
-            GlassBtn { text: qsTr("Réinitialiser le refus"); onClicked: card.permissionRequested(card.capability.key, 0) }
+            GlassBtn { text: qsTr("Réinitialiser et recharger"); onClicked: card.permissionRequested(card.capability.key, 0) }
             GlassBtn { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2) }
         }
         Flow {
@@ -143,7 +152,26 @@ Popup {
             visible: card.capability.key === "network"
             Layout.fillWidth: true; spacing: 4
             Label {
-                text: qsTr("Requêtes filtrées · tous les profils : %1").arg(browserStore.totalBlockedTrackers())
+                Layout.fillWidth: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText
+                color: "#FFD08A"
+                visible: !!card.capability.httpPending || !!card.capability.httpTemporary
+                text: card.capability.httpTemporary ? qsTr("HTTP temporaire · 60 secondes maximum · profil réservé à cet onglet. Cookies et cache en mémoire.")
+                    : qsTr("Connexion HTTP bloquée : %1. Ouvrir cette adresse une fois, pendant 60 secondes maximum ? Les données ne seront pas chiffrées. Cookies et cache séparés.").arg(card.capability.httpOrigin || "")
+            }
+            GlassBtn {
+                id: httpAllow
+                visible: !!card.capability.httpPending
+                text: qsTr("Ouvrir cette adresse HTTP")
+                onClicked: card.allowHttpRequested(pressedHttpToken)
+            }
+            GlassBtn {
+                id: httpRevoke
+                visible: !!card.capability.httpTemporary
+                text: qsTr("Révoquer HTTP et fermer la page")
+                onClicked: card.revokeHttpRequested(pressedHttpToken)
+            }
+            Label {
+                text: qsTr("Requêtes filtrées · profils ouverts : %1").arg(browserStore.totalBlockedTrackers())
                 color: "#38BDF8"; font.pixelSize: 12; font.bold: true
             }
             Label {

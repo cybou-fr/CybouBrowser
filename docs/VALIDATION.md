@@ -28,3 +28,21 @@ The native test rejects a real request after its epoch changes; a reset-icon cli
 Evidence: `docs/design/observable-browsing/coordinator-security-test.log` and `coordinator-controlbar-test.log`. Original layout screenshots remain applicable: no navigation geometry changes in this increment.
 
 A native denial was not re-requested after a same-view reload in the test iteration; the supported sensitive reset action therefore recreates the view, rather than relying on reload to clear document-level state. Real media shutdown, OS sleep/resume, pre-existing disk profile migration, cross-origin iframe enforcement and DPI/translation gates remain unverified.
+
+## Glass hover panels and spacing
+
+Latest user instruction replaces the earlier tooltip-only contract. Capability buttons now have 42px center spacing and 12px clear gaps. All eleven stay inline on the right; the address fills remaining space with a 120px minimum.
+
+Release build PASS. Updated `--controlbar-test` PASS in 84,079 ms, exit 0; smoke and PDF export PASS. Mouse hover opens the current glass panel without click; moving inside keeps it open for controls; moving to JavaScript replaces the location content; moving away closes it. All four window sizes and URL editing passed. Permission lifecycle regressions still pass. Native ordinary capability ToolTips are removed. Visual inspection of the JavaScript hover panel and 820px layout passed.
+
+Evidence and screenshots: `docs/design/glass-hover/`. The earlier tooltip-only findings above describe historical increments and are superseded by this section.
+
+## Temporary HTTP transport
+
+Release build PASS. `--security-test` PASS, exit 0: exact URL/query, atomic single-use main navigation, same-origin/firstParty resource restrictions, independent leases, canonical root URLs, credentials/ws rejection and revoke. Existing permission context, tracker and network-denial checks still pass.
+
+Native `--transport-test` PASS, exit 0, including smoke and PDF output. Actual mouse hover and button clicks open/revoke HTTP in a separate off-the-record AskEveryTime profile. A cross-origin HTTP fetch is blocked by the interceptor, same-origin resources load, another normal-profile tab remains denied, stale consent is rejected, reload requires fresh consent, and 60-second background expiry replaces the HTTP view without switching the peer tab. A native QPointer verifies final profile destruction. Both panel screenshots were visually inspected; the toolbar stays inline and address fills remaining width.
+
+Final `--controlbar-test` regression PASS, exit 0, 83,806 ms; hover interaction, window sizes, permission request identity, independent grant deadlines, document teardown, timeout denial, smoke and PDF checks pass after transport integration.
+
+Evidence: `docs/design/transport/`. Qt prints a deprecation guidance warning for the currently supported public QQuickWebEngineProfile constructor; this implementation uses no private Qt API. Real-device media shutdown, OS suspend/resume, cross-origin iframe behavior and independent proxy routing remain outside this validation.

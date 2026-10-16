@@ -188,6 +188,64 @@ ApplicationWindow {
     property bool restoring: true
     property real testControlBudget: -1
     readonly property var activeProfile: privateMode ? privateProfile : persistentProfile
+    readonly property var currentProfile: currentView ? currentView.profile : activeProfile
+    property var temporaryHttpProfiles: ({})
+    readonly property var transportState: {
+        const view = currentView
+        const pending = !!view && view.blockedHttpUrl.length > 0 && view.blockedHttpEpoch === view.navigationEpoch
+        return {httpPending:pending, httpOrigin:pending ? browserStore.origin(view.blockedHttpUrl) : "",
+            httpToken:view ? view.tabUid + "@" + view.navigationEpoch : "",
+            httpTemporary:!!view && view.temporaryTransport}
+    }
+    function offerHttp(view, url) {
+        if (!view || !browserStore.canRequestTemporaryHttp(url)) return
+        view.blockedHttpUrl = url.toString()
+        view.blockedHttpEpoch = view.navigationEpoch
+        if (view === currentView) window.showStatus(qsTr("HTTP bloqué. Ouvrez le contrôle Réseau pour cette tentative."))
+    }
+    function allowTemporaryHttp(token) {
+        if (!currentView || !transportState.httpPending || token !== transportState.httpToken) return false
+        const target = currentView.blockedHttpUrl
+        const profile = browserStore.createTemporaryHttpProfile(target)
+        if (!profile) return false
+        window.replaceGrantedView(currentView, target, profile)
+        return true
+    }
+    function endTemporaryNavigation(view, target) {
+        const uid = view.tabUid
+        const epoch = view.navigationEpoch
+        const offer = browserStore.canRequestTemporaryHttp(target)
+        Qt.callLater(function() {
+            for (let i = 0; i < views.count; ++i) {
+                const owner = views.itemAt(i)
+                if (!owner || owner.tabUid !== uid || owner.navigationEpoch !== epoch) continue
+                const replacement = window.replaceGrantedView(owner)
+                if (offer) Qt.callLater(function() {
+                    for (let j = 0; j < views.count; ++j) {
+                        const next = views.itemAt(j)
+                        if (next && next.tabUid === replacement) { window.offerHttp(next, target); return }
+                    }
+                })
+                return
+            }
+        })
+    }
+    function releaseHttpView(uid) {
+        const profile = temporaryHttpProfiles[uid]
+        if (!profile) return
+        delete temporaryHttpProfiles[uid]
+        browserStore.releaseTemporaryHttpProfile(profile)
+    }
+    Connections {
+        target: browserStore
+        function onTemporaryTransportExpired(profile) {
+            for (let i = 0; i < views.count; ++i) {
+                const view = views.itemAt(i)
+                if (view && view.profile === profile) { window.replaceGrantedView(view); return }
+            }
+            browserStore.releaseTemporaryHttpProfile(profile)
+        }
+    }
     readonly property var pendingPermission: permissionCoordinator.hasPending ? permissionCoordinator.pendingPermission : null
     readonly property var pendingPermissionView: permissionCoordinator.pendingView
     property int nextTabUid: 0
@@ -200,7 +258,7 @@ ApplicationWindow {
     ControlBarController {
         id: controlState
         store: browserStore
-        profile: window.activeProfile
+        profile: window.currentProfile
         url: window.currentView ? window.currentView.url : "about:blank"
         tabId: window.currentView ? window.currentView.tabUid : ""
         javascriptEnabled: window.currentView ? window.currentView.settings.javascriptEnabled : true
@@ -227,7 +285,7 @@ ApplicationWindow {
         }
         onRevokeDocument: function(view) { window.replaceGrantedView(view) }
     }
-    function replaceGrantedView(view, replacementUrl) {
+    function replaceGrantedView(view, replacementUrl, transportProfile) {
         const targetUrl = replacementUrl === undefined ? "about:blank" : replacementUrl
         if (!view) return
         for (let i = 0; i < tabs.count; ++i) {
@@ -239,18 +297,21 @@ ApplicationWindow {
             controlState.expireContext(view.tabUid)
             if (pdfTarget === view) { pdfTarget = null; pdfBusy = false }
             // Removing the repeater item destroys its WebEngineView; no beforeunload veto.
+            const newUid = "tab-" + (++nextTabUid)
+            if (transportProfile) temporaryHttpProfiles[newUid] = transportProfile
             tabs.remove(i)
             tabs.insert(i, {initialUrl:targetUrl, label:"Nouvel onglet", favicon:"",
-                isPinned:pinned, isMuted:muted, audible:false, tabUid:"tab-" + (++nextTabUid)})
+                isPinned:pinned, isMuted:muted, audible:false, tabUid:newUid})
             activeTab = selected
             saveTimer.restart()
             if (wasCurrent && replacementUrl === undefined) window.showStatus(qsTr("Accès temporaire révoqué. Rouvrez la page pour continuer."))
-            return
+            return newUid
         }
+        return ""
     }
     function cancelPermission() { permissionCoordinator.cancel() }
     function resolvePermission(allow, requestId) {
-        return permissionCoordinator.resolve(allow, currentView, activeProfile,
+        return permissionCoordinator.resolve(allow, currentView, currentProfile,
             requestId === undefined ? permissionCoordinator.pendingRequestId : requestId)
     }
     function askPermission(permission, view) {
@@ -320,6 +381,13 @@ ApplicationWindow {
         if (browserStore.isBookmarked(url)) browserStore.toggleBookmark(url, "")
         tabs.clear(); addTab(""); saveSession()
     }
+    function testViewAt(index) { return views.itemAt(index) }
+    readonly property var transportTestProfile: transportHarness.trackedProfile
+    function beginTransportTest() { transportHarness.begin() }
+    function pollTransportTest() { return transportHarness.step() }
+    function takeTransportScreenshot() { return transportHarness.takeScreenshot() }
+    function takeTransportInput() { return transportHarness.takeInput() }
+    TransportHarness { id: transportHarness; browserWindow: window; controller: controlState; bar: controlBar }
     function testTabCount() { return tabs.count }
     function testAddressMatches() { return currentView && address.text === (currentView.url.toString() === "about:blank" ? "" : currentView.url.toString()) }
     function testOverlayVisibility() {
@@ -583,9 +651,11 @@ ApplicationWindow {
         else target = browserStore.searchUrl(input)
         if (browserStore.shouldUpgradeToHttps(target)) {
             currentView.upgradedFromHttpUrl = target
-            currentView.url = browserStore.upgradeToHttps(target)
+            currentView.upgradeExpectedUrl = browserStore.upgradeToHttps(target).toString()
+            currentView.url = currentView.upgradeExpectedUrl
         } else {
             currentView.upgradedFromHttpUrl = ""
+            currentView.upgradeExpectedUrl = ""
             currentView.url = target
         }
         currentView.forceActiveFocus()
@@ -810,7 +880,7 @@ ApplicationWindow {
                 NavButton { text: "⌂"; hint: "Accueil"; onClicked: currentView.url = "about:blank" }
                 Rectangle {
                     id: addressContainer
-                    Layout.fillWidth: true; Layout.minimumWidth: 160; implicitHeight: chromeControlHeight
+                    Layout.fillWidth: true; Layout.minimumWidth: 120; implicitHeight: chromeControlHeight
                     radius: 8
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: address.activeFocus ? "#E80B1E38" : "#CC0F2748" }
@@ -856,8 +926,11 @@ ApplicationWindow {
                     id: controlBar
                     controller: controlState; popupHost: Overlay.overlay
                     pendingRequestId: permissionCoordinator.pendingRequestId
+                    transportState: window.transportState
+                    onAllowHttpRequested: function(token) { window.allowTemporaryHttp(token) }
+                    onRevokeHttpRequested: function(token) { if (currentView && currentView.temporaryTransport && token === transportState.httpToken) window.replaceGrantedView(currentView) }
                     editing: false
-                    widthBudget: 374
+                    widthBudget: effectiveWidth
                     Layout.preferredWidth: effectiveWidth; Layout.minimumWidth: effectiveWidth; Layout.maximumWidth: effectiveWidth
                     visible: true
                     interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible
@@ -970,6 +1043,9 @@ ApplicationWindow {
             required property string initialUrl
             required property bool isMuted
             required property string tabUid
+            property string blockedHttpUrl: ""
+            property int blockedHttpEpoch: -1
+            readonly property bool temporaryTransport: !!window.temporaryHttpProfiles[tabUid]
             property string policyOrigin: ""
             property int navigationEpoch: 0
             readonly property var grantedKeys: {
@@ -983,13 +1059,20 @@ ApplicationWindow {
             Component.onDestruction: {
                 if (permissionCoordinator) permissionCoordinator.forgetView(web)
                 if (controlState) controlState.expireContext(tabUid)
+                window.releaseHttpView(tabUid)
             }
             property bool policyNeedsReload: false
             property string upgradedFromHttpUrl: ""
+            property string upgradeExpectedUrl: ""
+            property int upgradeEpoch: -1
             anchors.fill: parent
             visible: activeTab === index && url.toString() !== "about:blank"
             url: initialUrl
-            profile: privateMode ? privateProfile : persistentProfile
+            profile: window.temporaryHttpProfiles[tabUid] || window.activeProfile
+            Connections {
+                target: web.temporaryTransport ? web.profile : null
+                function onDownloadRequested(download) { window.handleDownload(download) }
+            }
             audioMuted: isMuted
             onRecentlyAudibleChanged: function(value) { if (index < tabs.count) tabs.setProperty(index, "audible", value) }
             settings.javascriptEnabled: controlState.settingFor(initialUrl, "javascript", tabUid)
@@ -1004,22 +1087,38 @@ ApplicationWindow {
             onNavigationRequested: function(request) {
                 if (request.isMainFrame) {
                     web.navigationEpoch++
+                    if (request.url.toString() !== web.upgradeExpectedUrl) {
+                        web.upgradedFromHttpUrl = ""
+                        web.upgradeExpectedUrl = ""
+                        web.upgradeEpoch = -1
+                    } else web.upgradeEpoch = web.navigationEpoch
+                    web.blockedHttpUrl = ""
+                    web.blockedHttpEpoch = -1
                     if (web === currentView) { policyBanner.close(); controlBar.dismiss() }
+                    if (pendingPermissionView === web) window.cancelPermission()
+                    if (web.temporaryTransport && !browserStore.canStartTemporaryHttp(web.profile, request.url)) {
+                        request.reject()
+                        window.endTemporaryNavigation(web, request.url.toString())
+                        return
+                    }
+                    if (!web.temporaryTransport && browserStore.shouldUpgradeToHttps(request.url)) {
+                        request.reject()
+                        web.upgradedFromHttpUrl = request.url.toString()
+                        web.upgradeExpectedUrl = browserStore.upgradeToHttps(request.url).toString()
+                        web.url = web.upgradeExpectedUrl
+                        return
+                    }
                 }
-                if (request.isMainFrame && pendingPermissionView === web) window.cancelPermission()
-                const reason = browserStore.navigationBlockReason(request.url)
+                const reason = browserStore.navigationBlockReason(request.url, web.profile, request.isMainFrame)
                 if (reason.length > 0) {
                     request.reject()
-                    if (request.isMainFrame && web === currentView) { errorText.text = reason; errorNotice.open() }
+                    if (request.isMainFrame && web === currentView) {
+                        if (browserStore.canRequestTemporaryHttp(request.url)) window.offerHttp(web, request.url)
+                        else { errorText.text = reason; errorNotice.open() }
+                    }
                     return
                 }
                 if (request.isMainFrame) {
-                    if (browserStore.shouldUpgradeToHttps(request.url)) {
-                        request.reject()
-                        web.upgradedFromHttpUrl = request.url.toString()
-                        web.url = browserStore.upgradeToHttps(request.url)
-                        return
-                    }
                     const nextOrigin = browserStore.origin(request.url.toString())
                     if (web.policyOrigin !== nextOrigin) controlState.expireContext(web.tabUid)
                     web.policyOrigin = nextOrigin
@@ -1031,15 +1130,8 @@ ApplicationWindow {
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
             onUrlChanged: { if (browserStore.origin(web.url.toString()).length === 0) { permissionCoordinator.forgetView(web); controlState.expireContext(web.tabUid); web.policyOrigin = "" }; if (web === currentView) policyBanner.close(); if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
             onCertificateError: function(error) {
-                if (web.upgradedFromHttpUrl.length > 0 && !browserStore.httpsOnly && index === activeTab) {
-                    error.rejectCertificate()
-                    httpsFallbackDialog.failedUrl = web.url.toString()
-                    httpsFallbackDialog.fallbackUrl = web.upgradedFromHttpUrl
-                    httpsFallbackDialog.errorDetail = qsTr("Erreur de certificat SSL : %1").arg(error.description)
-                    httpsFallbackDialog.open()
-                    return
-                }
                 error.rejectCertificate()
+                if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && web.url.toString() === web.upgradeExpectedUrl && web === currentView) window.offerHttp(web, web.upgradedFromHttpUrl)
             }
             onPdfPrintingFinished: function(path, success) {
                 pdfBusy = false; pdfTarget = null
@@ -1059,14 +1151,12 @@ ApplicationWindow {
                 if (info.status === WebEngineView.LoadSucceededStatus) {
                     permissionCoordinator.documentLoaded(web, web.navigationEpoch)
                     web.upgradedFromHttpUrl = ""
+                    web.upgradeExpectedUrl = ""
                     if (!privateMode) browserStore.recordVisit(url.toString(), title)
                 }
                 if (info.status === WebEngineView.LoadFailedStatus && index === activeTab) {
-                    if (web.upgradedFromHttpUrl.length > 0 && !browserStore.httpsOnly) {
-                        httpsFallbackDialog.failedUrl = web.url.toString()
-                        httpsFallbackDialog.fallbackUrl = web.upgradedFromHttpUrl
-                        httpsFallbackDialog.errorDetail = info.errorString
-                        httpsFallbackDialog.open()
+                    if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && info.url.toString() === web.upgradeExpectedUrl) {
+                        window.offerHttp(web, web.upgradedFromHttpUrl)
                         return
                     }
                     errorText.text = "Impossible de charger cette page. Vérifiez l’adresse et votre connexion.\n\n" + info.errorString
@@ -1082,66 +1172,6 @@ ApplicationWindow {
         privateMode: window.privateMode
         onNavigateRequested: function(text) { window.navigate(text) }
         onLibraryRequested: function(section) { window.showLibrary(section) }
-    }
-    Dialog {
-        id: httpsFallbackDialog
-        anchors.centerIn: parent
-        width: Math.min(500, window.width - 40)
-        modal: true
-        title: qsTr("Connexion HTTPS non disponible")
-        background: GlassDialogBackground {}
-        header: Label {
-            text: httpsFallbackDialog.title; padding: 20; bottomPadding: 8
-            color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap
-        }
-        property string failedUrl: ""
-        property string fallbackUrl: ""
-        property string errorDetail: ""
-        contentItem: ColumnLayout {
-            spacing: 12
-            Label {
-                Layout.fillWidth: true; wrapMode: Text.WordWrap
-                color: CybouTheme.mainText
-                text: qsTr("CYBOU a automatiquement tenté de se connecter en HTTPS sécurisé, mais la connexion a échoué.")
-            }
-            Label {
-                Layout.fillWidth: true; wrapMode: Text.WrapAnywhere
-                color: CybouTheme.recent
-                font.bold: true
-                text: httpsFallbackDialog.failedUrl
-            }
-            Label {
-                Layout.fillWidth: true; wrapMode: Text.WordWrap
-                color: CybouTheme.secondaryText; font.pixelSize: 11
-                text: httpsFallbackDialog.errorDetail
-            }
-            Label {
-                Layout.fillWidth: true; wrapMode: Text.WordWrap
-                color: CybouTheme.mutedText; font.pixelSize: 12
-                text: qsTr("Vous pouvez tenter de charger la version HTTP non chiffrée. Attention : les données échangées (mots de passe, cookies) ne seront pas protégées.")
-            }
-        }
-        footer: DialogButtonBox {
-            background: Rectangle { color: "transparent" }
-            Button {
-                text: qsTr("Retour en sécurité")
-                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
-                onClicked: httpsFallbackDialog.close()
-            }
-            Button {
-                text: qsTr("Continuer en HTTP")
-                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-                onClicked: {
-                    const fallback = httpsFallbackDialog.fallbackUrl
-                    httpsFallbackDialog.close()
-                    if (fallback.length && currentView) {
-                        browserStore.allowHttpFallback(fallback)
-                        currentView.upgradedFromHttpUrl = ""
-                        currentView.url = fallback
-                    }
-                }
-            }
-        }
     }
     Dialog {
         id: behaviorDialog
@@ -1379,7 +1409,7 @@ ApplicationWindow {
     }
     SettingsPanel {
         id: settingsPanel
-        profile: window.activeProfile
+        profile: window.currentProfile
         privateMode: window.privateMode
         onClearRequested: function(cookies, cache, history, permissions, session) { window.clearBrowsingData(cookies, cache, history, permissions, session) }
     }

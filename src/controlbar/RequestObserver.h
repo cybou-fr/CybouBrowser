@@ -8,6 +8,7 @@
 #include <atomic>
 #include "../security/NetworkPolicy.h"
 #include "../security/TrackerBlocker.h"
+#include "../security/HttpNavigationLease.h"
 
 // A bounded metadata sample, profile scope only. Never reads headers or bodies.
 class RequestObserver final : public QWebEngineUrlRequestInterceptor {
@@ -17,12 +18,16 @@ public:
     void setHttpsOnly(bool enabled) { strictHttps.store(enabled); }
     void setBlockTrackers(bool enabled) { blockTrackers.store(enabled); }
     int blockedCount() const { return blockedTrackersCount.load(); }
+    bool allowHttpNavigation(const QUrl &url) { return httpLease.start(url); }
+    bool canStartHttpNavigation(const QUrl &url) const { return httpLease.canStart(url); }
+    void revokeHttpNavigation() { httpLease.revoke(); }
     struct Event { QString origin; QString firstParty; int type; qint64 time; bool blocked; QString reason; };
     void interceptRequest(QWebEngineUrlRequestInfo &info) override {
         const auto url = info.requestUrl();
         QString reason;
-        if (NetworkPolicy::blocks(url, strictHttps.load())) reason = "insecure-transport";
-        else if (NetworkPolicy::hasWebCredentials(url)) reason = "embedded-credentials";
+        if (NetworkPolicy::hasWebCredentials(url)) reason = "embedded-credentials";
+        else if (NetworkPolicy::blocks(url, strictHttps.load())
+                 && !httpLease.allows(url, info.firstPartyUrl(), info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame)) reason = "insecure-transport";
         else if (blockTrackers.load() && info.resourceType() != QWebEngineUrlRequestInfo::ResourceTypeMainFrame
                  && TrackerBlocker::isTracker(url, info.firstPartyUrl())) {
             reason = "tracker-rule";
@@ -59,4 +64,5 @@ private:
     std::atomic_int blockedTrackersCount{0};
     mutable QMutex mutex;
     QQueue<Event> events;
+    HttpNavigationLease httpLease;
 };

@@ -2,7 +2,7 @@
 
 CYBOU is a browser for Observable Browsing: a visible capability bar provides direct control over page permissions and behavior. Built with C++17 / Qt Quick / Qt WebEngine.
 
-Current implementation and limitations: [product vision](docs/PRODUCT_VISION.md), [security model](docs/SECURITY_MODEL.md), [capability contracts](docs/CAPABILITY_CONTRACT.md), [roadmap](docs/ROADMAP.md). The static tracker suffix list is a limited network filter, not a complete ad-blocking system. Risk-adaptive restrictions, temporary HTTP opt-in and verified proxy isolation remain planned.
+Current implementation and limitations: [product vision](docs/PRODUCT_VISION.md), [security model](docs/SECURITY_MODEL.md), [capability contracts](docs/CAPABILITY_CONTRACT.md), [roadmap](docs/ROADMAP.md). The static tracker suffix list is a limited network filter, not a complete ad-blocking system. Risk-adaptive restrictions and verified proxy isolation remain planned. Temporary HTTP access uses a separate in-memory profile and expires after 60 seconds.
 
 ## Windows build
 
@@ -22,7 +22,7 @@ Linux/macOS: configure with the matching Qt kit and compiler. Source structure i
 The following older feature inventory is being reconciled with the normative contracts linked above.
 
 - **Dark Glass UI & Alpine Dawn**: In 0.8.0, all browser-owned chrome (tab strip, navigation row, omnibox, control bar icons, overflow menu, capability popover, library drawer, settings panel, search suggestions, and modal dialogs) is unified under the CYBOU Dark Glass visual language (`CybouTheme`). The `about:blank` new tab page features the high-resolution Alpine Dawn landscape (`assets/cybou-alpine-dawn-1920x1080.jpg`), original CYBOU branding, centered floating glass card, and responsive layout. Untrusted third-party web content is left unmodified.
-- **Capability-first chrome**: eleven compact controls remain visible in the navigation row while the full URL is edited. Hover provides a tooltip; supported policies and live requests use direct clicks.
+- **Capability-first chrome**: eleven compact controls remain visible in the navigation row while the full URL is edited. Spaced buttons open glass panels on hover, containing explanations and controls; supported policies and live requests also use direct icon clicks.
 - **Temporary permissions**: AskEveryTime engine policy, no arbitrary native pregrants, no modal ASK, 15-second pending timeout and independent 60-second grant deadlines; the earliest deadline destroys and replaces the WebEngineView. No claim of active-device monitoring.
 - **Network observation**: bounded, sanitized profile-scoped events include blocked outcomes and reasons. A small built-in tracker suffix list blocks selected third-party requests.
 
@@ -60,13 +60,15 @@ Development build, not security audited. Passwords, extensions UI, physical-prin
 
 ### HTTPS-First and transport security
 
-Settings → Sécurité offers two complementary transport protection modes:
-1. **HTTPS-First (Enabled by default)**: All web navigations typed in the address bar or clicked as links are automatically upgraded from `http://` to `https://`. Local development hosts (`localhost`, `127.0.0.1`, `::1`, `.local`) are preserved so local development works without TLS barriers. If an upgraded public HTTPS connection fails (due to certificate errors or connection refusal), CYBOU shows a clear, informative security dialog allowing the user to either return to safety or opt-in to HTTP for that session.
-2. **HTTPS-Only mode (Enabled by default for new settings)**: Persisted globally and applied immediately to the interceptors of all open ordinary/private profiles. It unconditionally blocks all HTTP and unencrypted WebSocket (`ws:`) requests, including subresources and LAN addresses, with zero fallback.
+HTTPS strict is always enabled in production; old global opt-outs are removed. HTTPS-First attempts TLS for public HTTP addresses. After a blocked HTTP attempt or a failed known upgrade, the inline Network glass panel offers explicit access to that exact address.
+
+Consent creates a separate off-the-record profile without normal cookies/cache, valid for at most 60 seconds. One exact main-frame URL and subsequent same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and unencrypted WebSockets stay blocked. Reload or later navigation destroys the context and requires fresh HTTP consent. Revoke and expiry close the document in its existing tab slot. Page-controlled navigation is never automatically replayed with normal-profile cookies. This separates profile data; it does not provide process or proxy isolation.
 
 HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. Control Bar stays inline with navigation and never moves into a separate row.
 
 ### Architecture and modularity
+
+Run `./build/Release/cybou.exe --transport-test` to exercise HTTP panel consent/revoke, profile separation, exact navigation, reload, stale consent and 60-second expiry against a loopback fixture. See [test plan](docs/TEST_PLAN.md) and [validation](docs/VALIDATION.md).
 
 The UI layer is modularized into discrete, reusable QML components:
 - `AdaptiveAddress.qml`: Context-aware omnibox supporting BROWSE and EDIT modes.
@@ -76,7 +78,7 @@ The UI layer is modularized into discrete, reusable QML components:
 - `FindBar.qml`: Dedicated in-page search bar with match count and cycling.
 - `GlassButton.qml` & `GlassDialogBackground.qml`: Shared frosted glass design tokens and interactive components.
 
-Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after explicit opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, credential-URL denial, exact host formatting, IPv6, ACE/IDN punycode and safe display tests. The fixture listens only on loopback and no security preferences are changed by this test.
+Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after a test-only opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, credential-URL denial, exact host formatting, IPv6, ACE/IDN punycode and safe display tests. The fixture listens only on loopback and no security preferences are changed by this test.
 
 ### Reviewing downloaded files
 

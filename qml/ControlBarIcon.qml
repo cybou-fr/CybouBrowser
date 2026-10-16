@@ -6,6 +6,8 @@ Button {
     id: icon
     required property var capability
     property bool tabStop: false
+    property bool transportPending: false
+    readonly property bool requestPending: !!capability.pending || transportPending
     readonly property int policy: capability.policy === undefined ? 3 : capability.policy
     readonly property color brandColor: {
         switch (capability.key) {
@@ -23,14 +25,14 @@ Button {
         }
     }
     readonly property color stateColor: {
-        if (capability.pending) return "#F59E0B"
+        if (requestPending) return "#F59E0B"
         if (policy === 1) return brandColor
         if (policy === 2) return "#EF4444"
         if (policy === 4) return "#F59E0B"
         if (policy === 3) return "#64748B"
         return "#8FA3BF"
     }
-    readonly property string stateText: capability.pending ? qsTr("Demande en attente") : [qsTr("Indisponible sans demande"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
+    readonly property string stateText: requestPending ? qsTr("Demande en attente") : [qsTr("Indisponible sans demande"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
     signal hoverChanged(bool inside)
     signal focusStep(int direction)
     implicitWidth: 40; implicitHeight: 28
@@ -39,9 +41,6 @@ Button {
     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
     focusPolicy: tabStop || activeFocus ? Qt.StrongFocus : Qt.ClickFocus
     Accessible.name: (capability.title || "") + " · " + stateText + " · " + (capability.scope || "") + " · " + (capability.reason || "") + " · " + qsTr("Gérer cet accès temporaire")
-    ToolTip.visible: hovered
-    ToolTip.delay: 250
-    ToolTip.text: (capability.title || "") + " · " + stateText + "\n" + (capability.requester || capability.scope || "") + "\n" + (capability.reason || "") + (!capability.pending && ["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key) ? "\n" + qsTr("Recharger la page et réinitialiser ses accès temporaires") : "")
     onHoveredChanged: hoverChanged(hovered)
     Keys.onPressed: function(event) {
         if ([Qt.Key_Left, Qt.Key_Up, Qt.Key_Right, Qt.Key_Down].includes(event.key)) {
@@ -50,9 +49,9 @@ Button {
     }
     background: Rectangle {
         radius: 7
-        color: icon.down ? "#1D3B66" : icon.hovered ? "#162E4F" : (icon.policy === 1 || !!icon.capability.pending ? Qt.rgba(icon.stateColor.r, icon.stateColor.g, icon.stateColor.b, 0.12) : (icon.policy === 2 ? "#20EF4444" : "transparent"))
-        border.width: icon.activeFocus || (icon.policy === 1 || icon.policy === 2 || !!icon.capability.pending) ? 1 : (icon.hovered ? 1 : 0)
-        border.color: icon.activeFocus ? "#38BDF8" : (icon.capability.pending ? "#F59E0B80" : (icon.policy === 1 ? Qt.rgba(icon.brandColor.r, icon.brandColor.g, icon.brandColor.b, 0.35) : (icon.policy === 2 ? "#EF444460" : (icon.hovered ? "#1E3E6B" : "transparent"))))
+        color: icon.down ? "#1D3B66" : icon.hovered ? "#162E4F" : (icon.policy === 1 || icon.requestPending ? Qt.rgba(icon.stateColor.r, icon.stateColor.g, icon.stateColor.b, 0.12) : (icon.policy === 2 ? "#20EF4444" : "transparent"))
+        border.width: icon.activeFocus || (icon.policy === 1 || icon.policy === 2 || icon.requestPending) ? 1 : (icon.hovered ? 1 : 0)
+        border.color: icon.activeFocus ? "#38BDF8" : (icon.requestPending ? "#F59E0B80" : (icon.policy === 1 ? Qt.rgba(icon.brandColor.r, icon.brandColor.g, icon.brandColor.b, 0.35) : (icon.policy === 2 ? "#EF444460" : (icon.hovered ? "#1E3E6B" : "transparent"))))
         Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
         Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
     }
@@ -67,13 +66,13 @@ Button {
         MultiEffect { anchors.fill: glyph; source: glyph; colorization: 1; colorizationColor: icon.stateColor }
     }
     Rectangle {
-        visible: icon.policy !== 0 || !!icon.capability.pending
+        visible: icon.policy !== 0 || icon.requestPending
         x: parent.width - 12; y: 1; width: 10; height: 10; radius: icon.policy === 2 ? 2 : 5
         color: "#081426"; border.color: icon.stateColor; border.width: 1
-        Text { anchors.centerIn: parent; text: icon.capability.pending ? "!" : icon.policy === 1 ? "✓" : icon.policy === 2 || icon.policy === 3 ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
+        Text { anchors.centerIn: parent; text: icon.requestPending ? "!" : icon.policy === 1 ? "✓" : icon.policy === 2 || icon.policy === 3 ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
     }
     Rectangle {
-        visible: !!icon.capability.recent && !icon.capability.pending && icon.capability.key !== "network"
+        visible: !!icon.capability.recent && !icon.requestPending && icon.capability.key !== "network"
         x: parent.width - 9; y: parent.height - 6; width: 5; height: 5; radius: 2.5
         color: icon.capability.blocked ? "#EF4444" : "#F59E0B"
     }

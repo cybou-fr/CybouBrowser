@@ -14,6 +14,6 @@
 | Popups | newWindowRequested | только user gesture | временное allow/deny | вкладка; нет подсчёта подавленных Chromium попыток |
 | Cookies | cookieStore filter | third-party deny | профильные сведения/контроль | явно глобальная настройка, не site privilege |
 | Storage | settings.localStorageEnabled | включено | toggle + reload banner | localStorage, не IndexedDB/service workers |
-| Network | URL interceptor | tracker rules + HTTPS default | сведения | bounded profile sample; не per-tab счётчик |
+| Network | URL interceptor | tracker rules + постоянный HTTPS strict | сведения, HTTP opt-in/revoke | bounded profile sample; HTTP: один URL, отдельный профиль, 60 секунд |
 
 Reload/Undo действуют только при совпадении исходной вкладки, полного URL и navigation epoch; смена контекста закрывает баннер. Request IDs, независимые PermissionLease и проверки SiteContext реализованы в C++. Typed C++ policy transactions остаются в roadmap.

@@ -48,7 +48,7 @@ Item {
             } else if (phase === 3) {
                 const m = browserWindow.testOmnibox()
                 expect(m.visibleKeys.length === 11 && !m.overflowVisible, "all eleven controls at every size")
-                expect(m.addressWidth >= 160 && m.menuX > m.downloadX, "address fills available width and controls stay on the right")
+                expect(m.addressWidth >= 120 && m.menuX > m.downloadX, "address fills available width and controls stay on the right")
                 expect(browserWindow.header.height === 74, "capabilities share the navigation row")
                 screenshot = "observable-browse-" + sizes[sizeIndex][0]
                 input = {kind:"key", key:Qt.Key_L, modifiers:Qt.ControlModifier}; phase = 4
@@ -67,13 +67,26 @@ Item {
                 } else { input = browserWindow.testAddressPoint(); phase = 17 }
             } else if (phase === 17) {
                 const m = browserWindow.testOmnibox()
-                expect(m.editing && m.addressWidth >= 160 && m.selectedText === m.rawUrl, "mouse selects complete URL")
+                expect(m.editing && m.addressWidth >= 120 && m.selectedText === m.rawUrl, "mouse selects complete URL")
                 expect(m.visibleKeys.length === 11, "mouse edit preserves capabilities")
                 input = {kind:"key",key:Qt.Key_Escape}; phase = 18
             } else if (phase === 18) {
                 input = bar.testInputPoint("location","move"); phase = 6
             } else if (phase === 6) {
-                expect(!bar.testCard().visible, "hover never opens shared details")
+                expect(bar.testCard().visible && bar.testCard().key === "location", "hover opens the current glass control panel")
+                const c = bar.testCard()
+                expect(c.x >= 0 && c.x+c.width <= browserWindow.width, "glass panel stays inside window")
+                screenshot = "controlbar-hover-location"
+                input = {kind:"move", x:c.x+40, y:c.y+45}; phase = 24
+            } else if (phase === 24) {
+                expect(bar.testCard().visible && bar.testCard().pointerInside, "pointer can enter the panel to use its controls")
+                input = bar.testInputPoint("javascript","move"); phase = 25
+            } else if (phase === 25) {
+                expect(bar.testCard().visible && bar.testCard().key === "javascript", "hover replaces content without stale capability")
+                screenshot = "controlbar-hover-javascript"
+                input = {kind:"move",x:80,y:browserWindow.height-40}; phase = 26
+            } else if (phase === 26) {
+                if (bar.testCard().visible) return 0
                 bar.testFocus(); input = {kind:"key",key:Qt.Key_Right}; phase = 7
             } else if (phase === 7) {
                 expect(bar.testFocusedKey() === "notifications", "keyboard arrows")
@@ -119,7 +132,7 @@ Item {
                 input = bar.testInputPoint("javascript","click"); phase = 10
             } else if (phase === 10) {
                 expect(view.policyNeedsReload, "direct click changes behavior")
-                expect(!bar.testCard().visible, "direct click has no permission popover")
+                bar.dismiss()
                 phase = 13
             } else if (phase === 13 && view.url.toString() === "about:blank") {
                 expect(!view.hasPermissionLease, "expired grant unloads document")
