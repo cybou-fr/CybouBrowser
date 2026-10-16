@@ -49,6 +49,7 @@ public:
     Q_INVOKABLE void notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked);
     Q_INVOKABLE void finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed);
     Q_INVOKABLE void abandonPending(const QString &tab);
+    Q_INVOKABLE void clearPermissionPolicies();
     Q_INVOKABLE void notePopup(const QString &tab, const QUrl &url, bool blocked);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE QVariantList networkSample() const;

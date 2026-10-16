@@ -11,6 +11,11 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
+#include <QGuiApplication>
+#include <QStyleHints>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+#include <QAccessibilityHints>
+#endif
 #include <memory>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
@@ -28,10 +33,18 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool cacheBusy READ cacheBusy NOTIFY cacheBusyChanged)
     Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
+    Q_PROPERTY(bool highContrast READ highContrast NOTIFY preferencesChanged)
     Q_PROPERTY(bool disableGlow READ disableGlow WRITE setDisableGlow NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarLanguage READ controlBarLanguage WRITE setControlBarLanguage NOTIFY languageChanged)
 public:
-    explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {}
+    explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+        connect(QGuiApplication::styleHints()->accessibility(), &QAccessibilityHints::contrastPreferenceChanged, this, &BrowserStore::preferencesChanged);
+#endif
+#if QT_VERSION >= QT_VERSION_CHECK(6, 12, 0)
+        connect(QGuiApplication::styleHints()->accessibility(), &QAccessibilityHints::motionPreferenceChanged, this, &BrowserStore::preferencesChanged);
+#endif
+    }
     QVariantList bookmarks() const { return settings.value("bookmarks").toList(); }
     QVariantList history() const { return settings.value("history").toList(); }
     QString downloadsPath() const { return settings.value("preferences/downloadsPath", QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString(); }
@@ -79,7 +92,19 @@ public:
         if (!QStringList{"top", "right", "bottom", "left"}.contains(value) || value == controlBarPosition()) return;
         settings.setValue("ui/controlBar/position", value); settings.sync(); emit preferencesChanged();
     }
-    bool reduceMotion() const { return settings.value("ui/controlBar/reduceMotion", false).toBool(); }
+    bool reduceMotion() const {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 12, 0)
+        if (QGuiApplication::styleHints()->accessibility()->motionPreference() == Qt::MotionPreference::ReducedMotion) return true;
+#endif
+        return settings.value("ui/controlBar/reduceMotion", false).toBool();
+    }
+    bool highContrast() const {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+        return QGuiApplication::styleHints()->accessibility()->contrastPreference() == Qt::ContrastPreference::HighContrast;
+#else
+        return false;
+#endif
+    }
     void setReduceMotion(bool value) { settings.setValue("ui/controlBar/reduceMotion", value); emit preferencesChanged(); }
     bool disableGlow() const { return settings.value("ui/controlBar/disableGlow", false).toBool(); }
     void setDisableGlow(bool value) { settings.setValue("ui/controlBar/disableGlow", value); emit preferencesChanged(); }

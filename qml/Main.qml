@@ -212,6 +212,7 @@ ApplicationWindow {
         if (permissions) {
             const decisions = activeProfile.listAllPermissions()
             for (const decision of decisions) decision.reset()
+            controlState.clearPermissionPolicies()
         }
         if (cookies) browserStore.clearCookies(activeProfile)
         if (cache) browserStore.clearCache(activeProfile)
@@ -260,6 +261,13 @@ ApplicationWindow {
         tabs.clear(); addTab(""); saveSession()
     }
     function testTabCount() { return tabs.count }
+    function testAddressMatches() { return currentView && address.text === (currentView.url.toString() === "about:blank" ? "" : currentView.url.toString()) }
+    function testOverlayVisibility() {
+        settingsPanel.open(); const settingsHidden = !controlBar.visible; settingsPanel.close()
+        library.open(); const libraryHidden = !controlBar.visible; library.close()
+        window.showFullScreen(); const fullscreenHidden = !controlBar.visible; window.showNormal()
+        return settingsHidden && libraryHidden && fullscreenHidden
+    }
     function beginControlBarTest() { controlHarness.begin() }
     function pollControlBarTest() { return controlHarness.step() }
     function takeControlBarScreenshot() { return controlHarness.takeScreenshot() }
@@ -496,6 +504,7 @@ ApplicationWindow {
     }
     Timer { id: saveTimer; interval: 700; onTriggered: saveSession() }
     onActiveTabChanged: { refreshAddress(); findVisible = false; cancelPermission() }
+    onCurrentViewChanged: { if (suggestionsPopup) suggestionsPopup.close(); if (address) { address.focus = false; refreshAddress() } }
     onClosing: function(event) {
         if (!closingApproved && (activeDownloads() || pdfBusy)) {
             event.accepted = false; closeWorkDialog.open(); return
@@ -797,7 +806,7 @@ ApplicationWindow {
             }
             Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#8491A5"; font.pixelSize: 12 }
         }
-        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.5"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
+        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.6"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
     }
     ControlBar {
         id: controlBar
@@ -1001,7 +1010,7 @@ ApplicationWindow {
         Label { width: parent.width; wrapMode: Text.WordWrap; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
     }
     Dialog {
-        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.5"; modal: true; standardButtons: Dialog.Ok
+        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.6"; modal: true; standardButtons: Dialog.Ok
         Label { width: parent.width; wrapMode: Text.WordWrap; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {

@@ -1,10 +1,10 @@
-# CYBOU Browser 0.5
+# CYBOU Browser 0.6
 
 Native C++17 / Qt Quick browser using Qt WebEngine. Navy, white and red identity follows the supplied CYBOU sheet. The compass/shield icon was reconstructed from that reference with the built-in imagegen tool. assets/cybou.png is embedded in the app; assets/cybou.ico contains 16–256 px Windows icon sizes embedded through assets/cybou.rc.
 
 ## Windows build
 
-Requires Qt 6.9+ Quick, Quick Controls, WebEngine and Network; MSVC 2022 x64; CMake. Tested with Qt 6.12.0 and MSVC 19.44.
+Requires Qt 6.9+ Quick, Quick Controls, WebEngine/Core, Network and LinguistTools; MSVC 2022 x64; CMake. Tested with Qt 6.12.0 and MSVC 19.44.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
@@ -16,6 +16,8 @@ C:/Qt/6.12.0/msvc2022_64/bin/windeployqt.exe --release --qmldir qml --no-transla
 Linux/macOS: configure with the matching Qt kit and compiler. Source structure is portable; builds, window integration and packaging on these platforms remain unverified. macOS bundle icon packaging is outstanding.
 
 ## Features
+
+- Control Bar: a 36px translucent browser-owned overlay with top/right/bottom/left placement, hover/pinned cards, FR/RU panel strings, keyboard navigation and separate policy/event marks. Native permissions, per-origin JS/popups/localStorage controls and a bounded profile network sample are wired. Unsupported screen capture is explicitly unavailable. See [integration report](docs/CONTROL_BAR_INTEGRATION.md) and [capability matrix](docs/API_CAPABILITY_MATRIX.md).
 
 - Combined draggable tab/title bar; minimize, maximize/restore, close, edge resizing and F11 fullscreen.
 - Scrollable tabs, mouse drag reordering with edge autoscroll, favicons, middle-click close, duplicate and move-left/right menu, reopen closed tabs and keyboard switching. Both browser bars remain 36 logical px high, with 28 px tab/address controls.
@@ -39,6 +41,8 @@ Certificate errors are rejected; insecure mixed content and local file access fr
 
 Foreground sites can request supported permissions through an origin-labelled allow/deny dialog. Background requests and unimplemented capture types are denied. Persistent ordinary-profile decisions can be reset in Settings; private decisions stay within their window. Revoking a decision does not terminate an existing capture: close the tab to stop it. Native notification presentation remains outstanding.
 
+Control Bar never equates a permission grant with active device use. Permission events and the profile-wide HTTP(S) metadata sample are memory-only and bounded. No bodies, headers, query strings or URL paths are retained by this observer. Cookie filtering remains a global preference affecting all open profiles, rather than a fictional site-only control. New panel strings can be switched FR/RU in Settings; unrelated legacy UI remains French.
+
 Each private window owns a separate in-memory profile, destroyed on close. Private browsing does not anonymize traffic. Explicit bookmarks, preferences and downloaded files remain on disk. History and session URLs are stored locally in QSettings without encryption.
 
 Cleanup supports cookies, HTTP cache, history, permission decisions and saved tabs. Cookie/saved-tab cleanup closes tabs in the current window. Cookie deletion is asynchronous; cache completion is tracked. LocalStorage, IndexedDB and service workers are not removed by this command. Third-party cookie filtering applies to open profiles; it is not a full tracker blocker.
@@ -55,3 +59,5 @@ $env:QT_FORCE_STDERR_LOGGING = '1'
 Uses a separate QSettings organization and WebEngine storage name. Checks tab dragging with mouse events, close/reopen, bookmarks, history, preference updates, independent private windows and destruction of their profiles. A loopback-only HTTP fixture checks page loading, find matches, a real permission request and grant, cookie removal, permission reset, cache completion, PDF output signature, local-file loading, and a 4 MiB download with pause/resume and cancelled window closure. Artifacts go to build/test-downloads. Produces build/smoke-preview.png; exits 0 on success and 2 on test failure. No external sites required. Native OS file/folder dialog interaction is not automated by this test.
 
 Version 0.5 also checks address suggestions via keyboard events, deduplication/private history exclusion, pinned group boundaries, mute binding, tab-state restoration and compatibility with URL-only sessions. The final preview shows pinned/muted tabs and suggestions using temporary fixture data, removed after capture.
+
+Run `--controlbar-test` to extend this suite with Control Bar policy, origin isolation, consent invalidation, overlay, hover/keyboard/page-input, localization and snapshot checks. Actual DPR 1/1.25/1.5/2 runs and known verification gaps are documented in the integration report.

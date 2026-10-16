@@ -10,6 +10,7 @@ Item {
     property var selectedIcon: null
     property var hoveredIcon: null
     property bool pinned: false
+    property int rovingIndex: 0
     property var selectedData: { controller.revision; return controller.capability(selectedKey) }
     signal policyRequested(string key, int mode)
     signal decisionRequested(bool allow)
@@ -21,9 +22,9 @@ Item {
         if (pin && pinned && selectedKey === icon.capability.key && card.visible) { dismiss(); return }
         pinned = pin; selectedIcon = icon; selectedKey = icon.capability.key
         if (selectedKey === "position") {
-            card.close(); placePopup(picker, icon); picker.open(); return
+            card.close(); pinned = true; placePopup(picker, icon); picker.open(); return
         }
-        picker.close(); placePopup(card, icon); card.open()
+        picker.close(); pinned = pin; placePopup(card, icon); card.open()
     }
     function placePopup(popup, icon) {
         const point = icon.mapToItem(control, 0, 0)
@@ -53,7 +54,7 @@ Item {
         height: control.vertical ? Math.min(control.height - 16, 36 + 11 * 32) : 36
         x: control.position === "left" ? 8 : control.position === "right" ? control.width - width - 28 : (control.width - width - 20) / 2
         y: control.position === "bottom" ? control.height - height - 8 : 8
-        radius: 18; color: "#AA0D2547"; border.color: "#55D7E7FF"; border.width: 1
+        radius: 18; color: browserStore.highContrast ? "#FA0D2547" : "#AA0D2547"; border.color: browserStore.highContrast ? "white" : "#55D7E7FF"; border.width: 1
         Flickable {
             id: strip
             x: 2; y: 2
@@ -77,6 +78,8 @@ Item {
                     model: control.controller.model
                     delegate: ControlBarIcon {
                         required property int index
+                        tabStop: control.rovingIndex === index
+                        onActiveFocusChanged: if (activeFocus) control.rovingIndex = index
                         vertical: control.vertical; separator: [6,8].includes(index)
                         onHoverChanged: function(inside) { control.hoverIcon(this, inside) }
                         onClicked: control.openIcon(this, true)
@@ -87,6 +90,8 @@ Item {
         }
         ControlBarIcon {
             id: positionIcon
+            tabStop: control.rovingIndex === 11
+            onActiveFocusChanged: if (activeFocus) control.rovingIndex = 11
             x: control.vertical ? 2 : rail.width - 34
             y: control.vertical ? rail.height - 34 : 2
             vertical: control.vertical; separator: true
@@ -111,11 +116,16 @@ Item {
         onReloadRequested: control.reloadRequested()
         onCookieRequested: browserStore.blockThirdPartyCookies = !browserStore.blockThirdPartyCookies
     }
-    ControlBarPositionPicker { id: picker; parent: control }
+    ControlBarPositionPicker { id: picker; parent: control; onClosed: control.pinned = false }
     function testGeometry() { return {x:rail.x,y:rail.y,width:rail.width,height:rail.height,viewportWidth:width,viewportHeight:height} }
     function testOpen(key, pin) { for (let i = 0; i < 11; ++i) { const icon = iconRepeater.itemAt(i); if (icon && icon.capability.key === key) { openIcon(icon, pin); return true } } return false }
     function testCard() { return {visible:card.visible,pinned:pinned,x:card.x,y:card.y,width:card.width,height:card.height} }
+    function testPickerVisible() { return picker.visible }
+    function testPickerChoice() { return picker.testChoicePoint(0) }
+    function testFocus() { iconRepeater.itemAt(3).forceActiveFocus() }
+    function testFocusedKey() { const icon = iconRepeater.itemAt(rovingIndex); return icon && icon.activeFocus ? icon.capability.key : "" }
     function testInputPoint(key, kind) {
+        if (key === "position") { const point = positionIcon.mapToItem(null, 16, 16); return {kind:kind,x:point.x,y:point.y} }
         for (let i = 0; i < 11; ++i) {
             const icon = iconRepeater.itemAt(i)
             if (icon && icon.capability.key === key) { const point = icon.mapToItem(null, 16, 16); return {kind:kind,x:point.x,y:point.y} }

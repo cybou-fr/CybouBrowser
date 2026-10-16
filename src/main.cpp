@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     const bool controlBarTest = app.arguments().contains("--controlbar-test");
     const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
-    app.setApplicationVersion("0.5.0");
+    app.setApplicationVersion("0.6.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
     if (smokeTest) qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
@@ -69,6 +69,10 @@ int main(int argc, char *argv[])
         QDir().mkpath("build/test-downloads");
     }
     BrowserStore store;
+    if (smokeTest) {
+        for (const auto &argument : app.arguments()) if (argument.startsWith("--test-position=")) store.setControlBarPosition(argument.mid(16));
+        qInfo() << "CONTROL_BAR_PREFERENCE" << store.controlBarPosition();
+    }
     QTranslator controlTranslator;
     QQmlApplicationEngine engine;
     auto translateControlBar = [&] {
@@ -179,7 +183,11 @@ int main(int argc, char *argv[])
                     QMetaObject::invokeMethod(root, "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
                     QVariant screenshot;
                     QMetaObject::invokeMethod(root, "takeControlBarScreenshot", Q_RETURN_ARG(QVariant, screenshot));
-                    if (!screenshot.toString().isEmpty()) qobject_cast<QQuickWindow *>(root)->grabWindow().save("build/" + screenshot.toString() + ".png");
+                    if (!screenshot.toString().isEmpty()) {
+                        auto window = qobject_cast<QQuickWindow *>(root);
+                        window->grabWindow().save("build/" + screenshot.toString() + ".png");
+                        qInfo() << "CONTROL_BAR_SNAPSHOT" << screenshot.toString() << "DPR" << window->devicePixelRatio();
+                    }
                     QVariant input;
                     QMetaObject::invokeMethod(root, "takeControlBarInput", Q_RETURN_ARG(QVariant, input));
                     auto data = input.toMap();

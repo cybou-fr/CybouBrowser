@@ -27,3 +27,11 @@ Material is a translucent acrylic fallback; no expensive live capture/blur of th
 Do not infer hardware use from grants. Hover never resolves a request. Actual permission origin is separate from top-level origin. Native modal consent remains the fallback. Network sample is in memory, at most 256 entries per profile, 60s visible TTL, 12 displayed rows. Permission events are in memory, bounded to 256 per window/controller, matched by stable tab identity and top/requesting origins.
 
 Final test results and known gaps are recorded in CONTROL_BAR_INTEGRATION.md after implementation.
+
+## Runtime and delivered verification
+
+Runtime diagnostic output from the installed kit: Qt `6.12.0`, WebEngine `6.140.0`, Chromium `140.0.7339.225`, reported Chromium security patch `152.0.7977.83`. These are raw API-reported values, not a certification that the runtime is current or ready for public distribution.
+
+Verified: QML→C++ QWebEnginePermission value transfer on a real notifications request; grant/deny/reset readback; invalidation on tab switch; per-origin JS/localStorage reload behavior across 127.0.0.1 and localhost; default/explicit popup gate; private policy/event separation; profile destruction; bounded interceptor sample during an 80-request burst; all four positions, hover corridor, mouse-out, pin/Escape, roving keyboard focus, non-interception of page clicks, unchanged page viewport, drawer/fullscreen policy, FR/RU catalog, actual DPR 1.0/1.25/1.5/2.0 at 820×560 minimum window. Position persisted across separate processes.
+
+Not verified: physical camera/mic capture; stopping a cached grant/active stream; screen chooser; a real location provider; native notifications; cross-origin iframe hardware permission flows; touch/stylus devices; OS high-contrast/reduced-motion toggling during a run; mixed-monitor migration; third-party cookie fixtures beyond the pre-existing filter's tested preference path. Those limits remain explicit and are not replaced with invented activity indicators.

@@ -54,7 +54,8 @@ Popup {
             Button { text: qsTr("Bloquer…"); onClicked: card.policyRequested(card.capability.key, 2) }
             Button { visible: card.capability.key === "popups"; text: qsTr("Gestes explicites"); onClicked: card.policyRequested(card.capability.key, 0) }
         }
-        Button { visible: card.capability.policy === 4; text: qsTr("Recharger l’onglet"); onClicked: card.reloadRequested() }
+        Label { visible: ["camera", "mic"].includes(card.capability.key); Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#C4D6EB"; font.pixelSize: 11; text: qsTr("Pour interrompre un flux déjà accordé, rechargez ou fermez l’onglet. L’arrêt n’est pas vérifiable ici.") }
+        Button { visible: card.capability.policy === 4 || (!!card.capability.canAct && ["camera", "mic"].includes(card.capability.key)); text: qsTr("Recharger l’onglet"); onClicked: card.reloadRequested() }
         Button { visible: card.capability.key === "cookies"; text: browserStore.blockThirdPartyCookies ? qsTr("Autoriser les cookies tiers du profil") : qsTr("Bloquer les cookies tiers du profil"); onClicked: card.cookieRequested() }
         Label { visible: !!card.capability.recent && card.capability.key !== "network"; Layout.fillWidth: true; text: qsTr("Événements Qt récents (60 s), pas une preuve d’utilisation active."); color: "#A9C1DC"; font.pixelSize: 11; wrapMode: Text.WordWrap }
         Label { visible: card.capability.key === "network"; text: qsTr("Échantillon du profil : ") + (card.capability.sampleCount || 0); color: "#A9C1DC"; font.pixelSize: 11 }

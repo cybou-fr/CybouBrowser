@@ -38,7 +38,16 @@ bool ControlBarController::writePolicy(const QUrl &url, const QString &key, cons
     if (subject.isEmpty() || !m_profile) return false;
     const auto storageKey = QString::fromLatin1(subject.toUtf8().toBase64(QByteArray::Base64UrlEncoding)) + "/" + key;
     if (m_profile->isOffTheRecord()) m_privatePolicies[storageKey] = value;
-    else { m_settings.setValue("controlPolicies/" + storageKey, value); m_settings.sync(); if (m_settings.status() != QSettings::NoError) return false; }
+    else {
+        const auto fullKey = "controlPolicies/" + storageKey;
+        const bool existed = m_settings.contains(fullKey);
+        const auto previous = m_settings.value(fullKey);
+        m_settings.setValue(fullKey, value); m_settings.sync();
+        if (m_settings.status() != QSettings::NoError) {
+            if (existed) m_settings.setValue(fullKey, previous); else m_settings.remove(fullKey);
+            return false;
+        }
+    }
     emit policyChanged(subject, key); refresh(); return true;
 }
 bool ControlBarController::settingFor(const QUrl &url, const QString &key) const { return policyValue(url, key, true).toBool(); }
@@ -105,6 +114,17 @@ void ControlBarController::abandonPending(const QString &tab) {
     for (auto &event : m_observations) if (event.tab == tab) event.pending = false;
     refresh();
 }
+void ControlBarController::clearPermissionPolicies() {
+    if (!m_profile) return;
+    if (m_profile->isOffTheRecord()) {
+        for (const auto &key : m_privatePolicies.keys()) if (key.endsWith("/camera") || key.endsWith("/mic")) m_privatePolicies.remove(key);
+    } else {
+        m_settings.beginGroup("controlPolicies");
+        for (const auto &key : m_settings.allKeys()) if (key.endsWith("/camera") || key.endsWith("/mic")) m_settings.remove(key);
+        m_settings.endGroup(); m_settings.sync();
+    }
+    refresh();
+}
 QVariantList ControlBarController::networkSample() const {
     auto observer = m_store && m_profile ? m_store->observerFor(m_profile) : nullptr;
     return observer ? observer->sample() : QVariantList();
@@ -146,7 +166,7 @@ void ControlBarController::refresh() {
         }
         if (key == "cookies") {
             state = m_profile ? PolicyState::Ask : PolicyState::Unavailable; canAct = bool(m_store);
-            scope = tr("Profil entier");
+            scope = tr("Tous les profils ouverts");
             reason = m_store && m_store->blockThirdPartyCookies() ? tr("Cookies tiers bloqués par le filtre du profil. Cookies internes autorisés. Pas de comptage exhaustif.") : tr("Cookies tiers autorisés dans ce profil. Pas de comptage exhaustif.");
         }
         QVariantList eventRows;

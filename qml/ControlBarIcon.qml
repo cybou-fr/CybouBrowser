@@ -7,12 +7,13 @@ Button {
     property bool vertical: false
     property bool separator: false
     property bool previousPending: false
+    property bool tabStop: false
     signal hoverChanged(bool inside)
     signal focusStep(int direction)
     implicitWidth: 32; implicitHeight: 32
     padding: 7; hoverEnabled: true
-    focusPolicy: Qt.StrongFocus
-    Accessible.name: capability.title + " · " + capability.scope + " · " + capability.reason + " · " + qsTr("Ouvrir les détails")
+    focusPolicy: tabStop ? Qt.StrongFocus : Qt.ClickFocus
+    Accessible.name: capability.title + " · " + (capability.key === "position" ? "" : [qsTr("Demander"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][capability.policy || 0] + " · ") + (capability.pending ? qsTr("Demande en attente") + " · " : "") + capability.scope + " · " + capability.reason + " · " + qsTr("Ouvrir les détails")
     onHoveredChanged: hoverChanged(hovered)
     Keys.onPressed: function(event) {
         if ([Qt.Key_Left, Qt.Key_Up, Qt.Key_Right, Qt.Key_Down].includes(event.key)) {

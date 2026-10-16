@@ -47,6 +47,9 @@ QtObject {
                 browserWindow.applyViewPolicy(view, view.url); view.reload(); phase = 4
             } else if (phase === 4 && view.title === "Scripts enabled" && !view.loading) {
                 expect(!controller.setPermissionPolicy("camera", 1), "no arbitrary ephemeral pregrant")
+                expect(controller.setPermissionPolicy("camera", 2) && controller.capability("camera").policy === 2, "camera deny policy")
+                controller.clearPermissionPolicies()
+                expect(controller.capability("camera").policy === 0, "custom permission cleanup")
                 expect(controller.setPermissionPolicy("notifications", 2), "persistent deny")
                 expect(controller.capability("notifications").policy === 2, "native deny readback")
                 expect(controller.setPermissionPolicy("notifications", 1), "persistent allow")
@@ -90,10 +93,15 @@ QtObject {
                 const geometry = bar.testGeometry()
                 expect(geometry.x >= 5 && geometry.y >= 0 && geometry.x + geometry.width <= geometry.viewportWidth - 5 && geometry.y + geometry.height <= geometry.viewportHeight, "rail inside web viewport")
                 expect((bar.vertical ? geometry.width : geometry.height) === 36, "thin rail")
+                expect(view.width === bar.width && view.height === bar.height, "overlay does not resize page")
+                expect(browserWindow.testAddressMatches(), "address reflects actual active view")
                 screenshot = "controlbar-" + browserStore.controlBarPosition
                 positionIndex++; phase = positionIndex < 4 ? 8 : 10
             } else if (phase === 10) {
                 browserStore.controlBarPosition = "right"
+                bar.testFocus(); input = {kind:"key",key:Qt.Key_Down}; phase = 21
+            } else if (phase === 21) {
+                expect(bar.testFocusedKey() === "notifications", "roving arrow focus")
                 input = bar.testInputPoint("location", "move"); phase = 11
             } else if (phase === 11 && bar.testCard().visible) {
                 const card = bar.testCard()
@@ -113,6 +121,13 @@ QtObject {
             } else if (phase === 15) {
                 expect(!bar.testCard().visible, "escape dismisses card")
                 expect(browserWindow.header.height === 74, "browser chrome unchanged")
+                input = bar.testInputPoint("position", "click"); phase = 24
+            } else if (phase === 24) {
+                expect(bar.testPickerVisible(), "last icon opens position picker")
+                input = bar.testPickerChoice(); phase = 25
+            } else if (phase === 25) {
+                expect(browserStore.controlBarPosition === "top" && !bar.testPickerVisible(), "position choice by mouse")
+                browserStore.controlBarPosition = "right"
                 browserStore.controlBarLanguage = "ru"; controller.refresh()
                 expect(controller.capability("location").title === "Геолокация", "Russian catalog")
                 bar.testOpen("location", true); phase = 16
@@ -124,6 +139,12 @@ QtObject {
                 browserWindow.activeTab = 0
                 controller.setBehavior("javascript", 1)
                 browserWindow.applyViewPolicy(browserWindow.currentView, browserWindow.currentView.url)
+                expect(browserWindow.testOverlayVisibility(), "drawers/fullscreen hide rail")
+                phase = 22
+            } else if (phase === 22) {
+                browserWindow.currentView.runJavaScript("document.body.addEventListener('click',()=>document.title='Page clicked')")
+                input = {kind:"click",x:100,y:300}; phase = 23
+            } else if (phase === 23 && view.title === "Page clicked") {
                 browserStore.controlBarPosition = oldPosition
                 console.info("CONTROL_BAR_TEST PASS", "elapsedMs", Date.now() - started)
                 phase = 18; return 2
