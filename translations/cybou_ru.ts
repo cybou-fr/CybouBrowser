@@ -160,7 +160,57 @@
       <source>Refus</source>
       <translation>Отказ</translation>
     </message>
-  </context>
+      <message>
+      <source>Exception de traqueurs : %1 s restantes. Cet onglet uniquement, cookies et cache séparés.</source>
+      <translation>Исключение для трекеров: осталось %1 с. Только эта вкладка, отдельные cookies и кеш.</translation>
+    </message>
+    <message>
+      <source>Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Exception de 60 s, révoquée au prochain chargement.</source>
+      <translation>Если фильтр ломает этот HTTPS-сайт, откройте страницу во временном профиле без обычных cookies. Исключение на 60 с, до следующей загрузки.</translation>
+    </message>
+    <message>
+      <source>Autoriser les traqueurs · 60 s</source>
+      <translation>Разрешить трекеры · 60 с</translation>
+    </message>
+    <message>
+      <source>Disponible pour une page HTTPS chargée, hors exception HTTP.</source>
+      <translation>Доступно для загруженной HTTPS-страницы без исключения HTTP.</translation>
+    </message>
+    <message>
+      <source>Le filtre de traqueurs est désactivé dans les paramètres.</source>
+      <translation>Фильтр трекеров отключён в настройках.</translation>
+    </message>
+    <message>
+      <source>Révoquer l’exception et fermer la page</source>
+      <translation>Отозвать исключение и закрыть страницу</translation>
+    </message>
+    <message>
+      <source>Tout</source>
+      <translation>Все</translation>
+    </message>
+    <message>
+      <source>HTTP</source>
+      <translation>HTTP</translation>
+    </message>
+    <message>
+      <source>Traqueurs</source>
+      <translation>Трекеры</translation>
+    </message>
+    <message>
+      <source>Autres</source>
+      <translation>Прочее</translation>
+    </message>
+    <message>
+      <source>Passé par le filtre</source>
+      <translation>Прошёл фильтр</translation>
+    </message>
+    <message>
+      <source>Bloqués · HTTP : %1 · traqueurs : %2 · autres : %3
+Traqueurs passés par exception : %4</source>
+      <translation>Заблокировано · HTTP: %1 · трекеры: %2 · прочее: %3
+Трекеры, пропущенные по исключению: %4</translation>
+    </message>
+</context>
   <context>
     <name>ControlBarController</name>
     <message>
@@ -298,7 +348,15 @@
       <source>Échantillon borné de requêtes HTTP(S) : origine, type et heure. Aucun contenu, secret, volume ni attribution certaine à cet onglet.</source>
       <translation>Ограниченная выборка HTTP(S): origin, тип и время. Содержимое, секреты и объём не читаются. Привязка к вкладке не гарантируется.</translation>
     </message>
-  </context>
+      <message>
+      <source>Profil temporaire réservé à cet onglet</source>
+      <translation>Временный профиль только этой вкладки</translation>
+    </message>
+    <message>
+      <source>Échantillon des décisions du filtre, pas une preuve de chargement réussi. Origines et types uniquement, sans contenu ni chemin d’adresse. Dans un profil partagé, ces événements ne sont pas attribuables à un onglet.</source>
+      <translation>Выборка решений фильтра не доказывает успешную загрузку. Только источники и типы, без содержимого и пути адреса. В общем профиле события нельзя достоверно отнести к отдельной вкладке.</translation>
+    </message>
+</context>
   <context>
     <name>ControlBarIcon</name>
     <message>
@@ -472,4 +530,91 @@
       <translation>Блокирует HTTP и незашифрованные WebSocket во всех профилях, включая локальную сеть. Перехода на HTTP нет. Перезагрузите вкладки, чтобы прервать уже открытые соединения. Внешние протоколы отключены; WebRTC использует только публичные интерфейсы.</translation>
     </message>
   </context>
+  <context>
+    <name>RequestObserver</name>
+      <message>
+      <source>Connexion HTTP ou WebSocket non chiffrée</source>
+      <translation>Незашифрованное соединение HTTP или WebSocket</translation>
+    </message>
+    <message>
+      <source>Domaine tiers présent dans la liste de traqueurs</source>
+      <translation>Сторонний домен находится в списке трекеров</translation>
+    </message>
+    <message>
+      <source>Identifiants intégrés à l’adresse</source>
+      <translation>Логин или пароль встроен в адрес</translation>
+    </message>
+    <message>
+      <source>Nouvelle navigation : l’exception a pris fin</source>
+      <translation>Новый переход: срок действия исключения завершён</translation>
+    </message>
+    <message>
+      <source>Traqueur autorisé par l’exception temporaire</source>
+      <translation>Трекер пропущен по временному исключению</translation>
+    </message>
+    <message>
+      <source>Requête passée par le filtre réseau</source>
+      <translation>Запрос прошёл сетевой фильтр</translation>
+    </message>
+    <message>
+      <source>Page</source>
+      <translation>Страница</translation>
+    </message>
+    <message>
+      <source>Cadre intégré</source>
+      <translation>Встроенный фрейм</translation>
+    </message>
+    <message>
+      <source>Feuille de style</source>
+      <translation>Таблица стилей</translation>
+    </message>
+    <message>
+      <source>Script</source>
+      <translation>Скрипт</translation>
+    </message>
+    <message>
+      <source>Image</source>
+      <translation>Изображение</translation>
+    </message>
+    <message>
+      <source>Police</source>
+      <translation>Шрифт</translation>
+    </message>
+    <message>
+      <source>Média</source>
+      <translation>Медиа</translation>
+    </message>
+    <message>
+      <source>Worker</source>
+      <translation>Фоновый обработчик</translation>
+    </message>
+    <message>
+      <source>Icône du site</source>
+      <translation>Значок сайта</translation>
+    </message>
+    <message>
+      <source>Requête de données</source>
+      <translation>Запрос данных</translation>
+    </message>
+    <message>
+      <source>Signal de suivi</source>
+      <translation>Сигнал отслеживания</translation>
+    </message>
+    <message>
+      <source>Rapport de sécurité</source>
+      <translation>Отчёт безопасности</translation>
+    </message>
+    <message>
+      <source>Préchargement</source>
+      <translation>Предзагрузка</translation>
+    </message>
+    <message>
+      <source>WebSocket</source>
+      <translation>WebSocket</translation>
+    </message>
+    <message>
+      <source>Autre ressource</source>
+      <translation>Другой ресурс</translation>
+    </message>
+</context>
 </TS>

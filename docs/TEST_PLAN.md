@@ -2,6 +2,8 @@
 
 Build: `cmake --build build --config Release --parallel 4` (C++20, Qt 6.12, MSVC 2022).
 
+Tracker exceptions: `build/Release/cybou.exe --tracker-test`. The tracker hostname resolves only to the loopback fixture in this dedicated mode. Check actual block before consent and successful fetch after consent, off-the-record AskEveryTime profile, peer-tab isolation, stale-token rejection, reload, fresh consent, countdown, background 60-second expiry, panel revoke and native profile destruction. A test-only loopback HTTP path is used; production rejects HTTP tracker exceptions. Security tests cover HTTPS-only factory policy, credentials, exact URL/query, concurrent single consumption, firstParty origin, deadline/revoke and labels. Existing HTTP and permission suites must also pass after changing temporary-profile lifecycle code.
+
 Glass surfaces: `build/Release/cybou.exe --surface-test` checks a real navigation hover tooltip and drawer bounds for downloads, bookmarks, history and settings at 1360×900 and 820×560. Drawers must match the page workspace below chrome, without a modal full-window dimmer. Captures `build/glass-tooltip.png` and `build/drawer-*.png` for visual inspection. Uses the isolated test organization.
 
 Window chrome: the native harness double-clicks the unused tab-strip area to maximize and restore the previous window size; tab reordering is checked separately. Control Bar layout checks verify a separator between controls and downloads at every supported size. Transport tests click the dedicated address-row HTTP button to grant and revoke, while the first grant still exercises the glass-panel control. System window movement across monitors and dragging a maximized window remain manual Windows checks.

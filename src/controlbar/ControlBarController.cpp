@@ -135,6 +135,13 @@ void ControlBarController::refresh() {
     const auto now = QDateTime::currentMSecsSinceEpoch();
     m_observations.removeIf([now](const Observation &event) { return !event.pending && now - event.time > 60000; });
     const auto sample = networkSample();
+    QVariantMap networkCounts{{"transport",0}, {"trackers",0}, {"exceptions",0}, {"other",0}};
+    for (const auto &item : sample) {
+        const auto event = item.toMap();
+        const QString key = event.value("decision") == "tracker-exception" ? "exceptions"
+            : event.value("blocked").toBool() ? event.value("category").toString() : QString();
+        if (networkCounts.contains(key)) networkCounts[key] = networkCounts[key].toInt() + 1;
+    }
     for (int i = 0; i < keys.size(); ++i) {
         const auto key = keys[i];
         PolicyState state = PolicyState::Unavailable;
@@ -176,14 +183,21 @@ void ControlBarController::refresh() {
         if (key == "network") {
             state = m_profile ? PolicyState::Ask : PolicyState::Unavailable; canAct = false;
             scope = tr("Profil entier · observation seulement");
-            reason = tr("Échantillon borné de requêtes HTTP(S) : origine, type et heure. Aucun contenu, secret, volume ni attribution certaine à cet onglet.");
+            if (m_store && (m_store->isTemporaryHttpProfile(m_profile) || m_store->isTemporaryTrackerProfile(m_profile))) scope = tr("Profil temporaire réservé à cet onglet");
+            reason = tr("Échantillon des décisions du filtre, pas une preuve de chargement réussi. Origines et types uniquement, sans contenu ni chemin d’adresse. Dans un profil partagé, ces événements ne sont pas attribuables à un onglet.");
             eventRows.clear();
-            for (int j = sample.size() - 1; j >= 0 && eventRows.size() < 12; --j) eventRows.append(sample[j]);
+            QHash<QString,int> categoryRows;
+            for (int j = sample.size() - 1; j >= 0; --j) {
+                const auto event = sample[j].toMap();
+                const auto category = event.value("category").toString();
+                if (categoryRows.value(category) < 8) { eventRows.append(event); ++categoryRows[category]; }
+                blocked |= event.value("blocked").toBool();
+            }
             recent = !eventRows.isEmpty();
         }
         rows.append(QVariantMap{{"key", key}, {"title", titles[i]}, {"policy", int(state)}, {"scope", scope}, {"reason", reason}, {"origin", subject},
                                 {"persistent", persistent}, {"canAct", canAct}, {"pending", pending}, {"recent", recent}, {"blocked", blocked}, {"requester", requester}, {"events", eventRows},
-                                {"sampleCount", key == "network" ? sample.size() : eventRows.size()}});
+                                {"sampleCount", key == "network" ? sample.size() : eventRows.size()}, {"networkCounts", key == "network" ? networkCounts : QVariantMap()}});
     }
     if ((!m_observations.isEmpty() || !sample.isEmpty()) && !m_timer.isActive()) m_timer.start();
     if (m_model.update(rows)) { ++m_revision; emit changed(); }

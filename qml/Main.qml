@@ -203,13 +203,31 @@ ApplicationWindow {
     property real testControlBudget: -1
     readonly property var activeProfile: privateMode ? privateProfile : persistentProfile
     readonly property var currentProfile: currentView ? currentView.profile : activeProfile
-    property var temporaryHttpProfiles: ({})
+    property var temporaryProfiles: ({})
     readonly property var transportState: {
+        trackerClock
         const view = currentView
         const pending = !!view && view.blockedHttpUrl.length > 0 && view.blockedHttpEpoch === view.navigationEpoch
         return {httpPending:pending, httpOrigin:pending ? browserStore.origin(view.blockedHttpUrl) : "",
             httpToken:view ? view.tabUid + "@" + view.navigationEpoch : "",
-            httpTemporary:!!view && view.temporaryTransport}
+            httpTemporary:!!view && view.temporaryTransport,
+            trackerTemporary:!!view && view.temporaryTrackers,
+            trackerSeconds:view && view.temporaryTrackers ? Math.ceil(browserStore.trackerRemainingMs(view.profile) / 1000) : 0,
+            trackerCanAllow:!!view && !view.loading && !view.temporaryContext && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
+    }
+    property double trackerClock: Date.now()
+    Timer { interval:1000; repeat:true; running:!!window.currentView && window.currentView.temporaryTrackers; onTriggered:window.trackerClock = Date.now() }
+    function allowTemporaryTrackers(token) {
+        if (!currentView || !transportState.trackerCanAllow || token !== transportState.httpToken) return false
+        const profile = browserStore.createTemporaryTrackerProfile(currentView.url)
+        if (!profile) return false
+        window.replaceGrantedView(currentView, currentView.url.toString(), profile)
+        return true
+    }
+    function revokeTemporaryTrackers(token) {
+        if (!currentView || !currentView.temporaryTrackers || token !== transportState.httpToken) return false
+        window.replaceGrantedView(currentView)
+        return true
     }
     function offerHttp(view, url) {
         if (!view || !browserStore.canRequestTemporaryHttp(url)) return
@@ -244,11 +262,11 @@ ApplicationWindow {
             }
         })
     }
-    function releaseHttpView(uid) {
-        const profile = temporaryHttpProfiles[uid]
+    function releaseTemporaryView(uid) {
+        const profile = temporaryProfiles[uid]
         if (!profile) return
-        delete temporaryHttpProfiles[uid]
-        browserStore.releaseTemporaryHttpProfile(profile)
+        delete temporaryProfiles[uid]
+        browserStore.releaseTemporaryProfile(profile)
     }
     Connections {
         target: browserStore
@@ -257,7 +275,7 @@ ApplicationWindow {
                 const view = views.itemAt(i)
                 if (view && view.profile === profile) { window.replaceGrantedView(view); return }
             }
-            browserStore.releaseTemporaryHttpProfile(profile)
+            browserStore.releaseTemporaryProfile(profile)
         }
     }
     readonly property var pendingPermission: permissionCoordinator.hasPending ? permissionCoordinator.pendingPermission : null
@@ -308,11 +326,12 @@ ApplicationWindow {
             const muted = tabs.get(i).isMuted
             const wasCurrent = view === currentView
             const selected = activeTab
+            const newUid = "tab-" + (++nextTabUid)
+            if (transportProfile) controlState.inheritContext(view.tabUid, newUid, view.url, targetUrl)
             controlState.expireContext(view.tabUid)
             if (pdfTarget === view) { pdfTarget = null; pdfBusy = false }
             // Removing the repeater item destroys its WebEngineView; no beforeunload veto.
-            const newUid = "tab-" + (++nextTabUid)
-            if (transportProfile) temporaryHttpProfiles[newUid] = transportProfile
+            if (transportProfile) temporaryProfiles[newUid] = transportProfile
             tabs.remove(i)
             tabs.insert(i, {initialUrl:targetUrl, label:"Nouvel onglet", favicon:"",
                 isPinned:pinned, isMuted:muted, audible:false, tabUid:newUid})
@@ -396,11 +415,11 @@ ApplicationWindow {
         tabs.clear(); addTab(""); saveSession()
     }
     function testViewAt(index) { return views.itemAt(index) }
-    readonly property var transportTestProfile: transportHarness.trackedProfile
-    function beginTransportTest() { transportHarness.begin() }
-    function pollTransportTest() { return transportHarness.step() }
-    function takeTransportScreenshot() { return transportHarness.takeScreenshot() }
-    function takeTransportInput() { return transportHarness.takeInput() }
+    readonly property var transportTestProfile: trackerTestMode ? trackerHarness.trackedProfile : transportHarness.trackedProfile
+    function beginTransportTest() { if (trackerTestMode) trackerHarness.begin(); else transportHarness.begin() }
+    function pollTransportTest() { return trackerTestMode ? trackerHarness.step() : transportHarness.step() }
+    function takeTransportScreenshot() { return trackerTestMode ? trackerHarness.takeScreenshot() : transportHarness.takeScreenshot() }
+    function takeTransportInput() { return trackerTestMode ? trackerHarness.takeInput() : transportHarness.takeInput() }
     function testHttpButtonPoint() {
         const p = httpButton.mapToItem(null, httpButton.width / 2, httpButton.height / 2)
         return {kind:"click", x:p.x, y:p.y}
@@ -425,6 +444,7 @@ ApplicationWindow {
         const p = emptyTabDrag.mapToItem(null, emptyTabDrag.width / 2, emptyTabDrag.height / 2)
         return {x:p.x, y:p.y, width:emptyTabDrag.width}
     }
+    TrackerHarness { id: trackerHarness; browserWindow: window; controller: controlState; bar: controlBar }
     TransportHarness { id: transportHarness; browserWindow: window; controller: controlState; bar: controlBar }
     function testTabCount() { return tabs.count }
     function testAddressMatches() { return currentView && address.text === (currentView.url.toString() === "about:blank" ? "" : currentView.url.toString()) }
@@ -993,6 +1013,8 @@ ApplicationWindow {
                     controller: controlState; popupHost: Overlay.overlay
                     pendingRequestId: permissionCoordinator.pendingRequestId
                     transportState: window.transportState
+                    onAllowTrackersRequested: function(token) { window.allowTemporaryTrackers(token) }
+                    onRevokeTrackersRequested: function(token) { window.revokeTemporaryTrackers(token) }
                     onAllowHttpRequested: function(token) { window.allowTemporaryHttp(token) }
                     onRevokeHttpRequested: function(token) { if (currentView && currentView.temporaryTransport && token === transportState.httpToken) window.replaceGrantedView(currentView) }
                     editing: false
@@ -1117,8 +1139,10 @@ ApplicationWindow {
             required property string tabUid
             property string blockedHttpUrl: ""
             property int blockedHttpEpoch: -1
-            readonly property bool temporaryTransport: !!window.temporaryHttpProfiles[tabUid]
-            property string policyOrigin: ""
+            readonly property bool temporaryContext: !!window.temporaryProfiles[tabUid]
+            readonly property bool temporaryTransport: browserStore.isTemporaryHttpProfile(window.temporaryProfiles[tabUid] || null)
+            readonly property bool temporaryTrackers: browserStore.isTemporaryTrackerProfile(window.temporaryProfiles[tabUid] || null)
+            property string policyOrigin: temporaryContext ? browserStore.origin(initialUrl) : ""
             property int navigationEpoch: 0
             readonly property var grantedKeys: {
                 permissionCoordinator.revision
@@ -1131,7 +1155,7 @@ ApplicationWindow {
             Component.onDestruction: {
                 if (permissionCoordinator) permissionCoordinator.forgetView(web)
                 if (controlState) controlState.expireContext(tabUid)
-                window.releaseHttpView(tabUid)
+                window.releaseTemporaryView(tabUid)
             }
             property bool policyNeedsReload: false
             property string upgradedFromHttpUrl: ""
@@ -1140,9 +1164,9 @@ ApplicationWindow {
             anchors.fill: parent
             visible: activeTab === index && url.toString() !== "about:blank"
             url: initialUrl
-            profile: window.temporaryHttpProfiles[tabUid] || window.activeProfile
+            profile: window.temporaryProfiles[tabUid] || window.activeProfile
             Connections {
-                target: web.temporaryTransport ? web.profile : null
+                target: web.temporaryContext ? web.profile : null
                 function onDownloadRequested(download) { window.handleDownload(download) }
             }
             audioMuted: isMuted
@@ -1168,6 +1192,11 @@ ApplicationWindow {
                     web.blockedHttpEpoch = -1
                     if (web === currentView) { policyBanner.close(); controlBar.dismiss() }
                     if (pendingPermissionView === web) window.cancelPermission()
+                    if (web.temporaryTrackers && !browserStore.canStartTrackerDocument(web.profile, request.url)) {
+                        request.reject()
+                        window.endTemporaryNavigation(web, request.url.toString())
+                        return
+                    }
                     if (web.temporaryTransport && !browserStore.canStartTemporaryHttp(web.profile, request.url)) {
                         request.reject()
                         window.endTemporaryNavigation(web, request.url.toString())

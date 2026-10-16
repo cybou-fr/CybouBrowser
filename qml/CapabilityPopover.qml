@@ -18,6 +18,10 @@ Popup {
     signal cookieRequested()
     signal allowHttpRequested(string token)
     signal revokeHttpRequested(string token)
+    signal allowTrackersRequested(string token)
+    signal revokeTrackersRequested(string token)
+    property string networkFilter: "all"
+    onVisibleChanged: if (!visible) networkFilter = "all"
 
     component GlassBtn: Button {
         id: gbtn
@@ -47,6 +51,7 @@ Popup {
     }
     function testHttpAllowPoint() { const p = httpAllow.mapToItem(null, httpAllow.width/2, httpAllow.height/2); return {kind:"click",x:p.x,y:p.y} }
     function testHttpRevokePoint() { const p = httpRevoke.mapToItem(null, httpRevoke.width/2, httpRevoke.height/2); return {kind:"click",x:p.x,y:p.y} }
+    function testTrackerPoint(revoke) { const button = revoke ? trackerRevoke : trackerAllow; const p = button.mapToItem(null,button.width/2,button.height/2); return {kind:"click",x:p.x,y:p.y} }
     width: 330; padding: 16
     height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
@@ -178,18 +183,53 @@ Popup {
                 text: qsTr("Échantillon réseau récent : %1").arg(card.capability.sampleCount || 0)
                 color: "#A9C1DC"; font.pixelSize: 11
             }
+            Label {
+                Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#B9CBE2"; font.pixelSize: 11
+                text: qsTr("Bloqués · HTTP : %1 · traqueurs : %2 · autres : %3\nTraqueurs passés par exception : %4")
+                    .arg((card.capability.networkCounts || {}).transport || 0).arg((card.capability.networkCounts || {}).trackers || 0)
+                    .arg((card.capability.networkCounts || {}).other || 0).arg((card.capability.networkCounts || {}).exceptions || 0)
+            }
+            Label {
+                Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
+                text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs : %1 s restantes. Cet onglet uniquement, cookies et cache séparés.").arg(card.capability.trackerSeconds || 0)
+                    : qsTr("Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Exception de 60 s, révoquée au prochain chargement.")
+            }
             GlassBtn {
-                text: browserStore.blockTrackers ? qsTr("Désactiver le bloqueur") : qsTr("Activer le bloqueur de traqueurs")
-                enabled: false
+                id: trackerAllow
+                visible: !card.capability.trackerTemporary
+                enabled: !!card.capability.trackerCanAllow
+                text: qsTr("Autoriser les traqueurs · 60 s")
+                onClicked: card.allowTrackersRequested(pressedHttpToken)
+            }
+            Label {
+                visible: !card.capability.trackerTemporary && !card.capability.trackerCanAllow
+                Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#A9C1DC"; font.pixelSize: 11
+                text: browserStore.blockTrackers ? qsTr("Disponible pour une page HTTPS chargée, hors exception HTTP.") : qsTr("Le filtre de traqueurs est désactivé dans les paramètres.")
+            }
+            GlassBtn {
+                id: trackerRevoke
+                visible: !!card.capability.trackerTemporary
+                text: qsTr("Révoquer l’exception et fermer la page")
+                onClicked: card.revokeTrackersRequested(pressedHttpToken)
+            }
+            Flow {
+                Layout.fillWidth: true; spacing: 4
+                GlassBtn { text: qsTr("Tout"); highlighted: card.networkFilter === "all"; onClicked: card.networkFilter = "all" }
+                GlassBtn { text: qsTr("HTTP"); highlighted: card.networkFilter === "transport"; onClicked: card.networkFilter = "transport" }
+                GlassBtn { text: qsTr("Traqueurs"); highlighted: card.networkFilter === "trackers"; onClicked: card.networkFilter = "trackers" }
+                GlassBtn { text: qsTr("Autres"); highlighted: card.networkFilter === "other"; onClicked: card.networkFilter = "other" }
             }
         }
         Label { visible: !!card.capability.recent && card.capability.key !== "network"; Layout.fillWidth: true; text: qsTr("Événements Qt récents (60 s), pas une preuve d’utilisation active."); color: "#A9C1DC"; font.pixelSize: 11; wrapMode: Text.WordWrap }
         Repeater {
-            model: card.capability.events || []
+            model: (card.capability.events || []).filter(function(event) { return card.capability.key !== "network" || card.networkFilter === "all" || event.category === card.networkFilter })
             delegate: Label {
                 required property var modelData
                 Layout.fillWidth: true
-                text: new Date(modelData.time).toLocaleTimeString(Qt.locale(), "HH:mm:ss") + "  " + modelData.origin + (modelData.resourceType !== undefined ? " · type " + modelData.resourceType : "") + (modelData.blocked ? " · " + qsTr("Bloqué") + " · " + (modelData.reason || "") : "")
+                text: new Date(modelData.time).toLocaleTimeString(Qt.locale(), "HH:mm:ss") + "  " + modelData.origin
+                    + (modelData.resourceLabel ? " · " + modelData.resourceLabel : "")
+                    + (modelData.blocked ? " · " + qsTr("Bloqué") : modelData.resourceType !== undefined ? " · " + qsTr("Passé par le filtre") : "")
+                    + (modelData.explanation ? "\n" + modelData.explanation : "")
                 textFormat: Text.PlainText; color: "#BBD2EA"; font.pixelSize: 10; wrapMode: Text.WrapAnywhere
             }
         }

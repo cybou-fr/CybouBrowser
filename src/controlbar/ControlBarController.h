@@ -53,6 +53,15 @@ public:
     Q_INVOKABLE void abandonPending(const QString &tab);
     Q_INVOKABLE void clearPermissionPolicies();
     Q_INVOKABLE void expireContext(const QString &tab);
+    Q_INVOKABLE void inheritContext(const QString &fromTab, const QString &toTab, const QUrl &source, const QUrl &target) {
+        const auto subject = origin(source);
+        if (subject.isEmpty() || subject != origin(target) || fromTab == toTab) return;
+        const auto suffix = QString::fromLatin1(subject.toUtf8().toBase64(QByteArray::Base64UrlEncoding)) + "/";
+        const auto prefix = fromTab + "/" + suffix;
+        const auto snapshot = m_privatePolicies;
+        for (auto it = snapshot.cbegin(); it != snapshot.cend(); ++it)
+            if (it.key().startsWith(prefix)) m_privatePolicies[toTab + "/" + suffix + it.key().mid(prefix.size())] = it.value();
+    }
     Q_INVOKABLE void notePopup(const QString &tab, const QUrl &url, bool blocked);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE QVariantList networkSample() const;

@@ -62,7 +62,7 @@ The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Secu
 | **Pop-ups** | Control future window-opening behavior; user-initiated actions are allowed by default. |
 | **Cookies** | Display the current third-party-cookie policy. Filtering is **profile-wide**, not a per-site switch. |
 | **Site storage** | Control the WebEngine localStorage setting; not comprehensive IndexedDB, Cache Storage, or service-worker management. |
-| **Network** | Show bounded sanitized request events and known block outcomes. Observation is **profile-scoped**, not a verified per-tab traffic count. |
+| **Network** | Human-readable resource types and filter decisions, HTTP/tracker/other categories, bounded profile-scoped samples. A 60-second tracker exception recreates one HTTPS document in a separate in-memory profile, with countdown and revoke. |
 
 **An icon has two independent jobs:** indicate the effective policy and signal a confirmed event. A pending request is visually distinct from an allowed capability, a blocked attempt, and recent activity. Glass hover panels identify the relevant scope and requesting origin when available.
 
@@ -133,6 +133,7 @@ Linux and macOS may use their corresponding Qt kits, but builds, packaging, and 
 Use the built-in local fixtures for deterministic regression checks:
 
 ```powershell
+./build/Release/cybou.exe --tracker-test
 ./build/Release/cybou.exe --transport-test
 ./build/Release/cybou.exe --security-test
 ./build/Release/cybou.exe --controlbar-test
@@ -168,3 +169,9 @@ Production HTTPS strict is always enabled; legacy global opt-outs and host-wide 
 The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
 
 The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
+
+### Temporary tracker exception
+
+The Network glass panel groups HTTP, tracker and other events, using resource names and clear explanations. Passing a filter is not proof of a successful load. Counts are scoped to the current profile's recent sample.
+
+If filtering breaks a loaded HTTPS page, explicit consent recreates that exact page in a separate off-the-record profile without ordinary cookies/cache. Tracker-list requests with matching firstParty origin pass for at most 60 seconds. Existing behavior restrictions are inherited, while device grants are not copied. The panel shows remaining seconds and immediate revoke. Reload, later navigation, expiry or revoke destroy the temporary context; other tabs retain tracker filtering. This mode does not combine with HTTP exceptions. See [ADR 0004](docs/ADR/0004-temporary-tracker-exceptions.md).

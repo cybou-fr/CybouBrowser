@@ -107,7 +107,7 @@ public:
     void setHttpsOnly(bool enabled) {
         const auto arguments = QCoreApplication::arguments();
         const bool test = arguments.contains("--smoke-test") || arguments.contains("--controlbar-test")
-            || arguments.contains("--security-test") || arguments.contains("--transport-test") || arguments.contains("--surface-test");
+            || arguments.contains("--security-test") || arguments.contains("--transport-test") || arguments.contains("--surface-test") || arguments.contains("--tracker-test");
         if (!enabled && !test) return;
         if (enabled == httpsOnly()) return;
         m_testHttp = !enabled;
@@ -167,10 +167,48 @@ public:
         const auto observer = observers.value(profile);
         return m_temporaryHttpProfiles.contains(profile) && observer && observer->canStartHttpNavigation(url);
     }
-    Q_INVOKABLE void releaseTemporaryHttpProfile(QObject *object) {
+    Q_INVOKABLE bool canRequestTemporaryTrackers(const QUrl &url) const {
+        const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
+        return (url.scheme() == "https" || fixture) && !url.host().isEmpty() && url.userInfo().isEmpty();
+    }
+    Q_INVOKABLE QObject *createTemporaryTrackerProfile(const QUrl &url) {
+        if (!canRequestTemporaryTrackers(url)) return nullptr;
+        const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
+        auto profile = new QQuickWebEngineProfile(this);
+        profile->setPersistentPermissionsPolicy(QQuickWebEngineProfile::PersistentPermissionsPolicy::AskEveryTime);
+        configureProfile(profile);
+        auto observer = observers.value(profile);
+        observer->setHttpsOnly(!fixture);
+        if (!profile->isOffTheRecord() || !observer->allowTrackersForDocument(url, fixture)) { profile->deleteLater(); return nullptr; }
+        m_temporaryTrackerProfiles.insert(profile);
+        auto expiry = new QTimer(profile);
+        expiry->setSingleShot(true); expiry->setTimerType(Qt::PreciseTimer);
+        connect(expiry, &QTimer::timeout, this, [this, guarded = QPointer<QQuickWebEngineProfile>(profile)] {
+            if (!guarded || !m_temporaryTrackerProfiles.contains(guarded)) return;
+            if (auto observer = observers.value(guarded)) observer->revokeTrackers();
+            emit temporaryTransportExpired(guarded);
+        });
+        expiry->start(60000);
+        return profile;
+    }
+    Q_INVOKABLE bool isTemporaryTrackerProfile(QObject *object) const {
+        return m_temporaryTrackerProfiles.contains(qobject_cast<QQuickWebEngineProfile *>(object));
+    }
+    Q_INVOKABLE bool canStartTrackerDocument(QObject *object, const QUrl &url) const {
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        auto observer = observers.value(profile);
+        return m_temporaryTrackerProfiles.contains(profile) && observer && observer->canStartTrackerDocument(url);
+    }
+    Q_INVOKABLE qint64 trackerRemainingMs(QObject *object) const {
+        auto observer = observers.value(qobject_cast<QQuickWebEngineProfile *>(object));
+        return observer ? observer->trackerRemainingMs() : 0;
+    }
+    Q_INVOKABLE void releaseTemporaryProfile(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
-        if (!m_temporaryHttpProfiles.remove(profile)) return;
-        if (auto observer = observers.value(profile)) observer->revokeHttpNavigation();
+        const bool http = m_temporaryHttpProfiles.remove(profile);
+        const bool trackers = m_temporaryTrackerProfiles.remove(profile);
+        if (!http && !trackers) return;
+        if (auto observer = observers.value(profile)) { observer->revokeHttpNavigation(); observer->revokeTrackers(); }
         profile->deleteLater();
     }
     bool blockTrackers() const { return settings.value("preferences/blockTrackers", true).toBool(); }
@@ -279,7 +317,7 @@ public:
         observers.insert(profile, observer);
         profile->setUrlRequestInterceptor(observer);
         emit preferencesChanged();
-        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); m_temporaryHttpProfiles.remove(profile); });
+        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); m_temporaryHttpProfiles.remove(profile); m_temporaryTrackerProfiles.remove(profile); });
     }
     Q_INVOKABLE bool clearCookies(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
@@ -383,5 +421,6 @@ private:
     }
     bool m_testHttp = false;
     QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
+    QSet<QQuickWebEngineProfile *> m_temporaryTrackerProfiles;
     mutable QSettings settings;
 };

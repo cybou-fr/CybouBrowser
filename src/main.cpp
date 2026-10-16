@@ -23,12 +23,15 @@
 
 int main(int argc, char *argv[])
 {
+    bool trackerTest = false;
+    for (int i = 1; i < argc; ++i) trackerTest |= QByteArray(argv[i]) == "--tracker-test";
+    if (trackerTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP google-analytics.com 127.0.0.1\" --no-proxy-server");
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU");
     app.setOrganizationName("CYBOU");
     const bool controlBarTest = app.arguments().contains("--controlbar-test");
-    const bool transportTest = app.arguments().contains("--transport-test");
+    const bool transportTest = app.arguments().contains("--transport-test") || trackerTest;
     const bool surfaceTest = app.arguments().contains("--surface-test");
     const bool securityTest = app.arguments().contains("--security-test");
     const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest || transportTest || surfaceTest;
@@ -65,9 +68,11 @@ int main(int argc, char *argv[])
                     const bool download = request.startsWith("GET /download ");
                     const bool transport = request.startsWith("GET /transport-document?");
                     const bool controls = request.startsWith("GET /controls ");
-                    const QByteArray body = download ? QByteArray("CYBOU download test\n") : transport ? QByteArray("<!doctype html><title>Transport document</title><h1>Temporary HTTP fixture</h1><script>Promise.all([fetch('/transport-asset'),fetch('http://localhost:") + QByteArray::number(socket->localPort()) + QByteArray("/cross-origin-http').catch(()=>null)]).then(()=>document.title='Transport ready')</script>") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
+                    const bool tracker = request.startsWith("GET /tracker-document?");
+                    const QByteArray trackerBody = QByteArray("<!doctype html><title>Tracker fixture</title><h1>Tracker filter fixture</h1><script>fetch('http://google-analytics.com:") + QByteArray::number(socket->localPort()) + QByteArray("/tracker-asset?private=query').then(r=>r.text()).then(()=>document.title='Tracker allowed').catch(()=>document.title='Tracker blocked')</script>");
+                    const QByteArray body = tracker ? trackerBody : download ? QByteArray("CYBOU download test\n") : transport ? QByteArray("<!doctype html><title>Transport document</title><h1>Temporary HTTP fixture</h1><script>Promise.all([fetch('/transport-asset'),fetch('http://localhost:") + QByteArray::number(socket->localPort()) + QByteArray("/cross-origin-http').catch(()=>null)]).then(()=>document.title='Transport ready')</script>") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
                     const auto cookie = request.startsWith("GET /page ") ? QByteArray("Set-Cookie: cybou_smoke=present; Path=/; SameSite=Lax\r\n") : QByteArray();
-                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: " + QByteArray(download ? "application/octet-stream" : "text/html") + "\r\n" + cookie + (download ? QByteArray("Content-Disposition: attachment; filename=cybou-smoke.txt\r\n") : QByteArray()) + "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: " + QByteArray(download ? "application/octet-stream" : "text/html") + "\r\n" + cookie + (download ? QByteArray("Content-Disposition: attachment; filename=cybou-smoke.txt\r\n") : QByteArray()) + "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
                     socket->disconnectFromHost();
                 });
             }
@@ -91,6 +96,7 @@ int main(int argc, char *argv[])
     translateControlBar();
     engine.rootContext()->setContextProperty("browserStore", &store);
     engine.rootContext()->setContextProperty("smokeMode", smokeTest);
+    engine.rootContext()->setContextProperty("trackerTestMode", trackerTest);
     engine.rootContext()->setContextProperty("smokeBaseUrl", QString("http://127.0.0.1:%1").arg(testServer.serverPort()));
     engine.rootContext()->setContextProperty("smokeDownloadPath", QDir::current().absoluteFilePath("build/test-downloads"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app, [](QObject *object, const QUrl &) {

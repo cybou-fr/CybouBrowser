@@ -8,11 +8,13 @@
 #include "DownloadPolicy.h"
 #include "PermissionTests.h"
 #include "HttpLeaseTests.h"
+#include "TrackerLeaseTests.h"
 #include "../browserstore.h"
 #include <QTemporaryDir>
 #include <QFile>
 
 inline int runSecurityTests(QGuiApplication &app, quint16 port) {
+    if (!runTrackerLeaseTests()) { qCritical() << "TRACKER_LEASE_TEST FAIL"; return 2; }
     if (!runHttpLeaseTests()) { qCritical() << "HTTP_LEASE_TEST FAIL"; return 2; }
     if (!runPermissionContextTests()) { qCritical() << "PERMISSION_CONTEXT_TEST FAIL"; return 2; }
     const struct { const char *url; const char *host; } addresses[] = {
@@ -89,6 +91,11 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         const QUrl publicHttps("https://example.org/path?q=1");
         const QUrl localHttp("http://localhost:8080/test");
         const QUrl ipHttp("http://127.0.0.1:3000/");
+        if (!store.canRequestTemporaryTrackers(publicHttps) || store.canRequestTemporaryTrackers(publicHttp)
+            || store.canRequestTemporaryTrackers(ipHttp) || store.canRequestTemporaryTrackers(QUrl("https://user:secret@example.org/"))) {
+            qCritical() << "TRACKER_PROFILE_POLICY_TEST FAIL"; return 2;
+        }
+        qInfo() << "TRACKER_PROFILE_POLICY_TEST PASS: production factory accepts HTTPS only, including denial of loopback HTTP and credentials";
 
         if (!store.httpsFirst()) { qCritical() << "HTTPS_FIRST_TEST: httpsFirst not default true"; return 2; }
         if (!store.shouldUpgradeToHttps(publicHttp)) { qCritical() << "HTTPS_FIRST_TEST: shouldUpgradeToHttps failed for publicHttp"; return 2; }

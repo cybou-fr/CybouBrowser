@@ -1,6 +1,6 @@
 # Roadmap и статус
 
-Статус исходного кода, 16.10.2026. Не считать наличие кода подтверждением поведения на публичном сайте.
+Статус исходного кода, 17.10.2026. Не считать наличие кода подтверждением поведения на публичном сайте.
 
 | Этап | Статус | Следующий gate |
 |---|---|---|
@@ -13,7 +13,8 @@
 | P1 сетевые события блокировки | implemented profile scope | реальная блокировка, bounded burst, zero secrets |
 | P1 event-driven network refresh | implemented | queued coalescing; timer только expiration |
 | P2 HTTPS deny default | implemented | strict без глобального opt-out; точный HTTP opt-in в отдельном профиле на 60 секунд |
-| P2 версионированный ads/tracker engine | planned | категории, false-positive fixtures, scoped exceptions |
+| P2 временное исключение трекеров | implemented | отдельный профиль, точный HTTPS-документ, 60 секунд, countdown/revoke; native gate в VALIDATION |
+| P2 версионированный ads/tracker engine | planned | полноценные списки, версии правил и false-positive fixtures |
 | P3 risk engine | planned | доказанные сигналы и JS-off до документа |
 | P4 proxy isolation | research / unsupported | независимый процесс, DNS/WebRTC/route leak tests |
 

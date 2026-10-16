@@ -29,6 +29,8 @@ Item {
     signal permissionResetRequested(string key)
     signal allowHttpRequested(string token)
     signal revokeHttpRequested(string token)
+    signal allowTrackersRequested(string token)
+    signal revokeTrackersRequested(string token)
     signal reloadRequested()
     implicitWidth: effectiveWidth; implicitHeight: 28
     function keys(first, last) {
@@ -139,6 +141,8 @@ Item {
         onReloadRequested: control.reloadRequested()
         onAllowHttpRequested: function(token) { control.allowHttpRequested(token) }
         onRevokeHttpRequested: function(token) { control.revokeHttpRequested(token) }
+        onAllowTrackersRequested: function(token) { control.allowTrackersRequested(token) }
+        onRevokeTrackersRequested: function(token) { control.revokeTrackersRequested(token) }
         onCookieRequested: browserStore.blockThirdPartyCookies = !browserStore.blockThirdPartyCookies
     }
     function testHttpAllowPoint() { return card.testHttpAllowPoint() }
@@ -148,6 +152,7 @@ Item {
         return false
     }
     function testCard() { return {key:selectedKey,pointerInside:card.pointerInside,visible:card.visible,pinned:pinned,x:card.x,y:card.y,width:card.width,height:card.height} }
+    function testTrackerPoint(revoke) { return card.testTrackerPoint(revoke) }
     function testFocus() { if (visibleCount > 3) icons.itemAt(3).forceActiveFocus() }
     function testFocusedKey() { const icon = icons.itemAt(rovingIndex); return icon && icon.activeFocus ? icon.capability.key : "" }
     function testInputPoint(key, kind) {
