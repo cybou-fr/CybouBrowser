@@ -60,3 +60,13 @@ The connection indicator becomes an explicit HTTP consent/revoke button for pend
 Release build PASS. Native `--surface-test` PASS, exit 0: actual mouse hover shows the custom GlassToolTip; downloads, bookmarks, history and settings match the content workspace at 1360×900 and 820×560. Drawer tops are at the page boundary (74px in the fixture), heights match the remaining workspace, and full-window modality/dimming is disabled. Navigation and tab captions share the styled item tooltip; no default attached ToolTip remains in QML. Tab drag and title double-click checks also pass in this run.
 
 Visually inspected the navigation tooltip, downloads at 1360px and settings at 820px: blue rounded hint without the native black/white-border style; drawers cover neither tabs nor address row. Evidence and all eight drawer screenshots: `docs/design/glass-surfaces/`.
+
+## Documentation reconciliation audit — 17 October 2026
+
+Reference source revision: `51559ca33e089eeebca3edfb49dff05710d1d84c` on `main`. This pass reconciled product vision, security, capability, Control Bar UX, architecture, roadmap, tests and README against the implementation. The new security/UX work is documented as **planned**, not built or tested. No binary, QML, C++ source, screenshot, or release package was changed by this documentation update.
+
+The above recorded Windows test logs remain valid **historical evidence from the developer's environment**, not new independent test executions. Current code: C++20, Qt 6.12/Windows Release was previously reported PASS; 11 inline capabilities with glass hover; C++ PermissionCoordinator with request identity and independent grants; strict production HTTPS with a 60-second exact HTTP temporary profile; profile-scoped sanitized network events and a small suffix-list filter.
+
+Newly documented concrete gaps: user explicit deny stored at top origin vs `shouldDeny` checking requester origin in cross-origin iframe; a 60-second grant expiry forcibly tears down a WebEngineView (can interrupt a long call); granted camera may receive a red brandColor despite the same color being used for deny; comprehensive ad/tracker classification and temporary per-site exceptions absent; per-tab network attribution, real hardware stream shutdown, OS suspend/resume, patch/update distribution and proxy/process isolation unverified.
+
+A real media run, security update regression, iframe policy fix, full ad/tracker engine, activity aggregator, Navigation Guard and restricted mode are **not validated** by any documentation changes. Acceptance details: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), [TEST_PLAN](TEST_PLAN.md) and [ROADMAP](ROADMAP.md).
