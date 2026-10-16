@@ -31,7 +31,7 @@ Native coordinator coverage (`--controlbar-test`): stale same-origin epoch denie
 | Реальные media | Mic, camera, combined AV, 5–30 минут звонка, sleep/resume, background | Нет ложного active indicator; отзыв/истечение действительно защищают; целевой UX предупреждает до разрушения документа |
 | Qt/Chromium | Обновление поддерживаемой Qt WebEngine, runtime sandbox, release flags | Нет insecure flags; security/smoke/permission/network регрессия пройдена |
 | Ads/tracker engine | Verified rules, corrupted update, rollback; login/video/payment/CAPTCHA/CDN | Категории соответствуют фактическим правилам; ограниченный CPU/memory; false positives проверены |
-| Site exception | 2 таба одного origin и 1 другой; независимые Ads/Trackers, TTL, Undo, close, reload | Только нужная категория и контекст; strict HTTPS и другие вкладки не затронуты |
+| Расширение site exception | Уже реализован `--tracker-test` для **tracker-only** отдельного профиля. Следующий gate: 2 таба одного origin и 1 другой; **независимые Ads/Trackers**, TTL, Undo, close, reload | Имеющиеся tracker-only тесты не доказывают independent Ads/Trackers; HTTPS и другие вкладки не затронуты |
 | Semantic events | Pending permission, grant, confirmed block, profile-only network sample, burst | Цвет и текст не выдают grant за recording; профильные данные не подписаны per-tab; bounded memory |
 | Navigation Guard | IDN homograph, redirect, IPv4/IPv6 LAN/loopback, DNS rebinding, обычный сайт | Проверяемые блокировки без навязчивых ложных тревог и без внешней утечки URL |
 | Restricted mode | Risk signal до перехода, скрипт с side effect, popups/download attempt | JS disabled до первого выполнения; ограничения отработали; профильная изоляция не объявлена proxy/process isolation |
