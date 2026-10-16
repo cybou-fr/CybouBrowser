@@ -107,7 +107,7 @@ public:
     void setHttpsOnly(bool enabled) {
         const auto arguments = QCoreApplication::arguments();
         const bool test = arguments.contains("--smoke-test") || arguments.contains("--controlbar-test")
-            || arguments.contains("--security-test") || arguments.contains("--transport-test");
+            || arguments.contains("--security-test") || arguments.contains("--transport-test") || arguments.contains("--surface-test");
         if (!enabled && !test) return;
         if (enabled == httpsOnly()) return;
         m_testHttp = !enabled;

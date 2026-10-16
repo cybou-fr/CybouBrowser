@@ -13,8 +13,13 @@ Drawer {
     property string statusText: ""
     signal clearRequested(bool cookies, bool cache, bool history, bool permissions, bool session)
     edge: Qt.RightEdge
+    parent: Overlay.overlay
+    property real workspaceTop: 0
+    property real workspaceHeight: parent.height - workspaceTop
     width: Math.min(520, parent.width - 40)
-    height: parent.height
+    y: workspaceTop
+    height: workspaceHeight
+    modal: false; dim: false
     background: Rectangle {
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#D80A1F38" }

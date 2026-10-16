@@ -1,0 +1,4 @@
+ENGINE 6.12.0 6.140.0 140.0.7339.225 security patch 152.0.7977.83
+TAB_DRAG_TEST PASS
+WINDOW_TITLE_TEST PASS: empty tab strip double click maximizes and restores last size
+SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820

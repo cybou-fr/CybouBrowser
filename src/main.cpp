@@ -29,8 +29,9 @@ int main(int argc, char *argv[])
     app.setOrganizationName("CYBOU");
     const bool controlBarTest = app.arguments().contains("--controlbar-test");
     const bool transportTest = app.arguments().contains("--transport-test");
+    const bool surfaceTest = app.arguments().contains("--surface-test");
     const bool securityTest = app.arguments().contains("--security-test");
-    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest || transportTest;
+    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest || transportTest || surfaceTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
     app.setApplicationVersion("0.8.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
@@ -135,7 +136,7 @@ int main(int argc, char *argv[])
     }
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
-        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest, transportTest] {
+        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest, transportTest, surfaceTest] {
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->requestActivate(); QCoreApplication::processEvents();
             QTest::mouseMove(dragWindow, QPoint(80, 300));
@@ -182,6 +183,43 @@ int main(int argc, char *argv[])
             }
             qInfo() << "WINDOW_TITLE_TEST PASS: empty tab strip double click maximizes and restores last size";
             dragWindow->resize(1360, 900);
+            if (surfaceTest) {
+                QMetaObject::invokeMethod(root, "cleanFeaturePreview");
+                const auto mapValue = [](const QVariant &value) {
+                    return value.canConvert<QJSValue>() ? value.value<QJSValue>().toVariant().toMap() : value.toMap();
+                };
+                QTest::mouseMove(dragWindow, QPoint(80, 300));
+                QTest::qWait(100);
+                QVariant hintPoint;
+                QMetaObject::invokeMethod(root, "surfaceHintPoint", Q_RETURN_ARG(QVariant, hintPoint));
+                const auto point = mapValue(hintPoint);
+                QTest::mouseMove(dragWindow, QPoint(point["x"].toInt(), point["y"].toInt()));
+                QTest::qWait(850);
+                QVariant hintVisible;
+                QMetaObject::invokeMethod(root, "surfaceHintVisible", Q_RETURN_ARG(QVariant, hintVisible));
+                if (!hintVisible.toBool()) { qCritical() << "SURFACE_TEST FAIL: glass tooltip not visible"; app.exit(2); return; }
+                dragWindow->grabWindow().save("build/glass-tooltip.png");
+                QTest::mouseMove(dragWindow, QPoint(80, 300));
+                for (const QSize size : {QSize(1360,900), QSize(820,560)}) {
+                    dragWindow->resize(size); QTest::qWait(100);
+                    for (const QString &section : {QString("Téléchargements"), QString("Favoris"), QString("Historique"), QString("settings")}) {
+                        QMetaObject::invokeMethod(root, "prepareSurfaceTest", Q_ARG(QVariant, section));
+                        QTest::qWait(300);
+                        QVariant state;
+                        QMetaObject::invokeMethod(root, "surfaceTestState", Q_RETURN_ARG(QVariant, state));
+                        const auto geometry = mapValue(state);
+                        if (!geometry["visible"].toBool() || geometry["pageY"].toDouble() < 70
+                            || qAbs(geometry["y"].toDouble()-geometry["pageY"].toDouble()) > 1
+                            || qAbs(geometry["height"].toDouble()-geometry["pageHeight"].toDouble()) > 1
+                            || geometry["modal"].toBool() || geometry["dim"].toBool()) {
+                            qCritical() << "SURFACE_TEST FAIL: drawer workspace bounds" << section << size << geometry; app.exit(2); return;
+                        }
+                        dragWindow->grabWindow().save(QString("build/drawer-%1-%2.png").arg(section).arg(size.width()));
+                    }
+                }
+                qInfo() << "SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820";
+                app.exit(0); return;
+            }
             QMetaObject::invokeMethod(root, "prepareSuggestionsSmokeTest");
             for (const char character : QByteArray("cybou-suggest")) QTest::keyClick(dragWindow, character);
             QTest::keyClick(dragWindow, Qt::Key_Down);

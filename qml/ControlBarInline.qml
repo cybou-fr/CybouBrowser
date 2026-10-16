@@ -108,7 +108,7 @@ Item {
         width: control.slotWidth; height: 28
         visible: control.overflowVisible
         text: "···"; hint: qsTr("Autres contrôles du site")
-        ToolTip.visible: hovered && !control.hasPopup
+        hintEnabled: !control.hasPopup
         focusPolicy: control.rovingIndex === control.visibleCount || activeFocus ? Qt.StrongFocus : Qt.ClickFocus
         onActiveFocusChanged: if (activeFocus) control.rovingIndex = control.visibleCount
         onClicked: { openTimer.stop(); card.close(); hoveredIcon = null; const point = mapToItem(control.popupHost, 0, height); overflow.x = Math.max(8, Math.min(control.popupHost.width - overflow.width - 8, point.x)); overflow.y = point.y + 4; overflow.present(control.hiddenKeys) }

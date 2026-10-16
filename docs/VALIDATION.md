@@ -54,3 +54,9 @@ Merged origin/main, retaining the updated README structure and C++20 requirement
 The unused ListView tab-strip area now explicitly receives title mouse events. A system drag starts only after the platform movement threshold, preserving double-click handling. Native tests PASS for small pointer movement, maximizing by double-click, restoring the previous 1100×720 size, and independent tab reordering. Actual system movement between monitors and maximized-window dragging remain manual Windows checks.
 
 The connection indicator becomes an explicit HTTP consent/revoke button for pending/temporary HTTP. Native transport suite PASS, exit 0: first consent through the glass panel, later consent and revoke through the new address-row button, isolated profile, stale consent, reload and 60-second expiry. Final Control Bar regression PASS, exit 0, 83,771 ms: separator placement and all eleven controls at four widths, address editing, glass hover, independent permission deadlines, timeout, smoke and PDF. The 820px layout and HTTP screenshot were visually inspected. Evidence: `docs/design/window-chrome/`.
+
+## Glass tooltips and workspace drawers (2026-10-17)
+
+Release build PASS. Native `--surface-test` PASS, exit 0: actual mouse hover shows the custom GlassToolTip; downloads, bookmarks, history and settings match the content workspace at 1360×900 and 820×560. Drawer tops are at the page boundary (74px in the fixture), heights match the remaining workspace, and full-window modality/dimming is disabled. Navigation and tab captions share the styled item tooltip; no default attached ToolTip remains in QML. Tab drag and title double-click checks also pass in this run.
+
+Visually inspected the navigation tooltip, downloads at 1360px and settings at 820px: blue rounded hint without the native black/white-border style; drawers cover neither tabs nor address row. Evidence and all eight drawer screenshots: `docs/design/glass-surfaces/`.

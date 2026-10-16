@@ -14,7 +14,7 @@ qt_add_resources(cybou "controlbar_icons" PREFIX "/" FILES ${CONTROL_BAR_ICONS})
 set_source_files_properties(qml/CybouTheme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(cybou URI Cybou VERSION 1.0
     SOURCES src/security/PermissionCoordinator.h src/security/PermissionCoordinator.cpp src/security/SiteContext.h src/security/PermissionLease.h src/controlbar/ControlBarController.h src/controlbar/ControlBarController.cpp src/controlbar/CapabilityModel.h src/controlbar/RequestObserver.h
-    QML_FILES qml/CybouTheme.qml qml/NewTabPage.qml qml/Main.qml qml/NavButton.qml qml/SettingsPanel.qml qml/AdaptiveAddress.qml qml/ControlBarInline.qml qml/ControlBarOverflow.qml qml/ControlBarIcon.qml qml/CapabilityPopover.qml qml/ControlBarHarness.qml qml/TransportHarness.qml qml/GlassButton.qml qml/GlassDialogBackground.qml qml/PolicyBanner.qml qml/FindBar.qml)
+    QML_FILES qml/CybouTheme.qml qml/NewTabPage.qml qml/Main.qml qml/NavButton.qml qml/GlassToolTip.qml qml/SettingsPanel.qml qml/AdaptiveAddress.qml qml/ControlBarInline.qml qml/ControlBarOverflow.qml qml/ControlBarIcon.qml qml/CapabilityPopover.qml qml/ControlBarHarness.qml qml/TransportHarness.qml qml/GlassButton.qml qml/GlassDialogBackground.qml qml/PolicyBanner.qml qml/FindBar.qml)
 target_include_directories(cybou PRIVATE src/controlbar src/security)
 qt_add_translations(cybou TS_FILES translations/cybou_ru.ts RESOURCE_PREFIX "/translations")
 target_link_libraries(cybou PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::WebEngineQuick Qt6::WebEngineCore Qt6::Network Qt6::Test)

@@ -405,6 +405,22 @@ ApplicationWindow {
         const p = httpButton.mapToItem(null, httpButton.width / 2, httpButton.height / 2)
         return {kind:"click", x:p.x, y:p.y}
     }
+    function prepareSurfaceTest(section) {
+        library.close(); settingsPanel.close()
+        if (section === "settings") settingsPanel.open()
+        else if (section.length) window.showLibrary(section)
+    }
+    function surfaceTestState() {
+        const panel = settingsPanel.visible ? settingsPanel : library
+        const page = window.contentItem.mapToItem(Overlay.overlay, 0, 0)
+        return {visible:panel.visible, y:panel.y, height:panel.height, pageY:page.y,
+            pageHeight:window.contentItem.height, modal:panel.modal, dim:panel.dim}
+    }
+    function surfaceHintPoint() {
+        const p = downloadsButton.mapToItem(null, downloadsButton.width / 2, downloadsButton.height / 2)
+        return {x:p.x,y:p.y}
+    }
+    function surfaceHintVisible() { return downloadsButton.hintVisible }
     function testTitleDragPoint() {
         const p = emptyTabDrag.mapToItem(null, emptyTabDrag.width / 2, emptyTabDrag.height / 2)
         return {x:p.x, y:p.y, width:emptyTabDrag.width}
@@ -846,9 +862,7 @@ ApplicationWindow {
                             }
                             NavButton { visible: !tabItem.isPinned; text: "×"; implicitWidth: 22; implicitHeight: 24; hint: "Fermer · Ctrl+W"; onClicked: closeTab(tabItem.index) }
                         }
-                        ToolTip.visible: tabMouse.containsMouse && !tabMouse.pressed
-                        ToolTip.delay: 700
-                        ToolTip.text: tabItem.label
+                        GlassToolTip { parent: tabItem; visible: tabMouse.containsMouse && !tabMouse.pressed; delay: 700; text: tabItem.label }
                         Menu {
                             id: tabContext
                             padding: 6
@@ -969,6 +983,11 @@ ApplicationWindow {
                         NavButton { text: bookmarked ? "★" : "☆"; hint: "Favori · Ctrl+D"; onClicked: bookmark() }
                     }
                 }
+                Item {
+                    Layout.preferredWidth: 1; Layout.preferredHeight: 22
+                    Layout.leftMargin: 8
+                    Rectangle { anchors.fill: parent; color: "#456080" }
+                }
                 ControlBarInline {
                     id: controlBar
                     controller: controlState; popupHost: Overlay.overlay
@@ -1006,7 +1025,8 @@ ApplicationWindow {
                 }
                 Item {
                     id: panelSeparator
-                    Layout.preferredWidth: 9; Layout.preferredHeight: 22
+                    Layout.preferredWidth: 1; Layout.preferredHeight: 22
+                    Layout.rightMargin: 8
                     Rectangle { anchors.centerIn: parent; width: 1; height: parent.height; color: "#456080" }
                 }
                 NavButton { id: downloadsButton; text: "↓"; hint: "Téléchargements · Ctrl+J"; onClicked: showLibrary("Téléchargements") }
@@ -1242,7 +1262,12 @@ ApplicationWindow {
     }
     Drawer {
         id: library
-        edge: Qt.RightEdge; width: Math.min(460, window.width - 60); height: window.height
+        parent: Overlay.overlay
+        edge: Qt.RightEdge; width: Math.min(460, window.width - 60)
+        y: window.contentItem.y
+        height: window.contentItem.height
+        modal: false; dim: false
+        onAboutToShow: settingsPanel.close()
         background: Rectangle {
             gradient: Gradient {
                 GradientStop { position: 0.0; color: "#D80A1F38" }
@@ -1461,6 +1486,9 @@ ApplicationWindow {
     }
     SettingsPanel {
         id: settingsPanel
+        workspaceTop: window.contentItem.y
+        workspaceHeight: window.contentItem.height
+        onAboutToShow: library.close()
         profile: window.currentProfile
         privateMode: window.privateMode
         onClearRequested: function(cookies, cache, history, permissions, session) { window.clearBrowsingData(cookies, cache, history, permissions, session) }

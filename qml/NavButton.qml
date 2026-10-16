@@ -4,13 +4,14 @@ import QtQuick.Controls
 Button {
     id: control
     property string hint: ""
+    property bool hintEnabled: true
+    readonly property bool hintVisible: glassHint.visible
     implicitWidth: 30
     implicitHeight: 28
     padding: 0
     hoverEnabled: true
     Accessible.name: hint.length ? hint : text
-    ToolTip.visible: hovered && hint.length > 0
-    ToolTip.text: hint
+    GlassToolTip { id: glassHint; parent: control; visible: control.hovered && control.enabled && control.hintEnabled && control.hint.length > 0; text: control.hint }
     scale: control.down ? 0.93 : control.hovered ? 1.05 : 1.0
     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
     contentItem: Text {
