@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(CybouBrowser VERSION 0.7.1 LANGUAGES CXX)
+project(CybouBrowser VERSION 0.8.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 WebEngineQuick WebEngineCore Network LinguistTools Test)
@@ -8,12 +8,13 @@ qt_add_executable(cybou src/main.cpp src/browserstore.h src/ui/AddressDisplay.h 
 if(WIN32)
     target_sources(cybou PRIVATE assets/cybou.rc)
 endif()
-qt_add_resources(cybou "brand" PREFIX "/" FILES assets/cybou.png assets/wallpaper.jpg assets/speaker.svg assets/speaker-muted.svg)
+qt_add_resources(cybou "brand" PREFIX "/" FILES assets/cybou.png assets/cybou-alpine-dawn-1920x1080.jpg assets/speaker.svg assets/speaker-muted.svg)
 file(GLOB CONTROL_BAR_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/controlbar/*.svg")
 qt_add_resources(cybou "controlbar_icons" PREFIX "/" FILES ${CONTROL_BAR_ICONS})
+set_source_files_properties(qml/CybouTheme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(cybou URI Cybou VERSION 1.0
     SOURCES src/controlbar/ControlBarController.h src/controlbar/ControlBarController.cpp src/controlbar/CapabilityModel.h src/controlbar/RequestObserver.h
-    QML_FILES qml/Main.qml qml/NavButton.qml qml/SettingsPanel.qml qml/AdaptiveAddress.qml qml/ControlBarInline.qml qml/ControlBarOverflow.qml qml/ControlBarIcon.qml qml/CapabilityPopover.qml qml/ControlBarHarness.qml)
+    QML_FILES qml/CybouTheme.qml qml/NewTabPage.qml qml/Main.qml qml/NavButton.qml qml/SettingsPanel.qml qml/AdaptiveAddress.qml qml/ControlBarInline.qml qml/ControlBarOverflow.qml qml/ControlBarIcon.qml qml/CapabilityPopover.qml qml/ControlBarHarness.qml)
 target_include_directories(cybou PRIVATE src/controlbar)
 qt_add_translations(cybou TS_FILES translations/cybou_ru.ts RESOURCE_PREFIX "/translations")
 target_link_libraries(cybou PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::WebEngineQuick Qt6::WebEngineCore Qt6::Network Qt6::Test)
