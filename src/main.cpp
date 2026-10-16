@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QJSValue>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QFile>
 #include <memory>
 #include "browserstore.h"
@@ -24,7 +25,7 @@ int main(int argc, char *argv[])
     app.setOrganizationName("CYBOU");
     const bool smokeTest = app.arguments().contains("--smoke-test");
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
-    app.setApplicationVersion("0.4.0");
+    app.setApplicationVersion("0.5.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
     QTcpServer testServer;
@@ -106,6 +107,21 @@ int main(int argc, char *argv[])
             QMetaObject::invokeMethod(root, "verifyDragSmokeTest", Q_RETURN_ARG(QVariant, dragged));
             if (!dragged.toBool()) { qCritical() << "TAB_DRAG_TEST FAIL" << points; app.exit(2); return; }
             qInfo() << "TAB_DRAG_TEST PASS";
+            QMetaObject::invokeMethod(root, "prepareSuggestionsSmokeTest");
+            auto sendKey = [dragWindow](int key, const QString &text = QString()) {
+                QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier, text);
+                QCoreApplication::sendEvent(dragWindow, &press);
+                QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier, text);
+                QCoreApplication::sendEvent(dragWindow, &release);
+                QCoreApplication::processEvents();
+            };
+            sendKey(Qt::Key_unknown, "cybou-suggest");
+            sendKey(Qt::Key_Down);
+            sendKey(Qt::Key_Return);
+            QVariant suggestionResult;
+            QMetaObject::invokeMethod(root, "verifySuggestionsSmokeTest", Q_RETURN_ARG(QVariant, suggestionResult));
+            if (!suggestionResult.toBool()) { qCritical() << "ADDRESS_SUGGESTIONS_TEST FAIL"; app.exit(2); return; }
+            qInfo() << "ADDRESS_SUGGESTIONS_TEST PASS";
             QVariant result;
             QMetaObject::invokeMethod(root, "runSmokeTest", Q_RETURN_ARG(QVariant, result));
             const bool passed = result.toBool();
@@ -140,11 +156,13 @@ int main(int argc, char *argv[])
                 if (state.toInt() < 0 || ++*attempts > 120 || success) {
                     poll->stop();
                     qInfo() << "CYBOU_SMOKE_TEST" << (success ? "PASS" : "FAIL");
+                    if (success) QMetaObject::invokeMethod(root, "prepareFeaturePreview");
                     QTimer::singleShot(700, &app, [root, &app, success] {
                         QFile pdf("build/test-downloads/cybou-smoke.pdf");
                         const bool validPdf = pdf.open(QIODevice::ReadOnly) && pdf.size() > 1000 && pdf.read(5) == "%PDF-";
                         qInfo() << "PDF_EXPORT_TEST" << (validPdf ? "PASS" : "FAIL");
                         if (auto window = qobject_cast<QQuickWindow *>(root)) window->grabWindow().save("build/smoke-preview.png");
+                        if (success) QMetaObject::invokeMethod(root, "cleanFeaturePreview");
                         app.exit(success && validPdf ? 0 : 2);
                     });
                 }

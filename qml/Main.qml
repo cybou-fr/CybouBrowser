@@ -35,6 +35,35 @@ ApplicationWindow {
     property bool closingApproved: false
     property var draggedTab: null
     property real dragPointerX: 0
+    property var suggestionRows: []
+    property int suggestionIndex: -1
+    function updateSuggestions() {
+        suggestionRows = browserStore.suggestions(address.text, !privateMode)
+        suggestionIndex = -1
+        if (address.activeFocus && suggestionRows.length) suggestionsPopup.open()
+        else suggestionsPopup.close()
+    }
+    function acceptAddress() {
+        const value = suggestionsPopup.visible && suggestionIndex >= 0 ? suggestionRows[suggestionIndex].url : address.text
+        suggestionsPopup.close()
+        navigate(value)
+    }
+    function pinnedCount() {
+        let count = 0
+        for (let i = 0; i < tabs.count; ++i) if (tabs.get(i).isPinned) count++
+        return count
+    }
+    function togglePin(index) {
+        const pin = !tabs.get(index).isPinned
+        tabs.setProperty(index, "isPinned", pin)
+        moveTab(index, pin ? pinnedCount() - 1 : pinnedCount(), true)
+        saveTimer.restart()
+    }
+    function toggleMute(index) { tabs.setProperty(index, "isMuted", !tabs.get(index).isMuted); saveTimer.restart() }
+    function restoreTab(entry) {
+        if (typeof entry === "string") addTab(entry)
+        else if (entry && entry.url) addTab(entry.url, entry)
+    }
     function showStatus(message) { statusLabel.text = message; statusPopup.open(); statusTimer.restart() }
     function activeDownloads() {
         for (const item of downloadItems) if (item && !item.isFinished) return true
@@ -163,6 +192,33 @@ ApplicationWindow {
         return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
     }
     function verifyDragSmokeTest() { return activeTab === 2 && currentView.url.toString() === smokeBaseUrl + "/drag0" }
+    function prepareSuggestionsSmokeTest() {
+        const url = smokeBaseUrl + "/cybou-suggest"
+        if (browserStore.isBookmarked(url)) browserStore.toggleBookmark(url, "")
+        browserStore.toggleBookmark(url, "CYBOU suggestion test")
+        address.forceActiveFocus(); address.selectAll()
+    }
+    function verifySuggestionsSmokeTest() {
+        const url = smokeBaseUrl + "/cybou-suggest"
+        const valid = currentView.url.toString() === url && !suggestionsPopup.visible
+        browserStore.toggleBookmark(url, "")
+        return valid
+    }
+    function prepareFeaturePreview() {
+        tabs.clear()
+        addTab("about:blank", {pinned: true})
+        addTab("about:blank", {muted: true})
+        tabs.setProperty(1, "label", "Espace de travail")
+        addTab("about:blank")
+        const url = smokeBaseUrl + "/preview"
+        if (!browserStore.isBookmarked(url)) browserStore.toggleBookmark(url, "CYBOU — Espace personnel")
+        address.forceActiveFocus(); address.text = "CYBOU"; updateSuggestions()
+    }
+    function cleanFeaturePreview() {
+        const url = smokeBaseUrl + "/preview"
+        if (browserStore.isBookmarked(url)) browserStore.toggleBookmark(url, "")
+        tabs.clear(); addTab(""); saveSession()
+    }
     property int smokeStage: 0
     property int smokePdfResult: 0
     property bool smokeLocalLoaded: false
@@ -266,6 +322,29 @@ ApplicationWindow {
             if (tabs.count !== 2) throw new Error("close tab")
             reopenTab()
             if (tabs.count !== 3 || currentView.url.toString() !== smokeBaseUrl + "/two") throw new Error("reopen tab")
+            togglePin(activeTab)
+            if (activeTab !== 0 || pinnedCount() !== 1 || currentView.url.toString() !== smokeBaseUrl + "/two") throw new Error("pin identity")
+            toggleMute(0)
+            if (!views.itemAt(0).audioMuted) throw new Error("mute tab")
+            addTab(smokeBaseUrl + "/normal")
+            moveTab(activeTab, 0)
+            if (activeTab !== 1 || !tabs.get(0).isPinned) throw new Error("pinned group boundary")
+            closeTab(0); reopenTab()
+            if (activeTab !== 0 || !tabs.get(0).isPinned || !currentView.audioMuted) throw new Error("reopen pinned muted tab")
+            saveSession()
+            const session = browserStore.session()
+            tabs.clear()
+            for (const entry of session) restoreTab(entry)
+            if (!tabs.get(0).isPinned || !views.itemAt(0).audioMuted) throw new Error("restore tab flags")
+            restoreTab("about:blank")
+            if (currentView.url.toString() !== "about:blank") throw new Error("legacy session format")
+            const suggestUrl = smokeBaseUrl + "/cybou-suggest-bookmark"
+            browserStore.clearHistory()
+            browserStore.toggleBookmark(suggestUrl, "CYBOU suggest")
+            browserStore.recordVisit(suggestUrl, "CYBOU suggest")
+            browserStore.recordVisit(smokeBaseUrl + "/cybou-suggest-history", "CYBOU suggest")
+            if (browserStore.suggestions("cybou-suggest", true).length !== 2 || browserStore.suggestions("cybou-suggest", false).length !== 1) throw new Error("private suggestions or deduplication")
+            browserStore.toggleBookmark(suggestUrl, "")
             browserStore.toggleBookmark("https://example.org/test", "Test")
             if (!browserStore.isBookmarked("https://example.org/test")) throw new Error("bookmark add")
             browserStore.toggleBookmark("https://example.org/test", "Test")
@@ -295,9 +374,11 @@ ApplicationWindow {
         } catch (error) { console.error("SMOKE:", error); return false }
     }
 
-    function addTab(url) {
-        tabs.append({ initialUrl: url || "about:blank", label: "Nouvel onglet", favicon: "" })
-        activeTab = tabs.count - 1
+    function addTab(url, options) {
+        const pinned = options ? !!options.pinned : false
+        const index = pinned ? pinnedCount() : tabs.count
+        tabs.insert(index, { initialUrl: url || "about:blank", label: "Nouvel onglet", favicon: "", isPinned: pinned, isMuted: options ? !!options.muted : false, audible: false })
+        activeTab = index
         tabStrip.positionViewAtIndex(activeTab, ListView.Contain)
         saveTimer.restart()
     }
@@ -305,7 +386,7 @@ ApplicationWindow {
         const view = views.itemAt(index)
         if (pdfBusy && view === pdfTarget) { showStatus("L’export PDF est en cours."); return }
         if (view === pendingPermissionView) cancelPermission()
-        if (!privateMode && view) closedTabs = closedTabs.concat([view.url.toString()])
+        if (!privateMode && view) closedTabs = closedTabs.concat([{url: view.url.toString(), pinned: tabs.get(index).isPinned, muted: tabs.get(index).isMuted}])
         const next = activeTab > index ? activeTab - 1 : Math.min(activeTab, tabs.count - 2)
         tabs.remove(index)
         activeTab = Math.max(0, next)
@@ -316,10 +397,12 @@ ApplicationWindow {
         if (!closedTabs.length) return
         const url = closedTabs[closedTabs.length - 1]
         closedTabs = closedTabs.slice(0, -1)
-        addTab(url)
+        restoreTab(url)
     }
-    function moveTab(from, to) {
+    function moveTab(from, to, allowGroupChange) {
         if (to < 0 || to >= tabs.count) return
+        if (!allowGroupChange) to = tabs.get(from).isPinned ? Math.min(to, pinnedCount() - 1) : Math.max(to, pinnedCount())
+        if (from === to) return
         const selected = activeTab
         tabs.move(from, to, 1)
         if (selected === from) activeTab = to
@@ -332,11 +415,12 @@ ApplicationWindow {
         let urls = []
         for (let i = 0; i < views.count; ++i) {
             const view = views.itemAt(i)
-            if (view) urls.push(view.url.toString())
+            if (view) urls.push({url: view.url.toString(), pinned: tabs.get(i).isPinned, muted: tabs.get(i).isMuted})
         }
         browserStore.saveSession(urls)
     }
     function navigate(value) {
+        suggestionsPopup.close()
         const input = value.trim()
         if (!input || !currentView) return
         let target
@@ -391,7 +475,7 @@ ApplicationWindow {
         else persistentProfile = normalPrototype.createObject(window).instance()
         browserStore.configureProfile(activeProfile)
         const saved = !privateMode && browserStore.restoreSession ? browserStore.session() : []
-        for (let i = 0; i < saved.length; ++i) addTab(saved[i])
+        for (let i = 0; i < saved.length; ++i) restoreTab(saved[i])
         if (!tabs.count) addTab("")
         restoring = false
     }
@@ -410,6 +494,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+,"; onActivated: settingsPanel.open() }
     Shortcut { sequence: "Ctrl+O"; onActivated: openFileDialog.open() }
     Shortcut { sequence: "Ctrl+P"; onActivated: exportPdf() }
+    Shortcut { sequence: "Ctrl+M"; onActivated: toggleMute(activeTab) }
     Shortcut { sequence: "Alt+Left"; onActivated: if (currentView) currentView.goBack() }
     Shortcut { sequence: "Alt+Right"; onActivated: if (currentView) currentView.goForward() }
     Shortcut { sequence: "F11"; onActivated: visibility === Window.FullScreen ? showNormal() : showFullScreen() }
@@ -438,7 +523,10 @@ ApplicationWindow {
                         required property int index
                         required property string label
                         required property string favicon
-                        width: Math.max(112, Math.min(200, tabStrip.width / Math.min(tabs.count, 5)))
+                        required property bool isPinned
+                        required property bool isMuted
+                        required property bool audible
+                        width: isPinned ? (isMuted || audible ? 66 : 42) : Math.max(112, Math.min(200, tabStrip.width / Math.min(tabs.count, 5)))
                         height: chromeControlHeight; radius: 7
                         color: activeTab === index ? "white" : tabMouse.containsMouse ? "#F0F3F8" : "transparent"
                         MouseArea {
@@ -470,11 +558,22 @@ ApplicationWindow {
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 9; anchors.rightMargin: 3; spacing: 6
                             Image { source: tabItem.favicon || "qrc:/assets/cybou.png"; Layout.preferredWidth: 15; Layout.preferredHeight: 15; sourceSize.width: 32; sourceSize.height: 32 }
-                            Text { text: tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: "#0D2547"; font.pixelSize: 12 }
-                            NavButton { text: "×"; implicitWidth: 22; implicitHeight: 24; hint: "Fermer · Ctrl+W"; onClicked: closeTab(tabItem.index) }
+                            Text { visible: !tabItem.isPinned; text: tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: "#0D2547"; font.pixelSize: 12 }
+                            NavButton {
+                                visible: tabItem.isMuted || tabItem.audible; implicitWidth: 22; implicitHeight: 24
+                                hint: tabItem.isMuted ? "Réactiver le son" : "Couper le son"
+                                contentItem: Image { source: tabItem.isMuted ? "qrc:/assets/speaker-muted.svg" : "qrc:/assets/speaker.svg"; sourceSize.width: 16; sourceSize.height: 16; fillMode: Image.PreserveAspectFit }
+                                onClicked: toggleMute(tabItem.index)
+                            }
+                            NavButton { visible: !tabItem.isPinned; text: "×"; implicitWidth: 22; implicitHeight: 24; hint: "Fermer · Ctrl+W"; onClicked: closeTab(tabItem.index) }
                         }
+                        ToolTip.visible: tabMouse.containsMouse && !tabMouse.pressed
+                        ToolTip.delay: 700
+                        ToolTip.text: tabItem.label
                         Menu {
                             id: tabContext
+                            MenuItem { text: tabItem.isPinned ? "Désépingler l’onglet" : "Épingler l’onglet"; onTriggered: togglePin(tabItem.index) }
+                            MenuItem { text: tabItem.isMuted ? "Réactiver le son" : "Couper le son"; onTriggered: toggleMute(tabItem.index) }
                             MenuItem { text: "Déplacer à gauche"; enabled: tabItem.index > 0; onTriggered: moveTab(tabItem.index, tabItem.index - 1) }
                             MenuItem { text: "Déplacer à droite"; enabled: tabItem.index < tabs.count - 1; onTriggered: moveTab(tabItem.index, tabItem.index + 1) }
                             MenuItem { text: "Dupliquer"; onTriggered: addTab(views.itemAt(tabItem.index).url.toString()) }
@@ -507,6 +606,7 @@ ApplicationWindow {
                 NavButton { text: currentView && currentView.loading ? "×" : "↻"; hint: "Actualiser / arrêter"; onClicked: currentView.loading ? currentView.stop() : currentView.reload() }
                 NavButton { text: "⌂"; hint: "Accueil"; onClicked: currentView.url = "about:blank" }
                 Rectangle {
+                    id: addressContainer
                     Layout.fillWidth: true; implicitHeight: chromeControlHeight; color: address.activeFocus ? "#FFFFFF" : "#F0F3F8"; radius: 7
                     border.color: address.activeFocus ? "#8097B8" : "#E8EDF4"
                     RowLayout {
@@ -519,8 +619,15 @@ ApplicationWindow {
                             placeholderText: "Rechercher ou saisir une adresse"
                             color: "#0D2547"; font.pixelSize: 13; selectByMouse: true
                             background: Item {}
-                            onAccepted: navigate(text)
-                            onActiveFocusChanged: if (!activeFocus) refreshAddress()
+                            onAccepted: window.acceptAddress()
+                            onTextEdited: window.updateSuggestions()
+                            onActiveFocusChanged: if (!activeFocus) { suggestionsPopup.close(); refreshAddress() }
+                            Keys.onPressed: function(event) {
+                                if (suggestionsPopup.visible && (event.key === Qt.Key_Down || event.key === Qt.Key_Up)) {
+                                    suggestionIndex = event.key === Qt.Key_Down ? (suggestionIndex + 1) % suggestionRows.length : (suggestionIndex < 0 ? suggestionRows.length - 1 : (suggestionIndex + suggestionRows.length - 1) % suggestionRows.length)
+                                    event.accepted = true
+                                } else if (event.key === Qt.Key_Escape && suggestionsPopup.visible) { suggestionsPopup.close(); event.accepted = true }
+                            }
                         }
                         NavButton { text: bookmarked ? "★" : "☆"; hint: "Favori · Ctrl+D"; onClicked: bookmark() }
                     }
@@ -571,10 +678,13 @@ ApplicationWindow {
             id: web
             required property int index
             required property string initialUrl
+            required property bool isMuted
             anchors.fill: parent
             visible: activeTab === index && url.toString() !== "about:blank"
             url: initialUrl
             profile: privateMode ? privateProfile : persistentProfile
+            audioMuted: isMuted
+            onRecentlyAudibleChanged: function(value) { if (index < tabs.count) tabs.setProperty(index, "audible", value) }
             settings.javascriptCanOpenWindows: true
             settings.localContentCanAccessRemoteUrls: false
             settings.localContentCanAccessFileUrls: false
@@ -632,7 +742,7 @@ ApplicationWindow {
             }
             Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#8491A5"; font.pixelSize: 12 }
         }
-        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.4"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
+        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.5"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
     }
     Drawer {
         id: library
@@ -680,6 +790,42 @@ ApplicationWindow {
                     }
                 }
                 Label { anchors.centerIn: parent; visible: parent.count === 0; text: "Rien ici pour le moment"; color: "#8491A5" }
+            }
+        }
+    }
+    Popup {
+        id: suggestionsPopup
+        parent: addressContainer
+        x: 0; y: addressContainer.height + 6
+        width: addressContainer.width
+        padding: 6; focus: false; modal: false
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle { color: "white"; radius: 10; border.color: "#D8E1ED" }
+        onClosed: suggestionIndex = -1
+        contentItem: Column {
+            spacing: 2
+            Repeater {
+                model: suggestionRows
+                delegate: Button {
+                    id: suggestionButton
+                    required property var modelData
+                    required property int index
+                    width: suggestionsPopup.availableWidth; height: 48
+                    hoverEnabled: true; focusPolicy: Qt.NoFocus
+                    Accessible.name: modelData.title + " " + modelData.url
+                    background: Rectangle { radius: 7; color: suggestionIndex === suggestionButton.index || suggestionButton.hovered ? "#EAF0F8" : "transparent" }
+                    contentItem: RowLayout {
+                        spacing: 12
+                        Label { text: suggestionButton.modelData.kind === "Favori" ? "☆" : "↶"; color: "#65758E"; font.pixelSize: 20 }
+                        ColumnLayout {
+                            Layout.fillWidth: true; spacing: 2
+                            Label { Layout.fillWidth: true; text: suggestionButton.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: "#0D2547"; font.pixelSize: 12 }
+                            Label { Layout.fillWidth: true; text: suggestionButton.modelData.url; textFormat: Text.PlainText; elide: Text.ElideRight; color: "#65758E"; font.pixelSize: 11 }
+                        }
+                        Label { text: suggestionButton.modelData.kind; color: "#8491A5"; font.pixelSize: 10 }
+                    }
+                    onClicked: window.navigate(modelData.url)
+                }
             }
         }
     }
@@ -773,7 +919,7 @@ ApplicationWindow {
         Label { width: parent.width; wrapMode: Text.WordWrap; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
     }
     Dialog {
-        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.4"; modal: true; standardButtons: Dialog.Ok
+        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.5"; modal: true; standardButtons: Dialog.Ok
         Label { width: parent.width; wrapMode: Text.WordWrap; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {
@@ -803,5 +949,3 @@ ApplicationWindow {
         }
     }
 }
-
-

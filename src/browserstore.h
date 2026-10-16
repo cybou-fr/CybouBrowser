@@ -10,6 +10,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QSet>
 #include <memory>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
@@ -130,6 +131,25 @@ public:
         }
     }
     Q_INVOKABLE void newPrivateWindow() { emit privateWindowRequested(); }
+    Q_INVOKABLE QVariantList suggestions(const QString &query, bool includeHistory) const {
+        const auto needle = query.trimmed();
+        if (needle.isEmpty()) return {};
+        QVariantList result;
+        QSet<QString> seen;
+        auto appendMatches = [&](const QVariantList &items, const QString &kind) {
+            for (const auto &item : items) {
+                auto row = item.toMap();
+                const auto url = row.value("url").toString();
+                const auto title = row.value("title").toString();
+                if (!isWebUrl(url) || seen.contains(url) || (!url.contains(needle, Qt::CaseInsensitive) && !title.contains(needle, Qt::CaseInsensitive))) continue;
+                row["kind"] = kind; result.append(row); seen.insert(url);
+                if (result.size() >= 8) break;
+            }
+        };
+        appendMatches(bookmarks(), "Favori");
+        if (includeHistory && result.size() < 8) appendMatches(history(), "Historique");
+        return result;
+    }
     Q_INVOKABLE bool isBookmarked(const QString &url) const {
         for (const auto &item : bookmarks()) if (item.toMap().value("url").toString() == url) return true;
         return false;

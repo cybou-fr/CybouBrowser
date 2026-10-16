@@ -1,4 +1,4 @@
-# CYBOU Browser 0.4
+# CYBOU Browser 0.5
 
 Native C++17 / Qt Quick browser using Qt WebEngine. Navy, white and red identity follows the supplied CYBOU sheet. The compass/shield icon was reconstructed from that reference with the built-in imagegen tool. assets/cybou.png is embedded in the app; assets/cybou.ico contains 16–256 px Windows icon sizes embedded through assets/cybou.rc.
 
@@ -20,6 +20,8 @@ Linux/macOS: configure with the matching Qt kit and compiler. Source structure i
 - Combined draggable tab/title bar; minimize, maximize/restore, close, edge resizing and F11 fullscreen.
 - Scrollable tabs, mouse drag reordering with edge autoscroll, favicons, middle-click close, duplicate and move-left/right menu, reopen closed tabs and keyboard switching. Both browser bars remain 36 logical px high, with 28 px tab/address controls.
 - URL/search input, back/forward, stop/reload, home and zoom.
+- Address suggestions from local bookmarks and history, deduplicated and limited to 8 results. Up/Down select, Enter opens, Escape dismisses. No search query is sent to a suggestion service; private windows suggest bookmarks only.
+- Pinned tabs stay compact on the left; drag reordering stays within pinned/unpinned groups. Pin and mute controls are in the tab menu. Sound indicators appear on audible/muted tabs; Ctrl+M toggles the current tab. Pinned/muted states survive session restoration and reopening a closed tab. Existing URL-only sessions remain compatible.
 - Persistent bookmarks, latest 1000 history entries, filterable library and confirmed history deletion.
 - Configurable ordinary session restoration. Private windows are independent, each with an isolated in-memory profile destroyed when its window closes. Ordinary tabs stay open; private visits never enter history/session storage.
 - Downloads to a configurable directory, optional save-location dialog, progress, pause/resume, cancellation, explicit file opening and folder access. Files never open automatically. Download list and resumability last for the window lifetime; interrupted-download recovery after a restart is not implemented. Closing an active transfer or PDF export asks for confirmation.
@@ -29,7 +31,7 @@ Linux/macOS: configure with the matching Qt kit and compiler. Source structure i
 - Settings: DuckDuckGo/Google/Bing/Brave, startup restoration, third-party cookie blocking, per-profile cleanup and saved site permissions.
 - Icon in Windows executable, application window, tab fallback and start page.
 
-Shortcuts: Ctrl+L address, Ctrl+T new tab, Ctrl+W close, Ctrl+Shift+T reopen, Ctrl+Tab / Ctrl+Shift+Tab switch, Ctrl+D bookmark, Ctrl+H history, Ctrl+J downloads, Ctrl+F find, Ctrl+Shift+N private window, Ctrl+, settings, Ctrl+O local file, Ctrl+P PDF export, Ctrl+R reload, Alt+Left/Right navigation, F11 fullscreen. Start directly in private mode with --private.
+Shortcuts: Ctrl+L address, Ctrl+T new tab, Ctrl+W close, Ctrl+Shift+T reopen, Ctrl+Tab / Ctrl+Shift+Tab switch, Ctrl+D bookmark, Ctrl+H history, Ctrl+J downloads, Ctrl+F find, Ctrl+Shift+N private window, Ctrl+, settings, Ctrl+O local file, Ctrl+P PDF export, Ctrl+M mute tab, Ctrl+R reload, Alt+Left/Right navigation, F11 fullscreen. Start directly in private mode with --private.
 
 ## Privacy and development limits
 
@@ -51,3 +53,5 @@ $env:QT_FORCE_STDERR_LOGGING = '1'
 ```
 
 Uses a separate QSettings organization and WebEngine storage name. Checks tab dragging with mouse events, close/reopen, bookmarks, history, preference updates, independent private windows and destruction of their profiles. A loopback-only HTTP fixture checks page loading, find matches, a real permission request and grant, cookie removal, permission reset, cache completion, PDF output signature, local-file loading, and a 4 MiB download with pause/resume and cancelled window closure. Artifacts go to build/test-downloads. Produces build/smoke-preview.png; exits 0 on success and 2 on test failure. No external sites required. Native OS file/folder dialog interaction is not automated by this test.
+
+Version 0.5 also checks address suggestions via keyboard events, deduplication/private history exclusion, pinned group boundaries, mute binding, tab-state restoration and compatibility with URL-only sessions. The final preview shows pinned/muted tabs and suggestions using temporary fixture data, removed after capture.
