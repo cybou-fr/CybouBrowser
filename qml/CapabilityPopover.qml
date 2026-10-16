@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 
 Popup {
     id: card
@@ -17,7 +18,7 @@ Popup {
     height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    background: Rectangle { color: "#F0203550"; radius: 15; border.color: "#70B6CDE5" }
+    background: Rectangle { color: "#F2081528"; radius: 16; border.color: "#224775"; border.width: 1.5 }
     contentItem: ScrollView {
         implicitHeight: content.implicitHeight
         contentWidth: availableWidth
@@ -28,13 +29,50 @@ Popup {
         width: parent.width
         spacing: 10
         RowLayout {
-            Label { text: card.capability.title || ""; color: "white"; font.bold: true; font.pixelSize: 15; Layout.fillWidth: true }
-            Button { text: "×"; implicitWidth: 28; implicitHeight: 28; onClicked: card.close(); Accessible.name: qsTr("Fermer les détails") }
+            spacing: 10
+            Rectangle {
+                width: 36; height: 36; radius: 8
+                color: "#122540"; border.color: "#304D75"; border.width: 1
+                Image {
+                    id: popGlyph
+                    anchors.centerIn: parent; width: 20; height: 20
+                    source: card.capability.key ? "qrc:/assets/controlbar/" + card.capability.key + ".svg" : ""
+                    sourceSize.width: 36; sourceSize.height: 36
+                    fillMode: Image.PreserveAspectFit; visible: false
+                }
+                MultiEffect {
+                    anchors.fill: popGlyph; source: popGlyph; colorization: 1
+                    colorizationColor: {
+                        switch (card.capability.key) {
+                        case "camera": return "#FF4D4D"
+                        case "mic": return "#10B981"
+                        case "location": return "#38BDF8"
+                        case "notifications": return "#F59E0B"
+                        case "javascript": return "#10B981"
+                        case "popups": return "#FB923C"
+                        case "cookies": return "#C084FC"
+                        case "storage": return "#818CF8"
+                        case "clipboard": return "#38BDF8"
+                        case "network": return "#2DD4BF"
+                        default: return "#94A3B8"
+                        }
+                    }
+                }
+            }
+            ColumnLayout {
+                Layout.fillWidth: true; spacing: 1
+                Label { text: card.capability.title || ""; color: "white"; font.bold: true; font.pixelSize: 15 }
+                Label { text: card.capability.origin || qsTr("Page locale"); textFormat: Text.PlainText; color: "#7DD3FC"; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
+            }
+            Button {
+                text: "×"; implicitWidth: 26; implicitHeight: 26; onClicked: card.close(); Accessible.name: qsTr("Fermer les détails")
+                contentItem: Text { text: "×"; color: parent.hovered ? "#FFFFFF" : "#94A3B8"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { radius: 6; color: parent.hovered ? "#E11D2E" : "#142948" }
+            }
         }
-        Label { Layout.fillWidth: true; text: card.capability.scope || ""; color: "#A9C1DC"; font.pixelSize: 11; wrapMode: Text.WordWrap }
-        Label { Layout.fillWidth: true; text: card.capability.origin || qsTr("Page locale"); textFormat: Text.PlainText; color: "#D4E4F7"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
+        Label { Layout.fillWidth: true; text: card.capability.scope || ""; color: "#94A3B8"; font.pixelSize: 11; wrapMode: Text.WordWrap }
         Label { Layout.fillWidth: true; text: card.capability.pending ? qsTr("Demande d’accès reçue") : card.capability.key === "network" ? qsTr("Observation du profil") : card.capability.key === "cookies" ? qsTr("Politique du profil") : [qsTr("Toujours demander"), qsTr("Autorisé"), qsTr("Bloqué pour les prochaines demandes"), qsTr("Fonction indisponible"), qsTr("Recharger pour appliquer")][card.capability.policy || 0]; color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true }
-        Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#C4D6EB"; font.pixelSize: 12; wrapMode: Text.WordWrap }
+        Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
         Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
             visible: !!card.capability.pending

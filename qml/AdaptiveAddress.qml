@@ -7,8 +7,9 @@ TextField {
     signal cancelEdit()
     topPadding: 0; bottomPadding: 0; leftPadding: 4; rightPadding: 4
     placeholderText: activeFocus ? qsTr("Rechercher ou saisir une adresse") : ""
-    color: activeFocus ? "#0D2547" : "transparent"
-    selectionColor: "#D7E4F5"; selectedTextColor: "#0D2547"
+    placeholderTextColor: "#64748B"
+    color: activeFocus ? "#FFFFFF" : "transparent"
+    selectionColor: "#1D4ED8"; selectedTextColor: "#FFFFFF"
     font.pixelSize: 13; selectByMouse: true
     background: Item {}
     Accessible.name: qsTr("Adresse et recherche")
@@ -18,7 +19,7 @@ TextField {
         verticalAlignment: Text.AlignVCenter
         text: field.displayHost || qsTr("Rechercher ou saisir une adresse")
         textFormat: Text.PlainText; elide: Text.ElideRight
-        color: field.displayHost.length ? "#0D2547" : "#738197"
+        color: field.displayHost.length ? "#F1F5F9" : "#64748B"
         font: field.font
     }
     MouseArea {

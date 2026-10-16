@@ -8,7 +8,7 @@ qt_add_executable(cybou src/main.cpp src/browserstore.h src/ui/AddressDisplay.h 
 if(WIN32)
     target_sources(cybou PRIVATE assets/cybou.rc)
 endif()
-qt_add_resources(cybou "brand" PREFIX "/" FILES assets/cybou.png assets/speaker.svg assets/speaker-muted.svg)
+qt_add_resources(cybou "brand" PREFIX "/" FILES assets/cybou.png assets/wallpaper.jpg assets/speaker.svg assets/speaker-muted.svg)
 file(GLOB CONTROL_BAR_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/controlbar/*.svg")
 qt_add_resources(cybou "controlbar_icons" PREFIX "/" FILES ${CONTROL_BAR_ICONS})
 qt_add_qml_module(cybou URI Cybou VERSION 1.0

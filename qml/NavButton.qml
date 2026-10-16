@@ -13,13 +13,15 @@ Button {
     ToolTip.text: hint
     contentItem: Text {
         text: control.text
-        color: control.enabled ? "#0D2547" : "#AAB3C1"
-        font.pixelSize: 18
+        color: control.enabled ? (control.hovered ? "#FFFFFF" : "#A0B3D0") : "#41536E"
+        font.pixelSize: 17
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
     background: Rectangle {
         radius: 7
-        color: control.down ? "#DCE3ED" : control.hovered ? "#E8EDF4" : "transparent"
+        color: control.down ? "#1D3B66" : control.hovered ? "#142948" : "transparent"
+        border.width: control.hovered ? 1 : 0
+        border.color: "#1E4273"
     }
 }

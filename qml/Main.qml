@@ -610,7 +610,7 @@ ApplicationWindow {
         spacing: 0
         Rectangle {
             Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight
-            color: privateMode ? "#D9DDEC" : "#E5EBF3"
+            color: privateMode ? "#060F1E" : "#081325"
             MouseArea { anchors.fill: parent; onPressed: window.startSystemMove(); onDoubleClicked: window.maximizeToggle() }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: 8
@@ -634,7 +634,9 @@ ApplicationWindow {
                         required property bool audible
                         width: isPinned ? (isMuted || audible ? 66 : 42) : Math.max(112, Math.min(200, tabStrip.width / Math.min(tabs.count, 5)))
                         height: chromeControlHeight; radius: 7
-                        color: activeTab === index ? "white" : tabMouse.containsMouse ? "#F0F3F8" : "transparent"
+                        color: activeTab === index ? "#122A4E" : tabMouse.containsMouse ? "#0E213B" : "transparent"
+                        border.width: activeTab === index ? 1 : 0
+                        border.color: "#1E4273"
                         MouseArea {
                             id: tabMouse
                             anchors.fill: parent; hoverEnabled: true
@@ -664,7 +666,7 @@ ApplicationWindow {
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 9; anchors.rightMargin: 3; spacing: 6
                             Image { source: tabItem.favicon || "qrc:/assets/cybou.png"; Layout.preferredWidth: 15; Layout.preferredHeight: 15; sourceSize.width: 32; sourceSize.height: 32 }
-                            Text { visible: !tabItem.isPinned; text: tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: "#0D2547"; font.pixelSize: 12 }
+                            Text { visible: !tabItem.isPinned; text: tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: activeTab === tabItem.index ? "#FFFFFF" : "#8FA3BF"; font.bold: activeTab === tabItem.index; font.pixelSize: 12 }
                             NavButton {
                                 visible: tabItem.isMuted || tabItem.audible; implicitWidth: 22; implicitHeight: 24
                                 hint: tabItem.isMuted ? "Réactiver le son" : "Couper le son"
@@ -689,7 +691,7 @@ ApplicationWindow {
                     }
                 }
                 NavButton { text: "+"; hint: "Nouvel onglet · Ctrl+T"; onClicked: addTab("") }
-                Label { visible: privateMode; text: "PRIVÉ"; color: "#526080"; font.pixelSize: 10; padding: 8 }
+                Label { visible: privateMode; text: "PRIVÉ"; color: "#8FA3BF"; font.pixelSize: 10; padding: 8 }
                 Item { Layout.preferredWidth: 18 }
                 NavButton { text: "−"; hint: "Réduire"; implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.showMinimized() }
                 NavButton { text: window.visibility === Window.Maximized ? "❐" : "□"; hint: "Agrandir / restaurer"; implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.maximizeToggle() }
@@ -698,13 +700,15 @@ ApplicationWindow {
                     text: "×"; implicitWidth: 38; implicitHeight: chromeRowHeight; padding: 0; hoverEnabled: true
                     Accessible.name: "Fermer CYBOU"
                     background: Rectangle { color: closeWindow.hovered ? "#E11D2E" : "transparent" }
-                    contentItem: Text { text: "×"; color: closeWindow.hovered ? "white" : "#0D2547"; font.pixelSize: 20; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    contentItem: Text { text: "×"; color: closeWindow.hovered ? "white" : "#8FA3BF"; font.pixelSize: 18; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                     onClicked: window.close()
                 }
             }
         }
         Rectangle {
-            Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight; color: "white"
+            Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight
+            color: "#0A182F"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#11243E" }
             RowLayout {
                 id: navRow
                 anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.topMargin: 4; anchors.bottomMargin: 4; spacing: 4
@@ -714,8 +718,11 @@ ApplicationWindow {
                 NavButton { text: "⌂"; hint: "Accueil"; onClicked: currentView.url = "about:blank" }
                 Rectangle {
                     id: addressContainer
-                    Layout.fillWidth: true; Layout.minimumWidth: 160; implicitHeight: chromeControlHeight; color: address.activeFocus ? "#FFFFFF" : "#F0F3F8"; radius: 7
-                    border.color: address.activeFocus ? "#8097B8" : "#E8EDF4"
+                    Layout.fillWidth: true; Layout.minimumWidth: 160; implicitHeight: chromeControlHeight
+                    radius: 8
+                    color: address.activeFocus ? "#08162B" : "#0B1E38"
+                    border.width: address.activeFocus ? 1.5 : 1
+                    border.color: address.activeFocus ? "#0088FF" : "#1B3B66"
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 5; anchors.rightMargin: 4; spacing: 3
                         NavButton {
@@ -787,15 +794,21 @@ ApplicationWindow {
                 }
             }
         }
-        Rectangle { Layout.fillWidth: true; implicitHeight: 2; color: "#E5EAF1"
-            Rectangle { height: 2; width: parent.width * (currentView ? currentView.loadProgress / 100 : 0); color: "#E11D2E"; visible: currentView ? currentView.loading : false }
+        Rectangle { Layout.fillWidth: true; implicitHeight: 2; color: "#11243E"
+            Rectangle { height: 2; width: parent.width * (currentView ? currentView.loadProgress / 100 : 0); color: "#0088FF"; visible: currentView ? currentView.loading : false }
         }
         Rectangle {
-            Layout.fillWidth: true; implicitHeight: findVisible ? 48 : 0; visible: findVisible; color: "white"
+            Layout.fillWidth: true; implicitHeight: findVisible ? 48 : 0; visible: findVisible; color: "#0A182F"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#11243E" }
             RowLayout {
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8
-                TextField { id: findInput; placeholderText: "Rechercher dans la page"; onTextChanged: if (currentView) currentView.findText(text); onAccepted: if (currentView) currentView.findText(text) }
-                Label { text: findResult; color: "#65758E" }
+                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; anchors.rightMargin: 12; spacing: 8
+                TextField {
+                    id: findInput; placeholderText: "Rechercher dans la page"; color: "white"
+                    placeholderTextColor: "#64748B"
+                    background: Rectangle { radius: 6; color: "#0B1E38"; border.color: "#1B3B66" }
+                    onTextChanged: if (currentView) currentView.findText(text); onAccepted: if (currentView) currentView.findText(text)
+                }
+                Label { text: findResult; color: "#8FA3BF" }
                 NavButton { text: "↑"; hint: "Précédent"; onClicked: currentView.findText(findInput.text, WebEngineView.FindBackward) }
                 NavButton { text: "↓"; hint: "Suivant"; onClicked: currentView.findText(findInput.text) }
                 NavButton { text: "×"; hint: "Fermer la recherche"; onClicked: { findVisible = false; currentView.findText("") } }
@@ -865,33 +878,68 @@ ApplicationWindow {
         }
     }
     Connections { target: currentView; function onUrlChanged() { window.refreshAddress() } }
-    Rectangle {
-        anchors.fill: parent; visible: currentView ? currentView.url.toString() === "about:blank" : true; color: "#F5F7FB"
-        ColumnLayout {
-            anchors.centerIn: parent; anchors.verticalCenterOffset: -35
-            width: Math.min(640, parent.width - 80); spacing: 22
-            Image { Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 108; Layout.preferredHeight: 108; source: "qrc:/assets/cybou.png"; sourceSize.width: 256; sourceSize.height: 256 }
-            Text { Layout.alignment: Qt.AlignHCenter; text: "CYBOU"; color: "#0D2547"; font { pixelSize: 46; bold: true; letterSpacing: 8 } }
-            Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "VOTRE ESPACE PRIVÉ" : "NAVIGUEZ EN TOUTE SIMPLICITÉ"; color: "#65758E"; font { pixelSize: 11; letterSpacing: 3 } }
-            Rectangle { Layout.alignment: Qt.AlignHCenter; implicitWidth: 96; implicitHeight: 3; color: "white"
-                Rectangle { width: 32; height: 3; color: "#0D2547" }
-                Rectangle { x: 64; width: 32; height: 3; color: "#E11D2E" }
-            }
-            TextField {
-                Layout.fillWidth: true; Layout.topMargin: 10; implicitHeight: 58
-                leftPadding: 24; rightPadding: 24; placeholderText: "Où souhaitez-vous aller ?"
-                font.pixelSize: 16; color: "#0D2547"; selectByMouse: true
-                background: Rectangle { radius: 18; color: "white"; border.color: "#E1E7EF" }
-                onAccepted: { navigate(text); text = "" }
-            }
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter; spacing: 12
-                Button { text: "Favoris"; onClicked: showLibrary("Favoris") }
-                Button { text: "Historique"; visible: !privateMode; onClicked: showLibrary("Historique") }
-            }
-            Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#8491A5"; font.pixelSize: 12 }
+    Item {
+        anchors.fill: parent; visible: currentView ? currentView.url.toString() === "about:blank" : true
+        Image {
+            anchors.fill: parent
+            source: "qrc:/assets/wallpaper.jpg"
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
         }
-        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.7.1"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
+        Rectangle {
+            anchors.fill: parent
+            color: "#35050C16"
+        }
+        Rectangle {
+            anchors.centerIn: parent; anchors.verticalCenterOffset: -25
+            width: Math.min(620, parent.width - 60)
+            implicitHeight: startColumn.implicitHeight + 48
+            radius: 20
+            color: "#D0081426"
+            border.color: "#303B82F6"
+            border.width: 1.5
+            ColumnLayout {
+                id: startColumn
+                anchors.fill: parent; anchors.margins: 24
+                spacing: 16
+                Image { Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 84; Layout.preferredHeight: 84; source: "qrc:/assets/cybou.png"; sourceSize.width: 256; sourceSize.height: 256 }
+                Text { Layout.alignment: Qt.AlignHCenter; text: "CYBOU"; color: "#FFFFFF"; font { pixelSize: 42; bold: true; letterSpacing: 8 } }
+                Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "VOTRE ESPACE PRIVÉ" : "UN INTERNET À VOUS"; color: "#94A3B8"; font { pixelSize: 11; letterSpacing: 3; bold: true } }
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter; implicitWidth: 96; implicitHeight: 3; color: "transparent"
+                    Row {
+                        anchors.centerIn: parent; spacing: 0
+                        Rectangle { width: 32; height: 3; color: "#2563EB"; radius: 1 }
+                        Rectangle { width: 32; height: 3; color: "#FFFFFF"; radius: 1 }
+                        Rectangle { width: 32; height: 3; color: "#EF4444"; radius: 1 }
+                    }
+                }
+                TextField {
+                    Layout.fillWidth: true; Layout.topMargin: 6; implicitHeight: 52
+                    leftPadding: 20; rightPadding: 20; placeholderText: "Où souhaitez-vous aller ?"
+                    placeholderTextColor: "#64748B"
+                    font.pixelSize: 15; color: "#FFFFFF"; selectByMouse: true
+                    selectionColor: "#1D4ED8"; selectedTextColor: "#FFFFFF"
+                    background: Rectangle { radius: 14; color: "#D00B1E38"; border.color: parent.activeFocus ? "#0088FF" : "#1E3E6B"; border.width: parent.activeFocus ? 1.5 : 1 }
+                    onAccepted: { navigate(text); text = "" }
+                }
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter; spacing: 12
+                    Button {
+                        text: "Favoris"; onClicked: showLibrary("Favoris")
+                        contentItem: Text { text: parent.text; color: "#E2E8F0"; font.pixelSize: 13; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                        background: Rectangle { implicitWidth: 100; implicitHeight: 34; radius: 10; color: parent.hovered ? "#1E3E6B" : "#122A4E"; border.color: "#2563EB60" }
+                    }
+                    Button {
+                        text: "Historique"; visible: !privateMode; onClicked: showLibrary("Historique")
+                        contentItem: Text { text: parent.text; color: "#E2E8F0"; font.pixelSize: 13; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                        background: Rectangle { implicitWidth: 100; implicitHeight: 34; radius: 10; color: parent.hovered ? "#1E3E6B" : "#122A4E"; border.color: "#2563EB60" }
+                    }
+                }
+                Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#64748B"; font.pixelSize: 11 }
+            }
+            Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 12; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.7.1"; color: "#475569"; font { pixelSize: 10; letterSpacing: 2 } }
+        }
     }
     Dialog {
         id: behaviorDialog
@@ -909,11 +957,11 @@ ApplicationWindow {
     Drawer {
         id: library
         edge: Qt.RightEdge; width: Math.min(460, window.width - 60); height: window.height
-        background: Rectangle { color: "#F5F7FB"; border.color: "#DFE5ED" }
+        background: Rectangle { color: "#F2081426"; border.color: "#1E3E6B" }
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 20; spacing: 14
             RowLayout {
-                Label { text: librarySection; font.pixelSize: 23; font.bold: true; color: "#0D2547"; Layout.fillWidth: true }
+                Label { text: librarySection; font.pixelSize: 23; font.bold: true; color: "#FFFFFF"; Layout.fillWidth: true }
                 NavButton { text: "×"; hint: "Fermer"; onClicked: library.close() }
             }
             RowLayout {
