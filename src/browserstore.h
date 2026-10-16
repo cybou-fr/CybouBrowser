@@ -42,6 +42,7 @@ class BrowserStore : public QObject {
     Q_PROPERTY(QString wallpaperType READ wallpaperType WRITE setWallpaperType NOTIFY preferencesChanged)
     Q_PROPERTY(QString customWallpaperPath READ customWallpaperPath WRITE setCustomWallpaperPath NOTIFY preferencesChanged)
     Q_PROPERTY(int glassBlurLevel READ glassBlurLevel WRITE setGlassBlurLevel NOTIFY preferencesChanged)
+    Q_PROPERTY(bool blockTrackers READ blockTrackers WRITE setBlockTrackers NOTIFY preferencesChanged)
 public:
     explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
@@ -105,6 +106,18 @@ public:
         settings.setValue("preferences/httpsOnly", enabled);
         for (auto observer : observers) observer->setHttpsOnly(enabled);
         emit preferencesChanged();
+    }
+    bool blockTrackers() const { return settings.value("preferences/blockTrackers", true).toBool(); }
+    void setBlockTrackers(bool enabled) {
+        if (enabled == blockTrackers()) return;
+        settings.setValue("preferences/blockTrackers", enabled);
+        for (auto observer : observers) observer->setBlockTrackers(enabled);
+        emit preferencesChanged();
+    }
+    Q_INVOKABLE int totalBlockedTrackers() const {
+        int total = 0;
+        for (auto observer : observers) total += observer->blockedCount();
+        return total;
     }
     Q_INVOKABLE QString navigationBlockReason(const QUrl &url) const {
         if (NetworkPolicy::hasWebCredentials(url))
@@ -195,6 +208,7 @@ public:
         profiles.append(profile); applyCookieFilter(profile);
         auto observer = new RequestObserver(profile);
         observer->setHttpsOnly(httpsOnly());
+        observer->setBlockTrackers(blockTrackers());
         observers.insert(profile, observer);
         profile->setUrlRequestInterceptor(observer);
         connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); });

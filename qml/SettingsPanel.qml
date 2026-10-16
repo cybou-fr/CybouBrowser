@@ -152,6 +152,23 @@ Drawer {
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Bloque HTTP et les WebSocket non chiffrés dans tous les profils, y compris sur le réseau local. Aucun repli HTTP. Rechargez les onglets pour interrompre les connexions déjà ouvertes. Les protocoles externes sont désactivés et WebRTC utilise uniquement les interfaces publiques.") }
                 Label { text: "CONFIDENTIALITÉ"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Switch {
+                    id: trackerSwitch
+                    text: qsTr("Protection anti-pistage & blocage des traqueurs")
+                    checked: browserStore.blockTrackers
+                    onToggled: browserStore.blockTrackers = checked
+                    indicator: Rectangle {
+                        implicitWidth: 40; implicitHeight: 24; radius: 12
+                        x: trackerSwitch.leftPadding; y: (trackerSwitch.height - height) / 2
+                        color: trackerSwitch.checked ? "#0088FF" : "#1E3A5F"
+                        Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150 } }
+                        Rectangle {
+                            x: trackerSwitch.checked ? 19 : 3; y: 3; width: 18; height: 18; radius: 9; color: "white"
+                            Behavior on x { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150; easing.type: Easing.OutQuad } }
+                        }
+                    }
+                }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Bloque automatiquement les réseaux publicitaires tiers, les balises de suivi et les outils d’analyse de navigation pour préserver votre vie privée et accélérer le chargement.") }
+                Switch {
                     id: cookieSwitch
                     text: "Bloquer les cookies tiers"
                     checked: browserStore.blockThirdPartyCookies
@@ -167,7 +184,7 @@ Drawer {
                         }
                     }
                 }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: "Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies. Le blocage ne remplace pas un bloqueur de traqueurs." }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: "Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies." }
                 GlassButton { text: "Effacer les données de navigation…"; enabled: !browserStore.cacheBusy; onClicked: clearDialog.open() }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; visible: browserStore.cacheBusy || panel.statusText.length > 0; text: browserStore.cacheBusy ? "Nettoyage du cache en cours…" : panel.statusText; color: "#7DD3FC"; font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }

@@ -66,6 +66,19 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
     if (!NetworkPolicy::hasWebCredentials(QUrl("https://user:secret@example.org/"))
         || NetworkPolicy::hasWebCredentials(QUrl("https://example.org/?email=user@example.org"))) return 2;
 
+    {
+        using namespace TrackerBlocker;
+        if (!isTracker(QUrl("https://www.google-analytics.com/analytics.js"), QUrl("https://example.com"))
+            || !isTracker(QUrl("https://adservice.google.com/adsid/integrator.js"), QUrl("https://news.com"))
+            || !isTracker(QUrl("https://connect.facebook.net/en_US/fbevents.js"), QUrl("https://shop.com"))
+            || !isTracker(QUrl("https://mc.yandex.ru/metrika/tag.js"), QUrl("https://blog.com"))
+            || isTracker(QUrl("https://www.google-analytics.com/dashboard"), QUrl("https://www.google-analytics.com/"))
+            || isTracker(QUrl("https://example.com/script.js"), QUrl("https://example.com/"))) {
+            qCritical() << "TRACKER_BLOCKER_TEST FAIL"; return 2;
+        }
+        qInfo() << "TRACKER_BLOCKER_TEST PASS: third-party analytics and ad networks blocked, first-party preserved";
+    }
+
     QWebEngineProfile profile;
     RequestObserver interceptor(&profile);
     profile.setUrlRequestInterceptor(&interceptor);
