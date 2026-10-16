@@ -139,27 +139,67 @@ ApplicationWindow {
     readonly property var activeProfile: privateMode ? privateProfile : persistentProfile
     property var pendingPermission: null
     property var pendingPermissionView: null
+    property string pendingTopOrigin: ""
+    property string pendingRequestOrigin: ""
+    property int nextTabUid: 0
+    function applyViewPolicy(view, target) {
+        view.settings.javascriptEnabled = controlState.settingFor(target, "javascript")
+        view.settings.localStorageEnabled = controlState.settingFor(target, "storage")
+        view.settings.javascriptCanOpenWindows = controlState.popupMode(target) !== 2
+        view.policyNeedsReload = false
+    }
+    ControlBarController {
+        id: controlState
+        store: browserStore
+        profile: window.activeProfile
+        url: window.currentView ? window.currentView.url : "about:blank"
+        tabId: window.currentView ? window.currentView.tabUid : ""
+        javascriptEnabled: window.currentView ? window.currentView.settings.javascriptEnabled : true
+        storageEnabled: window.currentView ? window.currentView.settings.localStorageEnabled : true
+        reloadRequired: window.currentView ? window.currentView.policyNeedsReload : false
+        onPolicyChanged: function(origin, key) {
+            for (let i = 0; i < views.count; ++i) {
+                const view = views.itemAt(i)
+                if (!view || browserStore.origin(view.url.toString()) !== origin) continue
+                if (key === "javascript" || key === "storage") view.policyNeedsReload = true
+                if (key === "popups") view.settings.javascriptCanOpenWindows = controlState.popupMode(view.url) !== 2
+            }
+        }
+    }
     function cancelPermission() {
-        if (pendingPermission && pendingPermission.isValid) pendingPermission.deny()
+        if (pendingPermission && pendingPermission.isValid) {
+            controlState.finishPermission(pendingPermission, pendingPermissionView ? pendingPermissionView.tabUid : "", false)
+            pendingPermission.deny()
+        }
+        if (pendingPermissionView) controlState.abandonPending(pendingPermissionView.tabUid)
         pendingPermission = null
         pendingPermissionView = null
         permissionDialog.close()
     }
     function resolvePermission(allow) {
         if (pendingPermission && pendingPermission.isValid) {
-            if (allow && pendingPermissionView === currentView && browserStore.origin(currentView.url.toString()) === browserStore.origin(pendingPermission.origin.toString())) pendingPermission.grant()
-            else pendingPermission.deny()
+            const valid = allow && pendingPermissionView === currentView && pendingPermissionView.profile === activeProfile
+                && browserStore.origin(currentView.url.toString()) === pendingTopOrigin
+                && browserStore.origin(pendingPermission.origin.toString()) === pendingRequestOrigin
+            controlState.finishPermission(pendingPermission, pendingPermissionView ? pendingPermissionView.tabUid : "", valid)
+            if (valid) pendingPermission.grant(); else pendingPermission.deny()
         }
+        if (pendingPermissionView) controlState.abandonPending(pendingPermissionView.tabUid)
         pendingPermission = null; pendingPermissionView = null; permissionDialog.close()
     }
     function askPermission(permission, view) {
         if (!permission.isValid) return
-        if (view !== currentView || pendingPermission || ![1, 2, 3, 6, 7, 8, 9].includes(permission.permissionType)
-            || browserStore.origin(view.url.toString()) !== browserStore.origin(permission.origin.toString())) {
+        const types = WebEnginePermission.PermissionType
+        const supported = [types.MediaAudioCapture, types.MediaVideoCapture, types.MediaAudioVideoCapture, types.MouseLock, types.Notifications, types.Geolocation, types.ClipboardReadWrite]
+        const blocked = view !== currentView || pendingPermission || !supported.includes(permission.permissionType) || controlState.shouldDeny(permission)
+        controlState.notePermission(permission, view.tabUid, view.url, !!blocked)
+        if (blocked) {
             permission.deny(); return
         }
         pendingPermission = permission
         pendingPermissionView = view
+        pendingTopOrigin = browserStore.origin(view.url.toString())
+        pendingRequestOrigin = browserStore.origin(permission.origin.toString())
         permissionDialog.open()
     }
     function clearBrowsingData(cookies, cache, history, permissions, session) {
@@ -219,6 +259,12 @@ ApplicationWindow {
         if (browserStore.isBookmarked(url)) browserStore.toggleBookmark(url, "")
         tabs.clear(); addTab(""); saveSession()
     }
+    function testTabCount() { return tabs.count }
+    function beginControlBarTest() { controlHarness.begin() }
+    function pollControlBarTest() { return controlHarness.step() }
+    function takeControlBarScreenshot() { return controlHarness.takeScreenshot() }
+    function takeControlBarInput() { return controlHarness.takeInput() }
+    ControlBarHarness { id: controlHarness; browserWindow: window; controller: controlState; bar: controlBar }
     property int smokeStage: 0
     property int smokePdfResult: 0
     property bool smokeLocalLoaded: false
@@ -246,6 +292,7 @@ ApplicationWindow {
         }
         if (smokeStage === 3 && pendingPermission) {
             if (pendingPermission.permissionType !== WebEnginePermission.PermissionType.Notifications) return -1
+            if (!controlState.capability("notifications").pending || controlState.capability("notifications").requester !== browserStore.origin(smokeBaseUrl)) return -1
             resolvePermission(true)
             if (activeProfile.queryPermission(smokeBaseUrl, WebEnginePermission.PermissionType.Notifications).state !== WebEnginePermission.State.Granted) return -1
             smokeStage = 4
@@ -377,7 +424,7 @@ ApplicationWindow {
     function addTab(url, options) {
         const pinned = options ? !!options.pinned : false
         const index = pinned ? pinnedCount() : tabs.count
-        tabs.insert(index, { initialUrl: url || "about:blank", label: "Nouvel onglet", favicon: "", isPinned: pinned, isMuted: options ? !!options.muted : false, audible: false })
+        tabs.insert(index, { initialUrl: url || "about:blank", label: "Nouvel onglet", favicon: "", isPinned: pinned, isMuted: options ? !!options.muted : false, audible: false, tabUid: "tab-" + (++nextTabUid) })
         activeTab = index
         tabStrip.positionViewAtIndex(activeTab, ListView.Contain)
         saveTimer.restart()
@@ -679,17 +726,22 @@ ApplicationWindow {
             required property int index
             required property string initialUrl
             required property bool isMuted
+            required property string tabUid
+            property bool policyNeedsReload: false
             anchors.fill: parent
             visible: activeTab === index && url.toString() !== "about:blank"
             url: initialUrl
             profile: privateMode ? privateProfile : persistentProfile
             audioMuted: isMuted
             onRecentlyAudibleChanged: function(value) { if (index < tabs.count) tabs.setProperty(index, "audible", value) }
-            settings.javascriptCanOpenWindows: true
+            settings.javascriptEnabled: controlState.settingFor(initialUrl, "javascript")
+            settings.localStorageEnabled: controlState.settingFor(initialUrl, "storage")
+            settings.javascriptCanOpenWindows: controlState.popupMode(initialUrl) !== 2
             settings.localContentCanAccessRemoteUrls: false
             settings.localContentCanAccessFileUrls: false
             settings.allowRunningInsecureContent: false
             settings.fullScreenSupportEnabled: true
+            onNavigationRequested: function(request) { if (pendingPermissionView === web) window.cancelPermission(); window.applyViewPolicy(web, request.url) }
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
@@ -703,7 +755,10 @@ ApplicationWindow {
             onPermissionRequested: function(permission) { window.askPermission(permission, web) }
             onFindTextFinished: function(result) { if (index === activeTab) findResult = result.activeMatch + " / " + result.numberOfMatches }
             onNewWindowRequested: function(request) {
-                if (request.userInitiated && /^https?:\/\//i.test(request.requestedUrl.toString())) addTab(request.requestedUrl.toString())
+                const mode = controlState.popupMode(url)
+                const permitted = mode !== 2 && (request.userInitiated || mode === 1) && /^https?:\/\//i.test(request.requestedUrl.toString())
+                controlState.notePopup(tabUid, url, !permitted)
+                if (permitted) addTab(request.requestedUrl.toString())
             }
             onLoadingChanged: function(info) {
                 if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) smokeLocalLoaded = true
@@ -743,6 +798,33 @@ ApplicationWindow {
             Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#8491A5"; font.pixelSize: 12 }
         }
         Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.5"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
+    }
+    ControlBar {
+        id: controlBar
+        anchors.fill: parent
+        controller: controlState
+        visible: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible
+        onPolicyRequested: function(key, mode) {
+            if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
+            behaviorDialog.policyKey = key; behaviorDialog.policyMode = mode
+            behaviorDialog.policyOrigin = browserStore.origin(currentView.url.toString())
+            behaviorDialog.open()
+        }
+        onDecisionRequested: function(allow) { window.resolvePermission(allow) }
+        onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
+    }
+    Dialog {
+        id: behaviorDialog
+        property string policyKey: ""
+        property int policyMode: 0
+        property string policyOrigin: ""
+        title: qsTr("Modifier la politique de ce site ?")
+        width: 430; anchors.centerIn: parent; modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        Label { width: parent.width; wrapMode: Text.WordWrap; textFormat: Text.PlainText; text: behaviorDialog.policyOrigin + "\n\n" + (behaviorDialog.policyKey === "popups" ? qsTr("Ce choix modifie l’ouverture de nouvelles fenêtres pour cette origine. Autoriser inclut les fenêtres sans geste utilisateur.") : qsTr("Le changement sera appliqué lors de la prochaine navigation ou après un rechargement explicite. Bloquer JavaScript ou localStorage peut perturber les connexions et paiements.")) }
+        onAccepted: if (currentView && browserStore.origin(currentView.url.toString()) === policyOrigin) {
+            if (!controlState.setBehavior(policyKey, policyMode)) window.showStatus(qsTr("La modification n’a pas pu être confirmée."))
+        }
     }
     Drawer {
         id: library

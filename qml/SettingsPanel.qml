@@ -57,6 +57,16 @@ Drawer {
                 Button { text: "Choisir le dossier…"; onClicked: downloadFolder.open() }
                 CheckBox { text: "Toujours demander où enregistrer"; checked: browserStore.askDownloadLocation; onToggled: browserStore.askDownloadLocation = checked }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#DFE5ED" }
+                Label { text: qsTr("CONTROL BAR"); color: "#65758E"; font.letterSpacing: 2; font.pixelSize: 11 }
+                ComboBox {
+                    model: ["Français", "Русский"]
+                    currentIndex: browserStore.controlBarLanguage === "ru" ? 1 : 0
+                    onActivated: browserStore.controlBarLanguage = currentIndex === 1 ? "ru" : "fr"
+                    Accessible.name: qsTr("Langue du Control Bar")
+                }
+                CheckBox { text: qsTr("Réduire les animations"); checked: browserStore.reduceMotion; onToggled: browserStore.reduceMotion = checked }
+                CheckBox { text: qsTr("Désactiver les pulsations"); checked: browserStore.disableGlow; onToggled: browserStore.disableGlow = checked }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: qsTr("La dernière icône du panneau permet de choisir sa position. Les indicateurs ne prouvent pas qu’un appareil enregistre."); color: "#65758E"; font.pixelSize: 12 }
                 Label { text: "CONFIDENTIALITÉ"; color: "#65758E"; font.letterSpacing: 2; font.pixelSize: 11 }
                 Switch {
                     id: cookieSwitch

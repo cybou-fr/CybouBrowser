@@ -13,8 +13,10 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QFile>
+#include <QTranslator>
 #include <memory>
 #include "browserstore.h"
+#include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 
 int main(int argc, char *argv[])
@@ -23,11 +25,13 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU");
     app.setOrganizationName("CYBOU");
-    const bool smokeTest = app.arguments().contains("--smoke-test");
+    const bool controlBarTest = app.arguments().contains("--controlbar-test");
+    const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
     app.setApplicationVersion("0.5.0");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
+    if (smokeTest) qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
     QTcpServer testServer;
     if (smokeTest) {
         testServer.listen(QHostAddress::LocalHost);
@@ -54,7 +58,8 @@ int main(int argc, char *argv[])
                         transfer->start(40); return;
                     }
                     const bool download = request.startsWith("GET /download ");
-                    const QByteArray body = download ? QByteArray("CYBOU download test\n") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
+                    const bool controls = request.startsWith("GET /controls ");
+                    const QByteArray body = download ? QByteArray("CYBOU download test\n") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
                     const auto cookie = request.startsWith("GET /page ") ? QByteArray("Set-Cookie: cybou_smoke=present; Path=/; SameSite=Lax\r\n") : QByteArray();
                     socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: " + QByteArray(download ? "application/octet-stream" : "text/html") + "\r\n" + cookie + (download ? QByteArray("Content-Disposition: attachment; filename=cybou-smoke.txt\r\n") : QByteArray()) + "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
                     socket->disconnectFromHost();
@@ -64,7 +69,15 @@ int main(int argc, char *argv[])
         QDir().mkpath("build/test-downloads");
     }
     BrowserStore store;
+    QTranslator controlTranslator;
     QQmlApplicationEngine engine;
+    auto translateControlBar = [&] {
+        app.removeTranslator(&controlTranslator);
+        if (store.controlBarLanguage() == "ru" && controlTranslator.load(":/translations/cybou_ru.qm")) app.installTranslator(&controlTranslator);
+        engine.retranslate();
+    };
+    QObject::connect(&store, &BrowserStore::languageChanged, &engine, translateControlBar);
+    translateControlBar();
     engine.rootContext()->setContextProperty("browserStore", &store);
     engine.rootContext()->setContextProperty("smokeMode", smokeTest);
     engine.rootContext()->setContextProperty("smokeBaseUrl", QString("http://127.0.0.1:%1").arg(testServer.serverPort()));
@@ -86,7 +99,7 @@ int main(int argc, char *argv[])
     engine.loadFromModule("Cybou", "Main");
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
-        QTimer::singleShot(1500, &app, [root, &app, &engine] {
+        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest] {
             QVariant dragCoordinates;
             QMetaObject::invokeMethod(root, "prepareDragSmokeTest", Q_RETURN_ARG(QVariant, dragCoordinates));
             auto points = dragCoordinates.toMap();
@@ -142,18 +155,55 @@ int main(int argc, char *argv[])
             if (privateWindows.size() != 2 || !profileOf(privateWindows[0]) || profileOf(privateWindows[0]) == profileOf(privateWindows[1])) {
                 qCritical() << "PRIVATE_PROFILE_ISOLATION FAIL"; app.exit(2); return;
             }
+            {
+                ControlBarController policyA, policyB;
+                for (auto controller : {&policyA, &policyB}) { controller->setStore(&store); controller->setUrl(QUrl("https://private-policy.example")); controller->setTabId("private-test"); }
+                policyA.setProfile(profileOf(privateWindows[0])); policyB.setProfile(profileOf(privateWindows[1]));
+                policyA.setBehavior("javascript", 2);
+                policyA.notePopup("private-test", QUrl("https://private-policy.example"), true);
+                if (policyA.settingFor(QUrl("https://private-policy.example"), "javascript") || !policyB.settingFor(QUrl("https://private-policy.example"), "javascript") || policyB.capability("popups").value("recent").toBool()) {
+                    qCritical() << "PRIVATE_CONTROL_POLICY_TEST FAIL"; app.exit(2); return;
+                }
+                qInfo() << "PRIVATE_CONTROL_POLICY_TEST PASS";
+            }
             const QPointer<QObject> privateProfileA(profileOf(privateWindows[0]));
             const QPointer<QObject> privateProfileB(profileOf(privateWindows[1]));
             for (auto window : privateWindows) window->close();
             qInfo() << "PRIVATE_WINDOW_TEST PASS";
             auto poll = new QTimer(&app);
             auto attempts = std::make_shared<int>(0);
-            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB] {
+            auto controlStarted = std::make_shared<bool>(false);
+            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, controlStarted] {
                 QVariant state;
-                QMetaObject::invokeMethod(root, "pollSmokeTest", Q_RETURN_ARG(QVariant, state));
+                if (*controlStarted) {
+                    QMetaObject::invokeMethod(root, "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
+                    QVariant screenshot;
+                    QMetaObject::invokeMethod(root, "takeControlBarScreenshot", Q_RETURN_ARG(QVariant, screenshot));
+                    if (!screenshot.toString().isEmpty()) qobject_cast<QQuickWindow *>(root)->grabWindow().save("build/" + screenshot.toString() + ".png");
+                    QVariant input;
+                    QMetaObject::invokeMethod(root, "takeControlBarInput", Q_RETURN_ARG(QVariant, input));
+                    auto data = input.toMap();
+                    if (data.isEmpty()) data = input.value<QJSValue>().toVariant().toMap();
+                    auto window = qobject_cast<QQuickWindow *>(root);
+                    if (data.value("kind") == "key") {
+                        QKeyEvent event(QEvent::KeyPress, data.value("key").toInt(), Qt::NoModifier); QCoreApplication::sendEvent(window, &event);
+                    } else if (!data.isEmpty()) {
+                        const QPointF point(data["x"].toDouble(), data["y"].toDouble());
+                        QMouseEvent move(QEvent::MouseMove, point, window->mapToGlobal(point.toPoint()), Qt::NoButton, Qt::NoButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &move);
+                        if (data.value("kind") == "click") {
+                            QMouseEvent press(QEvent::MouseButtonPress, point, window->mapToGlobal(point.toPoint()), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &press);
+                            QMouseEvent release(QEvent::MouseButtonRelease, point, window->mapToGlobal(point.toPoint()), Qt::LeftButton, Qt::NoButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &release);
+                        }
+                    }
+                } else {
+                    QMetaObject::invokeMethod(root, "pollSmokeTest", Q_RETURN_ARG(QVariant, state));
+                    if (state.toInt() == 2 && controlBarTest) {
+                        QMetaObject::invokeMethod(root, "beginControlBarTest"); *controlStarted = true; state = 0;
+                    }
+                }
                 if (state.toInt() == 1) return;
                 const bool success = state.toInt() == 2 && privateProfileA.isNull() && privateProfileB.isNull();
-                if (state.toInt() < 0 || ++*attempts > 120 || success) {
+                if (state.toInt() < 0 || ++*attempts > 200 || success) {
                     poll->stop();
                     qInfo() << "CYBOU_SMOKE_TEST" << (success ? "PASS" : "FAIL");
                     if (success) QMetaObject::invokeMethod(root, "prepareFeaturePreview");

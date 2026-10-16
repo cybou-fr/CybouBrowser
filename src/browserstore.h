@@ -14,6 +14,7 @@
 #include <memory>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
+#include "controlbar/RequestObserver.h"
 
 class BrowserStore : public QObject {
     Q_OBJECT
@@ -25,6 +26,10 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool restoreSession READ restoreSession WRITE setRestoreSession NOTIFY preferencesChanged)
     Q_PROPERTY(bool blockThirdPartyCookies READ blockThirdPartyCookies WRITE setBlockThirdPartyCookies NOTIFY preferencesChanged)
     Q_PROPERTY(bool cacheBusy READ cacheBusy NOTIFY cacheBusyChanged)
+    Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
+    Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
+    Q_PROPERTY(bool disableGlow READ disableGlow WRITE setDisableGlow NOTIFY preferencesChanged)
+    Q_PROPERTY(QString controlBarLanguage READ controlBarLanguage WRITE setControlBarLanguage NOTIFY languageChanged)
 public:
     explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {}
     QVariantList bookmarks() const { return settings.value("bookmarks").toList(); }
@@ -69,6 +74,21 @@ public:
     bool restoreSession() const { return settings.value("preferences/restoreSession", true).toBool(); }
     bool blockThirdPartyCookies() const { return settings.value("preferences/blockThirdPartyCookies", true).toBool(); }
     bool cacheBusy() const { return m_cacheBusy; }
+    QString controlBarPosition() const { return settings.value("ui/controlBar/position", "right").toString(); }
+    void setControlBarPosition(const QString &value) {
+        if (!QStringList{"top", "right", "bottom", "left"}.contains(value) || value == controlBarPosition()) return;
+        settings.setValue("ui/controlBar/position", value); settings.sync(); emit preferencesChanged();
+    }
+    bool reduceMotion() const { return settings.value("ui/controlBar/reduceMotion", false).toBool(); }
+    void setReduceMotion(bool value) { settings.setValue("ui/controlBar/reduceMotion", value); emit preferencesChanged(); }
+    bool disableGlow() const { return settings.value("ui/controlBar/disableGlow", false).toBool(); }
+    void setDisableGlow(bool value) { settings.setValue("ui/controlBar/disableGlow", value); emit preferencesChanged(); }
+    QString controlBarLanguage() const { return settings.value("ui/controlBar/language", "fr").toString(); }
+    void setControlBarLanguage(const QString &language) {
+        if ((language != "fr" && language != "ru") || language == controlBarLanguage()) return;
+        settings.setValue("ui/controlBar/language", language); emit languageChanged(); emit preferencesChanged();
+    }
+    RequestObserver *observerFor(QQuickWebEngineProfile *profile) const { return observers.value(profile); }
     void setSearchEngine(const QString &value) {
         if (!QStringList{"DuckDuckGo", "Google", "Bing", "Brave"}.contains(value) || value == searchEngine()) return;
         settings.setValue("preferences/searchEngine", value); emit preferencesChanged();
@@ -90,7 +110,8 @@ public:
         return prefix + QString::fromLatin1(QUrl::toPercentEncoding(query));
     }
     Q_INVOKABLE QString origin(const QString &address) const {
-        const QUrl url(address);
+        QUrl url(address);
+        if ((url.scheme() == "https" && url.port() == 443) || (url.scheme() == "http" && url.port() == 80)) url.setPort(-1);
         return url.adjusted(QUrl::RemovePath | QUrl::RemoveQuery | QUrl::RemoveFragment | QUrl::RemoveUserInfo).toString();
     }
     Q_INVOKABLE void configureProfile(QObject *object) {
@@ -98,6 +119,10 @@ public:
         profiles.removeIf([](const auto &item) { return item.isNull(); });
         if (!profile || profiles.contains(profile)) return;
         profiles.append(profile); applyCookieFilter(profile);
+        auto observer = new RequestObserver(profile);
+        observers.insert(profile, observer);
+        profile->setUrlRequestInterceptor(observer);
+        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); });
     }
     Q_INVOKABLE bool clearCookies(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
@@ -183,6 +208,7 @@ signals:
     void preferencesChanged();
     void cacheBusyChanged();
     void privateWindowRequested();
+    void languageChanged();
 private:
     void applyCookieFilter(QQuickWebEngineProfile *profile) {
         const bool block = blockThirdPartyCookies();
@@ -191,6 +217,7 @@ private:
         });
     }
     QList<QPointer<QQuickWebEngineProfile>> profiles;
+    QHash<QQuickWebEngineProfile *, RequestObserver *> observers;
     bool m_cacheBusy = false;
     QObject *m_cacheTarget = nullptr;
     static bool isWebUrl(const QString &url) {
