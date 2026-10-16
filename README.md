@@ -23,6 +23,9 @@
 
 ---
 
+![CYBOU Browser running its Alpine Dawn default new-tab page](docs/design/cybou-08-alpine-dawn.png)
+
+<p align="center"><sub>Actual CYBOU 0.8 start-page capture from the repository — the Alpine Dawn default page, with the inline capability controls in the browser navigation row.</sub></p>
 
 ## A browser built around what pages **do**
 
