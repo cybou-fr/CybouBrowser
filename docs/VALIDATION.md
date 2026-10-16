@@ -1,78 +1,36 @@
-# Local validation — 16 October 2026
+# CYBOU — зарегистрированная локальная проверка
 
-Environment: Windows, MSVC 2022, Qt 6.12.0; Qt WebEngine 6.140.0 / Chromium 140.0.7339.225 (runtime-reported security patch 152.0.7977.83). These are runtime version strings, not an assertion of vulnerability status.
+**Назначение:** краткий индекс реально сохранённых результатов. Сведения относятся к указанным версиям и снимкам разработки, а **не к независимому security audit**. Изменение документации не означает повторного запуска тестов.
 
-## Product clarification
-User explicitly overrode the proposal: no separate capability row. Final layout keeps all eleven controls on the right of the same navigation row; address fills all remaining width. Ctrl+L and mouse editing preserve controls. No fixed narrow address or intervening spacer.
+## Исходная среда
 
-## Results
-- Release build: PASS (`cmake --build build --config Release --parallel 4`).
-- Security test: PASS; HTTP/URL-credentials/subresource rejection, tracker rules, sanitized display, download policy and a recorded blocked network event with reason and profile scope.
-- Smoke suite inside controlbar test: download review/type guard, private profile cleanup, tab drag and address suggestions have passed.
-- Control Bar layout: all 11 controls visible at 820×560, 1024×768, 1360×900 and 1920×1080; full URL selected by Ctrl+L and mouse; no extra row; hover does not open shared details.
-- Full grant deadline / timeout regression: PASS. Final Control Bar test completed in 82,208 ms, exit 0. A live notification was granted by clicking its icon; no native permission was stored. After 60 seconds the document unloaded; reopening required new consent; unanswered consent was denied after 15 seconds. Full smoke suite and PDF export also PASS.
+Windows / MSVC 2022 / Qt 6.12.0. Записанные runtime identifiers: Qt WebEngine 6.140.0, Chromium 140.0.7339.225, runtime-reported security patch 152.0.7977.83. Эти строки не удостоверяют отсутствие актуальных уязвимостей.
 
-Logs: `build/observable-security.stderr.log`, `build/observable-lifecycle.stderr.log`. Acceptance screenshots: `docs/design/observable-browsing/` (browse/edit at four sizes, DPR 1).
+## Зафиксированные результаты предыдущих локальных прогонов
 
-## Remaining release gates
-Real microphone/camera/combined iframe capture, OS sleep/resume deadlines, process-restart migration with a pre-existing granted profile, FR/RU completeness and DPI 150/200% are unverified. Full rulesets, request-scoped HTTP exceptions, risk engine and proxy isolation are not implemented by this increment. No claims of active device use or per-tab network counts.
+| Область | Ранее записанный результат | Материал и ограничения |
+| --- | --- | --- |
+| **Windows Release / C++20** | PASS, Release build и security suite | Build records предыдущего агента; нет независимой сборки в этом документальном проходе |
+| **Основная Control Bar** | PASS, размеры 820×560 / 1024×768 / 1360×900 / 1920×1080, URL editing, 11 buttons inline | [Observable browsing](design/observable-browsing/) и локальные логи; исходные версии без glass hover являются историческими |
+| **Native PermissionCoordinator** | PASS, identity checks, stale epoch/request ID, independent grants, deny без ответа, view replacement | [coordinator-controlbar-test.log](design/observable-browsing/coordinator-controlbar-test.log), [coordinator-security-test.log](design/observable-browsing/coordinator-security-test.log); действительные hardware capture и iframe не проверены |
+| **Glass hover Control Bar** | PASS, карточка появляется при hover, остаётся доступной при входе курсора, меняется для соседней иконки | [glass-hover.stderr.log](design/glass-hover/glass-hover.stderr.log), [визуальные captures](design/glass-hover/); реальная DPI-интеграция требует отдельного gate |
+| **HTTP temporary context** | В прежнем отчёте PASS: exact-address consent, cross-origin rejection, отдельный off-the-record профиль, смена tab/reload/revoke в ранее проверенной реализации | Отчёт этапа `feat(transport)`, visuals в [transport](design/transport/); не доказывает proxy/process isolation |
+| **Chrome and surfaces** | PASS: tab drag, title gestures, GlassToolTip, drawers под header при тестовых размерах | [surfaces.stderr.log](design/glass-surfaces/surfaces.stderr.log) и [скриншоты](design/glass-surfaces/); Windows multi-monitor manual testing отдельно |
+| **Smoke / downloads / PDF** | PASS в соответствующих записанных integrated harness run | Статус ограничен протестированными fixtures |
 
-Early test iterations exposed delayed URL selection after resizing and retained JS policy after a lease unloaded about:blank. Fixes defer selection until layout settles and explicitly expire the tab context on unload. Earlier separate-row screenshots are superseded by the final acceptance set.
+**Tracker-only exception:** код и `--tracker-test` harness добавлены коммитом `9f7b698`. В данном документационном проходе suite **не запускался**. Отдельный профиль, правила scoped firstParty, revoke и network decisions видны в коде; это само по себе не заменяет зафиксированный release regression.
 
-## C++ PermissionCoordinator increment
+## Известные пробелы
 
-Release build PASS. Security test PASS, including weak context ownership, actual view/profile/tab/top-origin/epoch matching, preserved iframe requester and dual-clock expiry checks. Final native Control Bar + smoke + PDF run PASS, exit 0, 82,862 ms.
+- Запрет на top origin и проверка requester origin для стороннего iframe могут расходиться; нужна cross-origin regression.
+- Реальный mic/camera/combined capture, прекращение потока, работа после sleep/resume и продолжительные звонки не проверены.
+- Отзыв permission/temporary context в текущем коде способен разрушить документ и прервать работу.
+- Персональные иконки могут смешивать brandColor с семантикой policy; нельзя выдавать grant за реальную hardware activity.
+- Малый suffix-list и tracker-only opt-in не равны полноценной раздельной рекламе/трекерам; network events относятся к профилю, не гарантированно к вкладке.
+- Linux/macOS distribution, runtime sandbox и безопасность обновления движка, NavigationGuard/RestrictedBrowsing и proxy/process isolation не подтверждены.
 
-The native test rejects a real request after its epoch changes; a reset-icon click recreates the same URL in the same tab slot; a stale request ID cannot resolve the later request. Notification and geolocation grants coexist and the second does not extend the first deadline. At the earliest expiry, the old WebEngineView is destroyed and replaced with a blank view and new tab UID. The reopened document asks again; the unanswered request resolves `denied` after 15 seconds. Button press captures the request ID used on release. This validates permission decisions, not actual device activity.
+## Правила дальнейшей фиксации
 
-Evidence: `docs/design/observable-browsing/coordinator-security-test.log` and `coordinator-controlbar-test.log`. Original layout screenshots remain applicable: no navigation geometry changes in this increment.
+Каждый результат должен содержать дату, фактический commit SHA, версии движка, команду, exit code, лог, ручные замечания и проверенные размеры/DPI. В [ROADMAP](ROADMAP.md) менять `planned` на `implemented/tested` только после соответствующего кода и фактической проверки. Новые сценарии — в [TEST_PLAN](TEST_PLAN.md); ограниченный tracker context — в [ADR 0004](ADR/0004-temporary-tracker-exceptions.md).
 
-A native denial was not re-requested after a same-view reload in the test iteration; the supported sensitive reset action therefore recreates the view, rather than relying on reload to clear document-level state. Real media shutdown, OS sleep/resume, pre-existing disk profile migration, cross-origin iframe enforcement and DPI/translation gates remain unverified.
-
-## Glass hover panels and spacing
-
-Latest user instruction replaces the earlier tooltip-only contract. Capability buttons now have 42px center spacing and 12px clear gaps. All eleven stay inline on the right; the address fills remaining space with a 120px minimum.
-
-Release build PASS. Updated `--controlbar-test` PASS in 84,079 ms, exit 0; smoke and PDF export PASS. Mouse hover opens the current glass panel without click; moving inside keeps it open for controls; moving to JavaScript replaces the location content; moving away closes it. All four window sizes and URL editing passed. Permission lifecycle regressions still pass. Native ordinary capability ToolTips are removed. Visual inspection of the JavaScript hover panel and 820px layout passed.
-
-Evidence and screenshots: `docs/design/glass-hover/`. The earlier tooltip-only findings above describe historical increments and are superseded by this section.
-
-## Temporary HTTP transport
-
-Release build PASS. `--security-test` PASS, exit 0: exact URL/query, atomic single-use main navigation, same-origin/firstParty resource restrictions, independent leases, canonical root URLs, credentials/ws rejection and revoke. Existing permission context, tracker and network-denial checks still pass.
-
-Native `--transport-test` PASS, exit 0, including smoke and PDF output. Actual mouse hover and button clicks open/revoke HTTP in a separate off-the-record AskEveryTime profile. A cross-origin HTTP fetch is blocked by the interceptor, same-origin resources load, another normal-profile tab remains denied, stale consent is rejected, reload requires fresh consent, and 60-second background expiry replaces the HTTP view without switching the peer tab. A native QPointer verifies final profile destruction. Both panel screenshots were visually inspected; the toolbar stays inline and address fills remaining width.
-
-Final `--controlbar-test` regression PASS, exit 0, 83,806 ms; hover interaction, window sizes, permission request identity, independent grant deadlines, document teardown, timeout denial, smoke and PDF checks pass after transport integration.
-
-Evidence: `docs/design/transport/`. Qt prints a deprecation guidance warning for the currently supported public QQuickWebEngineProfile constructor; this implementation uses no private Qt API. Real-device media shutdown, OS suspend/resume, cross-origin iframe behavior and independent proxy routing remain outside this validation.
-
-## Git integration and window chrome (2026-10-17)
-
-Merged origin/main, retaining the updated README structure and C++20 requirement while updating current HTTP/permission/hover behavior. No unmerged entries remain. C++20 Release build and security suite PASS.
-
-The unused ListView tab-strip area now explicitly receives title mouse events. A system drag starts only after the platform movement threshold, preserving double-click handling. Native tests PASS for small pointer movement, maximizing by double-click, restoring the previous 1100×720 size, and independent tab reordering. Actual system movement between monitors and maximized-window dragging remain manual Windows checks.
-
-The connection indicator becomes an explicit HTTP consent/revoke button for pending/temporary HTTP. Native transport suite PASS, exit 0: first consent through the glass panel, later consent and revoke through the new address-row button, isolated profile, stale consent, reload and 60-second expiry. Final Control Bar regression PASS, exit 0, 83,771 ms: separator placement and all eleven controls at four widths, address editing, glass hover, independent permission deadlines, timeout, smoke and PDF. The 820px layout and HTTP screenshot were visually inspected. Evidence: `docs/design/window-chrome/`.
-
-## Glass tooltips and workspace drawers (2026-10-17)
-
-Release build PASS. Native `--surface-test` PASS, exit 0: actual mouse hover shows the custom GlassToolTip; downloads, bookmarks, history and settings match the content workspace at 1360×900 and 820×560. Drawer tops are at the page boundary (74px in the fixture), heights match the remaining workspace, and full-window modality/dimming is disabled. Navigation and tab captions share the styled item tooltip; no default attached ToolTip remains in QML. Tab drag and title double-click checks also pass in this run.
-
-Visually inspected the navigation tooltip, downloads at 1360px and settings at 820px: blue rounded hint without the native black/white-border style; drawers cover neither tabs nor address row. Evidence and all eight drawer screenshots: `docs/design/glass-surfaces/`.
-
-## Documentation reconciliation audit — 17 October 2026
-
-Reference source revision: `51559ca33e089eeebca3edfb49dff05710d1d84c` on `main`. This pass reconciled product vision, security, capability, Control Bar UX, architecture, roadmap, tests and README against the implementation. The new security/UX work is documented as **planned**, not built or tested. No binary, QML, C++ source, screenshot, or release package was changed by this documentation update.
-
-The above recorded Windows test logs remain valid **historical evidence from the developer's environment**, not new independent test executions. Current code: C++20, Qt 6.12/Windows Release was previously reported PASS; 11 inline capabilities with glass hover; C++ PermissionCoordinator with request identity and independent grants; strict production HTTPS with a 60-second exact HTTP temporary profile; profile-scoped sanitized network events and a small suffix-list filter.
-
-Newly documented concrete gaps: user explicit deny stored at top origin vs `shouldDeny` checking requester origin in cross-origin iframe; a 60-second grant expiry forcibly tears down a WebEngineView (can interrupt a long call); granted camera may receive a red brandColor despite the same color being used for deny; comprehensive ad/tracker classification and **independent** per-site Ads/Trackers exceptions absent (a tracker-only 60-second isolated-profile exception is implemented); per-tab network attribution, real hardware stream shutdown, OS suspend/resume, patch/update distribution and proxy/process isolation unverified.
-
-A real media run, security update regression, iframe policy fix, full ad/tracker engine, activity aggregator, Navigation Guard and restricted mode are **not validated** by any documentation changes. Acceptance details: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), [TEST_PLAN](TEST_PLAN.md) and [ROADMAP](ROADMAP.md).
-
-## Tracker-only exception implementation — documentation reconciliation (17 October 2026)
-
-The code at `9f7b69887a6ca7bdfbf6c1ef31c249b8cc9a2e0f` adds `TrackerExceptionLease`, temporary off-the-record profile for one HTTPS document, network-event category/decision labels, a 60-second independent deadline, consent/revoke/countdown in the existing Network hover panel and `--tracker-test` with a loopback fixture. Other tabs keep tracker blocking; normal cookies/cache are not copied. A profile exception does not provide process/proxy isolation.
-
-This document update inspected the source and the test harness but **did not run `--tracker-test` itself**. Independent Ads/Tracker categories, versioned rules, preserving the document without a temporary profile swap, real media behavior and verified per-tab network attribution are not implemented. See [ADR 0004](ADR/0004-temporary-tracker-exceptions.md), [ROADMAP](ROADMAP.md) and [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
+**Редакторский проход:** обновлены только документы; никакие исходники, бинарники, тестовые harness или журналы с первичными результатами не изменены.

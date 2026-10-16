@@ -1,40 +1,44 @@
-# Проверки
+# CYBOU — план проверки
 
-Build: `cmake --build build --config Release --parallel 4` (C++20, Qt 6.12, MSVC 2022).
+**Правило:** статус PASS только после фактического запуска с сохранённым результатом. Этот документ описывает проверки, а не объявляет их пройденными. Ранее полученные результаты — в [VALIDATION](VALIDATION.md).
 
-Tracker exceptions: `build/Release/cybou.exe --tracker-test`. The tracker hostname resolves only to the loopback fixture in this dedicated mode. Check actual block before consent and successful fetch after consent, off-the-record AskEveryTime profile, peer-tab isolation, stale-token rejection, reload, fresh consent, countdown, background 60-second expiry, panel revoke and native profile destruction. A test-only loopback HTTP path is used; production rejects HTTP tracker exceptions. Security tests cover HTTPS-only factory policy, credentials, exact URL/query, concurrent single consumption, firstParty origin, deadline/revoke and labels. Existing HTTP and permission suites must also pass after changing temporary-profile lifecycle code.
+## Локальные команды
 
-Glass surfaces: `build/Release/cybou.exe --surface-test` checks a real navigation hover tooltip and drawer bounds for downloads, bookmarks, history and settings at 1360×900 and 820×560. Drawers must match the page workspace below chrome, without a modal full-window dimmer. Captures `build/glass-tooltip.png` and `build/drawer-*.png` for visual inspection. Uses the isolated test organization.
+Windows Release (Qt 6.12 / MSVC 2022, C++20):
 
-Window chrome: the native harness double-clicks the unused tab-strip area to maximize and restore the previous window size; tab reordering is checked separately. Control Bar layout checks verify a separator between controls and downloads at every supported size. Transport tests click the dedicated address-row HTTP button to grant and revoke, while the first grant still exercises the glass-panel control. System window movement across monitors and dragging a maximized window remain manual Windows checks.
+```powershell
+cmake --build build --config Release --parallel 4
+./build/Release/cybou.exe --security-test
+./build/Release/cybou.exe --controlbar-test
+./build/Release/cybou.exe --transport-test
+./build/Release/cybou.exe --tracker-test
+./build/Release/cybou.exe --surface-test
+./build/Release/cybou.exe --smoke-test
+```
 
-HTTP transport: `build/Release/cybou.exe --transport-test`. A loopback fixture checks initial strict denial, real hover-panel consent, a separate off-the-record profile, same-origin assets, blocked cross-origin HTTP, no inheritance by another tab, stale-token rejection, reload requiring fresh consent, 60-second background expiry preserving the selected peer tab, real panel revoke, and destruction of the temporary native profile. `--security-test` also checks exact URL/query matching, concurrent single-use consumption, origin/firstParty restrictions, ws and credential rejection, canonical root URLs and explicit revocation. Screenshots: `build/transport-http-blocked.png`, `build/transport-http-temporary.png`. Test-only HTTP opt-out remains unavailable in normal launches.
-Run: `build/Release/cybou.exe --security-test`, `--smoke-test`, `--controlbar-test`.
-Test organization CYBOU-Tests and test profile separate ordinary browsing; HTTP fixture access is enabled explicitly only for test runs.
+Test organization и fixtures должны быть отделены от обычного профиля пользователя. Встроенные loopback HTTP fixtures разрешаются только тестовым запуском; production HTTPS strict сохраняется. После существенного изменения permission/view/profile lifecycle прогонять **все** смежные suites.
 
-ControlBar harness must enforce all 11 controls during URL editing and at 820 px; no arbitrary notification pregrant; glass hover panels with explanations and controls; pointer corridor and current-icon content. Verify live notification request cancellation on tab switch. Existing historical overflow/ASK assertions are superseded by this contract.
+## Функциональная регрессия
 
-Manual release gates: real mic+camera requests; cross-origin iframe requesting origin; timeout after 15s; grant deadline unload after 60s; close/tab navigation; restart without restored grants; Undo after same-origin navigation; blocked tracker network event with reason; HTTPS HTTP/ws strict; cookies persistence independent from permissions. Real media use and proxy routing cannot be certified by model color.
+| Направление | Что проверять |
+| --- | --- |
+| **Control Bar** | Все 11 иконок в **одной** строке на 820×560, 1024×768, 1360×900, 1920×1080; Ctrl+L/Escape не скрывают иконки, URL заполняет остаток ширины; separator перед Downloads/Menu |
+| **Glass hover** | Наведение на Location → интерактивная карточка → переход курсора в неё → переключение на JavaScript без stale content; закрытие вне области; кнопки действуют, клик по странице доходит до Chromium |
+| **Keyboard и accessibility** | Tab, arrows, Space/Enter, focus, accessible name/state; FR/RU, DPI 100/150/200%, reduced motion, contrast |
+| **Native permissions** | Реальный request, отказ без pregrant, подтверждение правильного ID, stale ID/tab/profile/epoch, reset создаёт view без новой вкладки, independent grants, revoke и очистка permissions |
+| **HTTP transport** | HTTPS strict, exact URL/query, single-use main navigation, same-origin/firstParty assets, cross-origin HTTP/ws deny, credential-URL deny, stale token, peer-tab isolation, reload/revoke/profile destruction |
+| **Tracker-only exception** | Реальная blocked fixture до consent, passed tracker-rule после consent, отдельный OTR профиль без обычных cookies/cache, peer-tab isolation, нет HTTP exception mixing, stale token, reload/revoke/profile teardown; факт pass не означает успешную загрузку |
+| **Other surfaces** | Tab drag, unused strip window drag/double-click, bookmarks/history/downloads/settings drawers в workspace под header, обычный GlassToolTip у chrome, download review и PDF export |
 
-Record actual test outcomes and unverified cases in VALIDATION.md. Never label manual tests passed without running them.
+## Новые release gates — запланированы, ещё не пройдены
 
-C++ permission coverage (`--security-test`): view/profile/tab/top-origin/navigation-epoch mismatch; cross-origin requester preserved; destroyed weak context; invalid native request; monotonic ceiling despite wall-clock rollback and expiry after forward jump.
+1. **Iframe:** top origin A и requester iframe B; явный запрет родителя действует на вложенный request; отдельный requester deny; нормальный и приватный профиль; старый ID никогда не подтверждается.
+2. **Реальные media:** mic, camera, combined audio/video, продолжительный видеозвонок, системные разрешения, background tab, sleep/resume, навигация и ручной отзыв; оценить UX и реальное прекращение capture. Не считать grant доказательством записи.
+3. **Engine:** поддерживаемая версия Qt/Chromium, проверяемый sandbox runtime, небезопасные flags в release, регрессия после обновления, проверка подписанной доставки.
+4. **Ad/Tracker RuleEngine:** реальная классификация по правилам, обновление/rollback, memory/CPU burst, ложные блокировки login/payment/video/CDN/CAPTCHA.
+5. **Независимые site actions:** две вкладки одного origin и третья другого; Ads и Trackers разделены; context guard, restore defaults, Undo, no global HTTPS/permission relaxation.
+6. **ActivityAggregator:** effective policy ≠ request ≠ grant ≠ confirmed block, profile sample не выдаётся за tab counter; память и время событий ограничены.
+7. **NavigationGuard / Restricted browsing:** IDN, redirects, IPv4/IPv6 private network и DNS rebinding; JS-off *до* первого документа; негативные fixtures против ложных тревог.
+8. **UI preservation:** одна строка с 11 иконками и интерактивным hover на всех размерах/DPI/языках после каждого функционального обновления.
 
-Native coordinator coverage (`--controlbar-test`): stale same-origin epoch denies the actual request; old request ID cannot resolve a later native request; a real reset-icon click replaces the denied view at the same URL without adding a tab; notification and geolocation grants have independent deadlines; later grant does not renew the first; earliest deadline destroys the WebEngineView and replaces its slot with a new UID; a new document must ask again; 15-second unanswered request is denied.
-
-## Следующие security/UX gates (план тестов, ЕЩЁ НЕ выполнены)
-
-| Gate | Fixture / действие | Ожидаемое подтверждение |
-| --- | --- | --- |
-| Explicit iframe deny | Top origin A, cross-origin iframe B; блок A и независимый запрет B | Запрос B не обходит блок A; requester deny тоже действует; нет grant без живого запроса |
-| Request identity | Switch tabs/profiles, navigation epoch, long press/release, native invalidation | Старый request ID не разрешает новый; отказ fail-closed |
-| Реальные media | Mic, camera, combined AV, 5–30 минут звонка, sleep/resume, background | Нет ложного active indicator; отзыв/истечение действительно защищают; целевой UX предупреждает до разрушения документа |
-| Qt/Chromium | Обновление поддерживаемой Qt WebEngine, runtime sandbox, release flags | Нет insecure flags; security/smoke/permission/network регрессия пройдена |
-| Ads/tracker engine | Verified rules, corrupted update, rollback; login/video/payment/CAPTCHA/CDN | Категории соответствуют фактическим правилам; ограниченный CPU/memory; false positives проверены |
-| Расширение site exception | Уже реализован `--tracker-test` для **tracker-only** отдельного профиля. Следующий gate: 2 таба одного origin и 1 другой; **независимые Ads/Trackers**, TTL, Undo, close, reload | Имеющиеся tracker-only тесты не доказывают independent Ads/Trackers; HTTPS и другие вкладки не затронуты |
-| Semantic events | Pending permission, grant, confirmed block, profile-only network sample, burst | Цвет и текст не выдают grant за recording; профильные данные не подписаны per-tab; bounded memory |
-| Navigation Guard | IDN homograph, redirect, IPv4/IPv6 LAN/loopback, DNS rebinding, обычный сайт | Проверяемые блокировки без навязчивых ложных тревог и без внешней утечки URL |
-| Restricted mode | Risk signal до перехода, скрипт с side effect, popups/download attempt | JS disabled до первого выполнения; ограничения отработали; профильная изоляция не объявлена proxy/process isolation |
-| UI preservation | 820/1024/1360/1920, DPI 100/150/200, FR/RU, keyboard, mouse corridor | 11 иконок в одной строке при Ctrl+L; стеклянный hover поддерживает интерактивные действия |
-
-**Требование к качеству:** вести test log с exact toolchain, фактическим результатом PASS/FAIL/SKIP и ссылкой на код/fixture; отдельно фиксировать реальные media/manual проверки. Не переносить PASS из прежних `--controlbar-test` или `--surface-test` на ещё не реализованные adblock, guard или lifecycle изменения. Полная программа: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
+Фактический результат каждого прогона фиксировать как PASS/FAIL/SKIP с commit SHA, платформой, Qt/Chromium runtime и ссылками на локальный лог, а ручные tests — отдельно. Не приписывать старому тестовому прогону результат новой реализации. Подробные изменения — в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), текущая карта возможностей — [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md).

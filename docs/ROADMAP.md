@@ -1,34 +1,38 @@
-# CYBOU Browser — roadmap: реализация и развитие
+# CYBOU Browser — roadmap и проверяемый статус
 
-**Актуально на 17 октября 2026.** Проверка `main` @ `9f7b69887a6ca7bdfbf6c1ef31c249b8cc9a2e0f` (tracker exception) и `51559ca33e089eeebca3edfb49dff05710d1d84c` (glass surfaces). Это документ о состоянии **кода**, а не сертификат реальной защищённости. `implemented` — есть код; `tested (recorded)` — в репозитории сохранены логи локального прогона; `planned` — реализации пока нет.
+**Срез кода:** `main`, изменения `51559ca` (Control Bar и surfaces) и `9f7b698` (tracker exception), 17.10.2026. Позднейшие изменения документации не равны изменениям кода.
 
-## Реализовано в текущей кодовой базе
+**Статусы:** **implemented** — существует код; **tested (recorded)** — ранее сохранён результат локального теста; **unverified** — не подтверждено на реальных сценариях; **planned** — ещё нет реализации. Детали и журналы — в [VALIDATION](VALIDATION.md).
 
-| Этап | Статус и подтверждение | Границы |
-| --- | --- | --- |
-| 11 inline capabilities + glass hover | **implemented; tested (recorded)**: 820/1024/1360/1920, Ctrl+L, pointer corridor, keyboard; `--controlbar-test` | DPI 150/200%, FR/RU и все ОС требуют проверки |
-| Browser-owned glass surfaces | **implemented; tested (recorded)**: `--surface-test`, обычные GlassToolTip, drawers под 74px header | Ручные real-monitor испытания остаются |
-| Без постоянного positive trust | **implemented; tested (recorded)**: `AskEveryTime`, native coordinator с request ID, SiteContext, 15 c pending и независимыми 60 c grants | Camera/mic/iframe и OS suspend/resume не проверены на устройствах |
-| Безопасный отзыв документа | **implemented**: earliest grant expiry уничтожает WebEngineView, не передаёт grants другому документу | Может неожиданно прерывать звонки и работу пользователя |
-| Production HTTPS strict | **implemented; tested (recorded)**: точный HTTP URL через off-the-record профиль на 60 c, same-origin assets, revoke, reload/epoch guards; `--transport-test` | Data isolation != process/proxy isolation |
-| Network observation | **implemented**: bounded (256) metadata, outcome/reason, profile scope; event-driven refresh | Нет доказанной per-tab атрибуции |
-| Tracker blocker | **implemented, limited**: небольшой static suffix-list; одноразовое **60-секундное исключение для трекеров** в отдельном off-the-record профиле, countdown/revoke в Network hover-панели; `TrackerExceptionLease`, `--tracker-test` harness | Нет полноценного ads engine и независимых категорий Ads/Trackers; исключение заменяет документ и временно теряет обычные cookies/cache |
-| Windows build | **implemented; tested (recorded)**: C++20, Qt 6.12, MSVC 2022 Release, security tests в `VALIDATION.md` | Linux/macOS, release pipeline и независимый аудит не проверены |
+## Реализовано в текущем коде
 
-## Новые этапы — не реализованы
+| Возможность | Статус и границы |
+| --- | --- |
+| **Control Bar** | **implemented, tested (recorded):** 11 иконок в одной навигационной строке, адрес занимает остаток ширины, hover открывает интерактивные стеклянные карточки; test harness на четырёх размерах при DPR 1 |
+| **Browser surfaces** | **implemented, tested (recorded):** отдельные GlassToolTip для навигации, drawers под шапкой, управление вкладками и окном |
+| **Чувствительные permissions** | **implemented, tested (recorded):** C++ `PermissionCoordinator`, request ID, `SiteContext`, fail-closed ожидание, независимые leases, `AskEveryTime`; real mic/camera и cross-origin iframe **unverified** |
+| **Текущий отзыв grant** | **implemented, UX gap:** отзыв реализован через завершение WebEngineView, что может оборвать пользовательскую работу; новый UX отзыва **planned** |
+| **Transport** | **implemented, tested (recorded):** production HTTPS strict; exact-address HTTP consent в отдельном off-the-record профиле, последующее завершение/отзыв без наследования обычных cookies |
+| **Tracker-only exception** | **implemented, narrow:** отдельный временный профиль для выбранной HTTPS-страницы, пропуск matching tracker-list traffic, ручной revoke и завершение по закрытию/перезагрузке/смене документа; `--tracker-test` harness присутствует; не полный adblock |
+| **Network events** | **implemented:** ограниченная очередь, sanitized origin, blocked reason и type, только scope профиля; нет проверенного per-tab attribution |
+| **Windows** | **tested (recorded):** C++20 Release, Qt 6.12/MSVC, security/controlbar/surface/transport suites; Linux/macOS и release qualification остаются unverified |
 
-| ID | Приоритет | Задача | Gate завершения |
+## Далее — приоритетный порядок
+
+| ID | Приоритет | Задача (**planned**, если не указано иное) | Критерий приёмки |
 | --- | --- | --- | --- |
-| S0.1 | **P0** | Устранить несовпадение explicit top-origin deny и iframe requesting-origin policy | Cross-origin A→B deny, запрет requester, stale request ID, нормальный/приватный профиль |
-| S0.2 | **P0** | Реальные media-тесты; безопасный UX временного grant без тихого обрыва страницы и без постоянного Allow | Mic/camera/combined, звонок 5–30 мин, expiry/revoke и OS sleep/resume |
-| S0.3 | **P0** | Hardening Qt/Chromium: sandbox, актуальность патчей, release/update-дисциплина | Runtime версии и sandbox проверены; регрессия на обновлённом WebEngine |
-| S1.1 | **P1** | Версионированный, проверяемый rule engine для ads и trackers | Категории реальны, false positives/производительность, безопасное обновление правил |
-| S1.2 | **P1 / partially implemented** | Уже есть один временный tracker exception через изолированный профиль. Развить его в **две независимые Ads/Trackers policies** в той же Network hover-карточке, без потери защищённого UX | Two-tabs isolation, Ads ≠ Trackers, TTL/Undo, HTTPS strict не меняется; реальный rules engine |
-| S1.3 | **P1** | Семантические цвета policy/events, bounded `ActivityAggregator` | Нет red-allow, no fake active device, no fictitious per-tab counts |
-| S2.1 | **P2** | Локальный Navigation Guard: IDN/redirect/private-network/опасные схемы | Позитивные и негативные fixtures без навязчивых false positives |
-| S2.2 | **P2** | Restricted Browsing: JS-off до документа, ограниченный профиль/разрешения | Before-load JS test, safe exit; не выдавать профиль за полноценный sandbox |
-| S3 | **Research** | Separate-process/proxy isolation | DNS/WebRTC/route leak tests и проверяемая процессная граница |
+| S0.1 | P0 | Одинаковое применение explicit deny к top origin и вложенным requester iframe | Двухoriginные fixtures, stale ID/tab/profile/epoch тесты |
+| S0.2 | P0 | Достоверный и пригодный для звонков отзыв media без внезапного разрушения документа; перепроектировать жизненный цикл доступа по требованиям владельца продукта и проверить гарантии отзыва | Реальные mic/camera/combined tests, долгий звонок, revoke, sleep/resume |
+| S0.3 | P0 | Поддерживаемый патченный Qt/Chromium, sandbox/release flags и безопасная доставка обновлений | Runtime-проверка, регрессия и проверка обновлений |
+| S1.1 | P1 | Версионированный ad/tracker RuleEngine с проверкой целостности и false positives | Реальные категории, производительность, rollback, сайты login/video/payment |
+| S1.2 | P1 / частично | Развить реализованное tracker-only исключение до независимых временных Ads/Trackers действий **в той же Network hover-карточке** | Две вкладки, independent categories, Undo, HTTPS unchanged |
+| S1.3 | P1 | Семантика policy/event и `ActivityAggregator` с правдивым scope | Default != blocked event; grant != recording; profile != tab |
+| S2.1 | P2 | Локальный Navigation Guard: IDN/redirect/private-network | Positive/negative fixtures, отсутствие необоснованных предупреждений |
+| S2.2 | P2 | Restricted Browsing: JS-off до документа и проверяемые ограничения | Before-load tests, корректный отказ и выход |
+| S3 | research | Process/proxy isolation | DNS/WebRTC/route leak tests; никакого рекламного обещания заранее |
 
-**Именно этот порядок — приоритетный.** Пошаговая спецификация, сценарии и неизменяемые UX-решения: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md). Текущие API: [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md); зафиксированные предыдущие локальные результаты: [VALIDATION](VALIDATION.md); новые тесты: [TEST_PLAN](TEST_PLAN.md).
+## Правила внесения изменений
 
-**Правила:** не создавать ветки, небольшие коммиты в `main`; без новой строки панели, без группировки 11 иконок, без замены glass hover на plain tooltips, без Always Allow/модального ASK или глобальных отключений в site card. Любое `planned → implemented` сопровождается кодом, реальными проверками и изменением статуса. Историческая [OBSERVABLE_BROWSING_PROPOSAL_RU](OBSERVABLE_BROWSING_PROPOSAL_RU.md) не переопределяет эти решения.
+Все изменения прямо в `main`, **без веток**, после локальных тестов. GitHub Actions пока не является обязательным условием. Никакого редизайна Control Bar, Always Allow, глобального opt-out из карточки сайта или фальшивых событий. Старые интеграционные планы — исторический материал и не переопределяют [PRODUCT_VISION](PRODUCT_VISION.md) и [CONTROL_BAR_UX](CONTROL_BAR_UX.md).
+
+**Детальный план реализации:** [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md). **Проверки:** [TEST_PLAN](TEST_PLAN.md).

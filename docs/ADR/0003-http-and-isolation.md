@@ -1,3 +1,9 @@
-# ADR 0003: transport and isolation
+# ADR 0003 — strict HTTPS и временный HTTP-контекст
 
-Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. Explicit network-panel consent opens one exact HTTP URL in a dedicated off-the-record profile for at most 60 seconds, allowing only same-origin HTTP resources with matching firstParty. Reload, later navigation, revoke and expiry tear down the view/profile. Consent is scoped to tab UID/navigation epoch. Page-controlled navigation is never replayed automatically with normal cookies. Tests alone may disable strict in their separate organization. Profile data separation does not establish process or proxy isolation. Independent routing requires process and route/DNS/WebRTC leak tests; no such production claim is made.
+**Статус:** реализованная модель исключения для конкретной навигации.
+
+Production HTTPS strict без глобального opt-out. По явному запросу пользователя Network-карточка может открыть **один конкретный HTTP URL** в отдельном off-the-record профиле; допуск same-origin HTTP resources ограничен origin и firstParty контекстом. Следующий переход, reload, revoke или закрытие контекста не превращает исключение в разрешение для других URL или обычного профиля. Запрещены embedded credentials и незащищённые дополнительные origins. Page-controlled navigation не переигрывается с нормальными cookies.
+
+Отдельный профиль означает разделение cookies/cache, **не process isolation, не proxy и не анонимность**. Тестовый режим HTTP fixture не должен быть доступен обычному запуску.
+
+Техническое устройство: [ARCHITECTURE](../ARCHITECTURE.md). Текущий статус и проверки: [ROADMAP](../ROADMAP.md), [VALIDATION](../VALIDATION.md).

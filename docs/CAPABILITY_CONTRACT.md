@@ -1,35 +1,29 @@
-# Контракты возможностей
+# CYBOU — контракт возможностей панели
 
-Политика и событие независимы. Allow означает временную выдачу права, не использование устройства. Pending всегда сопровождается requesting origin в tooltip. Срок ожидания 15 с, срок каждого grant до 60 с; самый ранний deadline уничтожает WebEngineView и заменяет её пустой. Все события памяти ограничены 256 записями.
+Этот документ описывает **то, что реально поддерживается**, а не план релиза. Расположение и взаимодействия определяет [CONTROL_BAR_UX](CONTROL_BAR_UX.md); новая безопасность и UX — [ROADMAP](ROADMAP.md).
 
-| Кнопка | Наблюдение/API | Default | Клик | Область / отзыв / ограничения |
-|---|---|---|---|---|
-| Camera | permissionRequested, MediaVideoCapture | недоступна | grant только pending; иначе сброс отказа и новая view на том же URL | документ вкладки; навигация/60 с; работа сенсора не наблюдается |
-| Mic | MediaAudioCapture / MediaAudioVideoCapture | недоступен | как camera; комбинированный запрос выдаёт оба | объект исходного запроса; неизвестна активность |
-| Screen | DesktopVideoCapture | недоступен | сведения | chooser не интегрирован, запрос deny |
-| Location | Geolocation | недоступна | текущий запрос / сброс через новую view на том же URL | requesting origin, документ, 60 с |
-| Notifications | Notifications | недоступны | текущий запрос / сброс через новую view на том же URL | desktop presentation не интегрирована |
-| Clipboard | ClipboardReadWrite | недоступен | текущий запрос / сброс через новую view на том же URL | не все clipboard операции наблюдаемы |
-| JavaScript | settings.javascriptEnabled | включён | toggle + reload banner | tab UID + origin, память; нет наблюдения DOM |
-| Popups | newWindowRequested | только user gesture | временное allow/deny | вкладка; нет подсчёта подавленных Chromium попыток |
-| Cookies | cookieStore filter | third-party deny | профильные сведения/контроль | явно глобальная настройка, не site privilege |
-| Storage | settings.localStorageEnabled | включено | toggle + reload banner | localStorage, не IndexedDB/service workers |
-| Network | URL interceptor | tracker rules + постоянный HTTPS strict | категории/причины, HTTP и tracker opt-in/revoke | bounded profile sample; исключения: отдельный профиль, один документ, 60 с; tracker только HTTPS |
+**Состояния:** effective policy, pending request, granted permission, confirmed blocked event, recent event и unknown — независимые факты. `Allow` не доказывает работу камеры/микрофона. Событие перехватчика на профиле не подтверждает конкретную вкладку. Если нет достоверного API, UI говорит об ограничении.
 
-Reload/Undo действуют только при совпадении исходной вкладки, полного URL и navigation epoch; смена контекста закрывает баннер. Request IDs, независимые PermissionLease и проверки SiteContext реализованы в C++. Typed C++ policy transactions остаются в roadmap.
-
-## Следующий контракт UX и защиты (planned; не реализован)
-
-Текущие `policy / pending / blocked / recent` не следует смешивать с фактической активностью сенсора. Grant camera/mic не гарантирует «идёт запись». По умолчанию нейтральная закрытая capability — не ошибка или произошедшая атака. Hover должен оставаться полноценной **интерактивной стеклянной панелью**, не краткой подсказкой.
-
-| Контроль | Следующее проверяемое поведение | Что запрещено утверждать |
+| Кнопка | Источник и текущее действие | Область / честные ограничения |
 | --- | --- | --- |
-| Camera/Mic/Location | Показать срок действующего grant, предупреждать о последствиях истечения; улучшение без внезапного обрыва лишь после real-media/revoke API proof | Что grant означает активную запись или что можно безопасно отозвать работающий stream без проверки |
-| Requests из iframe | Запрет top-level origin распространяется на nested requester; показываются оба origin; конкретный request ID обязательный | Что посещение сайта или разрешение для родителя автоматически разрешает iframe |
-| Network (Ads/Trackers) | Две *backend-подтверждённые* категории и независимые временные действия **в существующей Network hover-карточке** | Что старый единый tracker suffix list уже даёт полноценный adblock или отдельные per-tab счётчики |
-| Журнал | Ограниченные по времени confirmed events с явным scope profile/tab/unknown | Что `firstParty` одного сетевого запроса точно определяет tab |
-| Навигация | Локальные проверки IDN/URL/redirect/private-network, при реальном риске restricted mode и JS-off before-load | Что неизвестный сайт опасен или что off-the-record profile анонимен |
+| **Camera** | Native `MediaVideoCapture` request; клик отвечает на конкретный pending request или сбрасывает контекст | Grant связан с документом; неизвестно, ведётся ли реальная запись |
+| **Mic** | `MediaAudioCapture` / combined audio-video; действующий запрос, сброс | Combined request может относиться к двум кнопкам; нет датчика активности потока |
+| **Screen** | Тип permission распознаётся; capture chooser не интегрирован | Unsupported request отклоняется; fake Allow не показывать |
+| **Location** | `Geolocation` permission request, явное решение, сброс | Реальный location provider и точность не подтверждены |
+| **Notifications** | Native permission request, явное решение | Desktop delivery не интегрирована |
+| **Clipboard** | `ClipboardReadWrite`, pending/решение | Не каждый clipboard access наблюдаем |
+| **JavaScript** | `settings.javascriptEnabled`, direct toggle, reload/Undo | Текущий view, политика по tab+origin; нет inventory DOM/JS |
+| **Popups** | `onNewWindowRequested`, user gesture по умолчанию, allow/deny для новых окон | Скрытые внутренние попытки Chromium не подсчитываются |
+| **Cookies** | Third-party cookie filter | Глобальная настройка профилей, **не per-site** |
+| **Storage** | `settings.localStorageEnabled`, direct toggle, reload/Undo | Только localStorage, не полный IndexedDB/Cache/Service Workers control |
+| **Network** | Interceptor, HTTPS strict, event categories; HTTP consent/revoke и tracker-only exception/revoke в интерактивной карточке | События и counts profile-scoped; отдельный tracker профиль без обычных cookies; ни полного adblock, ни независимых Ads/Trackers policies пока нет |
 
-**Реализованный узкий промежуточный шаг:** `TrackerExceptionLease` разрешает известные tracker-list запросы одной HTTPS-страницы на срок до 60 с только в отдельном off-the-record профиле, с countdown и revoke в Network glass-панели. Старые cookies/cache не наследуются; reload/expiry уничтожают контекст. Нельзя объявлять это независимыми Ads и Tracker категориями. **Следующий этап** расширяет уже реализованное поведение, а не проектирует исключения с нуля.
+## Правила действий
 
-**Существующие ограничения сохраняются:** Screen chooser не интегрирован; Notifications presentation не готова; cookies глобальны по нескольким профилям; Storage контролирует localStorage, не полный инвентарь IndexedDB/Service Workers; Network наблюдает только доступные ему HTTP(S)/ws события. Новые таблицы — acceptance criteria, а не shipped API. Подробнее: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
+- Permission выдаётся только в ответ на живой запрос для той же вкладки, профиля, requesting/top origins и navigation epoch; произвольного site allow нет. `AskEveryTime` остаётся внутренним механизмом Qt. Отсутствие ответа на pending request приводит к отказу.
+- Сброс чувствительной capability без pending request может пересоздать текущий URL в новой `WebEngineView` без добавления вкладки.
+- JS/storage/popups меняют поведение, а не переписывают уже исполненные скрипты; Reload/Undo требуют исходный tab+URL+epoch. Нельзя запускать Undo на другой вкладке.
+- Сетевые temporary opt-ins действуют в отдельном контексте и могут пересоздать/закрыть документ; это UX-ограничение следует честно показывать в карточке, не утверждая безусловный бесшовный возврат.
+- Настройку защиты всех профилей нельзя представлять как site-scoped действие. Недоступные Screen или полноценные Ads/Trackers controls не изображать активными.
+
+Следующие изменения (iframe inheritance, verified media revoke, ad/tracker RuleEngine, ActivityAggregator) отмечены как **planned** в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md). Реальные локальные проверки: [VALIDATION](VALIDATION.md).

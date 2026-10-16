@@ -1,11 +1,11 @@
-# ADR 0002: temporary permission lifecycle
+# ADR 0002 — request-scoped permissions и отзыв контекста
 
-Both Qt profiles use AskEveryTime; controller queryPermission cannot grant. PermissionCoordinator owns one pending object per window and independent per-request PermissionLease records. SiteContext binds weak view/profile pointers, tab UID, top/requester origins and navigation epoch; IDs distinguish successive native requests, and resolve requires an exact ID. Button press snapshots the ID so a later release cannot grant a replacement request. The actual view profile must remain AskEveryTime at both submit and resolve. A grant requires the unchanged current context, a valid native request and an unexpired 15-second deadline.
+**Статус:** принятое описание текущей архитектуры. Будущий UX media-сессий — отдельное продуктовое решение.
 
-Each grant expires after 60 seconds. Later grants cannot renew earlier deadlines. At the earliest expiry, the entire WebEngineView is destroyed and replaced in place by a blank view with a new UID, and all its leases are removed; this deliberately revokes newer grants too because isolated per-device stream termination is unverified. Monotonic and wall-clock deadlines fail closed on timer delay and clock changes. Confirmed document replacement retires old-epoch leases; failed navigation retains the old deadline. Clear permissions destroys all leased views. Idle sensitive-capability reset replaces the view with the same URL, without adding a tab or granting access. Pinned and mute state survive replacement; a PDF export owned by that view is marked cancelled. View/profile destruction removes weak references.
+- Оба WebEngine-профиля используют внутреннее `AskEveryTime`. Permanent positive origin grants и user-facing ASK/Always Allow не применяются.
+- C++ `PermissionCoordinator` обрабатывает один актуальный pending request на окно, связывает `QWebEnginePermission` с request ID, view/profile, tab UID, top/requester origin и navigation epoch; stale/invalid/background/unsupported отклоняются.
+- Кнопка сохраняет request ID при нажатии, чтобы отпускание не подтвердило следующий чужой запрос.
+- Для выданных permissions существуют независимые `PermissionLease`, а закрытие/смена документа и отзыв контекста удаляют право. Текущая реализация может разрушать `WebEngineView`; это **не** доказательство того, что native media stream можно достоверно остановить *внутри той же страницы*.
+- Сброс чувствительной capability без ожидающего запроса пересоздаёт документ с тем же URL в том же слоте вкладки, сохраняя важное состояние вкладки, но не grants. No automatic pregrant.
 
-Grant is not evidence of device activity. Actual media shutdown and iframe behavior still require real-device checks; per-request objects do not imply individually stoppable device streams. Typed policy transactions remain planned.
-
-## Follow-up pending decision (17.10.2026; not yet implemented)
-
-The current forced 60-second WebEngineView teardown is intentionally fail-closed, **not** a finished experience for long calls. Before changing the mechanism, validate real microphone/camera streams, combined requests, independent deadlines and OS sleep/resume. UI proposals include a clear unobtrusive pre-expiry warning and strictly bounded *explicit* renewal for the same active document, but only after a trustworthy revoke/stop mechanism has been demonstrated. No auto-renew or stored Allow. Explicit sensitive deny must also apply consistently to requesting cross-origin iframes, not only the top-level origin. See [SECURITY_UX_EVOLUTION](../SECURITY_UX_EVOLUTION.md).
+**Открытая задача:** проверить top-origin deny и requester-origin для cross-origin iframe; отдельно проверить реальные устройства и улучшить UX длинных звонков в соответствии с решением владельца продукта. См. [SECURITY_MODEL](../SECURITY_MODEL.md), [SECURITY_UX_EVOLUTION](../SECURITY_UX_EVOLUTION.md).

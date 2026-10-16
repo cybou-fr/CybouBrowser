@@ -62,7 +62,7 @@ The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Secu
 | **Pop-ups** | Control future window-opening behavior; user-initiated actions are allowed by default. |
 | **Cookies** | Display the current third-party-cookie policy. Filtering is **profile-wide**, not a per-site switch. |
 | **Site storage** | Control the WebEngine localStorage setting; not comprehensive IndexedDB, Cache Storage, or service-worker management. |
-| **Network** | Human-readable resource types and filter decisions, HTTP/tracker/other categories, bounded profile-scoped samples. A 60-second tracker exception recreates one HTTPS document in a separate in-memory profile, with countdown and revoke. |
+| **Network** | Human-readable resource types and filter decisions, HTTP/tracker/other categories, bounded profile-scoped samples. A temporary tracker exception recreates one HTTPS document in a separate off-the-record profile, with explicit revocation. |
 
 **An icon has two independent jobs:** indicate the effective policy and signal a confirmed event. A pending request is visually distinct from an allowed capability, a blocked attempt, and recent activity. Glass hover panels identify the relevant scope and requesting origin when available.
 
@@ -70,8 +70,8 @@ The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Secu
 
 1. A foreground page requests a supported sensitive capability; the corresponding icon highlights **without a routine ASK dialog**.
 2. Clicking a highlighted icon may grant **the current, valid request**. Unanswered requests are denied after **15 seconds**.
-3. Both regular and private WebEngine profiles use **AskEveryTime** internally; they do not persist positive grants to disk.
-4. Every grant has an independent **60-second deadline**. The earliest expiry destroys and replaces the document; a later grant does not extend an earlier one. This is not a guarantee of stopping hardware streams in place.
+3. Regular and private WebEngine profiles use **AskEveryTime** internally; they do not persist positive grants to disk.
+4. Each grant belongs to the current document. Reload, navigation, tab closure or explicit reset end that access; revocation may replace the WebEngineView. A grant is not evidence of active hardware use.
 5. Another visit requires a new permission decision; no permanent positive site trust is retained.
 
 A request's top-level site and actual requesting origin may differ (for example, in an iframe). This needs further real-world verification with combined camera/microphone requests, multiple tabs, and physical devices.
@@ -80,10 +80,10 @@ A request's top-level site and actual requesting origin may differ (for example,
 
 | Area | Shipped in the code | Planned / unverified |
 | --- | --- | --- |
-| **Encrypted transport** | Production HTTPS strict; exact HTTP consent in a separate in-memory profile for 60 seconds. Legacy global opt-outs removed; certificate errors rejected. | Real-world transport compatibility and OS suspend/resume checks. |
+| **Encrypted transport** | Production HTTPS strict; exact HTTP consent in a separate off-the-record profile. Legacy global opt-outs removed; certificate errors rejected. | Real-world transport compatibility and OS suspend/resume checks. |
 | **Tracker filtering** | A small in-memory list of known advertising and analytics host suffixes blocks selected third-party requests. | Comprehensive, versioned ad/tracker rules and verified category separation. |
 | **Observable traffic** | Bounded, sanitized metadata with origin, resource type, timestamp, blocked outcome, and reason. | Guaranteed per-tab attribution and visibility into all page/JavaScript activity. |
-| **Permission restrictions** | Native C++ request coordinator, request identity checks, fail-closed timeout and independent grant deadlines enforced by document teardown. | Proven hardware capture-stop behavior on real devices. |
+| **Permission restrictions** | Native C++ coordinator, request identity checks, fail-closed pending timeout and document-scoped grants. | Proven hardware capture-stop behavior on real devices. |
 | **Risk-adaptive mode** | Conservative WebEngine content policies and the transport/request interceptor. | Evidence-based risk engine and JS-off applied before suspicious content loads. |
 | **Proxy isolation** | **Not implemented.** | Dedicated, tested network/process isolation including DNS and WebRTC leak checks. |
 
@@ -92,11 +92,27 @@ An unfamiliar website is not automatically malicious. CYBOU must base stronger r
 **Security disclosure:** CYBOU is an experimental browser, not independently security-audited. The current suffix-list filter is **not** a complete ad blocker. Network observation cannot reveal every action executed by a page. Private mode does not anonymize the connection. Keep the underlying Qt/Chromium engine patched.
 
 
+## Temporary HTTP and tracker exceptions
+
+### HTTP: exact-address consent
+
+Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. After a blocked HTTP attempt or failed known HTTPS upgrade, the Network panel offers explicit access to that exact address. Consent creates a separate off-the-record profile without normal cookies/cache for this document. One exact main-frame URL and same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and ws remain blocked. Reload, later navigation, tab closure and manual revoke end the temporary view/profile; HTTP requires fresh consent. Page-controlled navigation is never automatically replayed with normal cookies. This separates profile data, not processes or proxy routes.
+
+The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
+
+The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
+
+### Trackers: dedicated temporary context
+
+The Network glass panel groups HTTP, tracker and other events, using resource names and clear explanations. Passing a filter is not proof of a successful load. Counts are scoped to the current profile's recent sample.
+
+If filtering breaks a loaded HTTPS page, explicit consent recreates that exact page in a separate off-the-record profile without ordinary cookies/cache. Tracker-list requests with matching firstParty origin can pass while that temporary document remains active. Existing behavior restrictions are inherited, while device grants are not copied. The panel provides immediate revocation of the temporary exception. Reload, later navigation, tab closure or manual revoke end the temporary context; other tabs retain tracker filtering. This mode does not combine with HTTP exceptions. See [ADR 0004](docs/ADR/0004-temporary-tracker-exceptions.md).
+
 ## Security and UX: what we are building next
 
-The current eleven-icon **single-row** Control Bar and its interactive glass hover panels stay exactly where they are. Planned improvements focus on *real enforcement*: explicit deny rules across cross-origin iframes, verified and usable temporary camera/microphone permissions, a patched/sandboxed WebEngine, a versioned ad/tracker rules engine, expansion of the **already implemented 60-second tracker exception** into independent ad/tracker policies inside the same Network hover panel, truthful events/colors, and carefully gated navigation-risk checks.
+The **single-row eleven-icon Control Bar and interactive glass hover panels remain unchanged**. The next priorities are iframe deny inheritance, a reliable media-permission lifecycle without silent page loss, WebEngine patch/sandbox discipline, full ad/tracker rule coverage, independent site-scoped controls, truthful activity and navigation risk checks.
 
-**The existing temporary tracker exception is shipped; the independent ad/tracker policies and other improvements described here are planned.** Profile-scoped traffic is not a tab counter; permission grants are not proof of physical capture; off-the-record HTTP sessions are not proxy/process isolation. See the [Security & UX Evolution Plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
+The existing tracker-only temporary context is implemented, but the full rule engine and independent ad/tracker category controls are **planned**. Permission grants do not prove active hardware use; profile network events are not per-tab statistics. See the [Security & UX plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
 
 ## Everyday browser features
 
@@ -105,20 +121,6 @@ The current application also includes draggable/reorderable tabs; pinned and mut
 The browser-owned UI uses the CYBOU navy/red/white brand and the Dark Glass / Alpine Dawn design language. The application icon is [assets/cybou.png](assets/cybou.png); the Windows executable icon is [assets/cybou.ico](assets/cybou.ico).
 
 **No permanent site permission does not mean no local data is saved.** Bookmarks, history, session URLs, cookies, downloaded files, and ordinary first-party storage can persist. History and session URLs are saved in QSettings without encryption. The current cleanup command does not comprehensively erase localStorage, IndexedDB, or service workers.
-
-### Temporary HTTP access
-
-Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. After a blocked HTTP attempt or failed known HTTPS upgrade, the Network panel offers explicit access to that exact address. Consent creates a separate off-the-record profile without normal cookies/cache for at most 60 seconds. One exact main-frame URL and same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and ws remain blocked. Reload, later navigation, revoke and expiry destroy the temporary view/profile; HTTP requires fresh consent. Page-controlled navigation is never automatically replayed with normal cookies. This separates profile data, not processes or proxy routes.
-
-The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
-
-The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
-
-### Temporary tracker exception
-
-The Network glass panel groups HTTP, tracker and other events, using resource names and clear explanations. Passing a filter is not proof of a successful load. Counts are scoped to the current profile's recent sample.
-
-If filtering breaks a loaded HTTPS page, explicit consent recreates that exact page in a separate off-the-record profile without ordinary cookies/cache. Tracker-list requests with matching firstParty origin pass for at most 60 seconds. Existing behavior restrictions are inherited, while device grants are not copied. The panel shows remaining seconds and immediate revoke. Reload, later navigation, expiry or revoke destroy the temporary context; other tabs retain tracker filtering. This mode does not combine with HTTP exceptions. See [ADR 0004](docs/ADR/0004-temporary-tracker-exceptions.md).
 
 ## Build on Windows
 

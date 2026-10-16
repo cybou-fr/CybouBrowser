@@ -1,11 +1,11 @@
-# ADR 0004: temporary tracker exceptions
+# ADR 0004 — tracker-only exception через отдельный профиль
 
-A shared profile interceptor cannot reliably attribute a request to a tab. Never disable tracker filtering on that shared profile for a tab-scoped action.
+**Статус:** узкий механизм реализован; независимый ads/tracker rule engine запланирован.
 
-Explicit consent recreates one loaded HTTPS URL in a fresh off-the-record AskEveryTime profile. Ordinary cookies/cache are not copied. A mutex-protected native lease consumes the exact main-frame URL once and permits tracker-list matches only when firstParty origin matches that document. HTTPS strict and the other profile policies still apply. The exception does not combine with an HTTP exception.
+Запросы перехватываются на уровне `QWebEngineProfile`; без достоверной tab attribution нельзя отключить filtering на общем профиле ради одной вкладки.
 
-The native lease lasts at most 60 seconds and checks monotonic and wall-clock deadlines. A separate native timer tears down the view/profile on expiry, including in a background tab. Reload, another main-frame navigation, manual revoke and tab closure also end the exception. Page-controlled navigations are not replayed with ordinary cookies. Press/release actions carry tab UID/navigation epoch tokens. The panel shows remaining seconds; UI refresh never extends the lease.
+По явному согласию выбранная HTTPS-страница открывается заново в отдельном off-the-record профиле с внутренним `AskEveryTime`. Обычные cookies/cache не переносятся. `TrackerExceptionLease` разрешает одно конкретное открытие документа, а затем применяет исключение к matched tracker-list requests при соответствующем `firstParty`. HTTPS strict, URL credentials deny и остальные ограничения не отменяются. Этот режим не совмещается с временным HTTP-исключением.
 
-Network events retain sanitized origin/firstParty, type, time, blocked reason and explicit tracker-exception decisions. Labels and categories describe filter outcomes, not successful downloads or total page activity. Shared-profile counts remain profile-scoped. The fixed suffix list is still a limited filter, not a full ad-block engine. Profile data separation is not process/proxy isolation.
+Отзыв, новая навигация, reload и завершение временного контекста удаляют исключение и могут разрушать документ. Hover-панель Network показывает состояние, подтверждённые network decisions и возможность revoke. Никакого бессрочного или межвкладочного Allow.
 
-The dedicated --tracker-test harness alone permits a loopback HTTP fixture in a temporary tracker profile and maps the tracker test hostname to loopback before WebEngine startup. Production rejects this HTTP path. The fixture observes actual blocked and successful requests without contacting a public tracker or ignoring TLS errors.
+События ограничены sanitized origin/firstParty, resource type, action и category. «Фильтр пропустил» не доказывает, что ресурс действительно загрузился. Это ещё не полноценная блокировка рекламы и не изоляция процесса, DNS или маршрута. См. [ROADMAP](../ROADMAP.md), [SECURITY_MODEL](../SECURITY_MODEL.md), [SECURITY_UX_EVOLUTION](../SECURITY_UX_EVOLUTION.md).
