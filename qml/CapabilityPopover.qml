@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
+import Cybou
 
 Popup {
     id: card
@@ -14,6 +15,30 @@ Popup {
     signal decisionRequested(bool allow)
     signal reloadRequested()
     signal cookieRequested()
+
+    component GlassBtn: Button {
+        id: gbtn
+        scale: down ? 0.95 : hovered ? 1.02 : 1.0
+        Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
+        contentItem: Text {
+            text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
+            font.pixelSize: 12; font.bold: gbtn.highlighted || gbtn.hovered
+            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: 6
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: gbtn.highlighted ? "#E0183A68" : gbtn.down ? "#DD0D2038" : gbtn.hovered ? "#DD224572" : "#80142F52" }
+                GradientStop { position: 1.0; color: gbtn.highlighted ? "#E80E2444" : gbtn.down ? "#EE071222" : gbtn.hovered ? "#EE163052" : "#900B1D35" }
+            }
+            border.color: gbtn.highlighted ? CybouTheme.borderActive : gbtn.hovered ? "#7DA5CC" : CybouTheme.borderHighlight
+            border.width: 1
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: gbtn.highlighted ? "#50FFFFFF" : CybouTheme.glassSheenSubtle; radius: parent.radius
+            }
+        }
+    }
     width: 330; padding: 16
     height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
@@ -95,28 +120,43 @@ Popup {
         Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
             visible: !!card.capability.pending
-            Button { text: qsTr("Autoriser cette demande"); onClicked: card.decisionRequested(true) }
-            Button { text: qsTr("Refuser"); onClicked: card.decisionRequested(false) }
+            GlassBtn { text: qsTr("Autoriser cette demande"); onClicked: card.decisionRequested(true) }
+            GlassBtn { text: qsTr("Refuser"); onClicked: card.decisionRequested(false) }
         }
         Flow {
             Layout.fillWidth: true; spacing: 5
             visible: !!card.capability.canAct && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key)
-            Button { text: qsTr("Demander"); onClicked: card.permissionRequested(card.capability.key, 0) }
-            Button { visible: !!card.capability.persistent; text: qsTr("Toujours autoriser"); onClicked: card.permissionRequested(card.capability.key, 1) }
-            Button { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2) }
+            GlassBtn { text: qsTr("Demander"); onClicked: card.permissionRequested(card.capability.key, 0) }
+            GlassBtn { visible: !!card.capability.persistent; text: qsTr("Toujours autoriser"); onClicked: card.permissionRequested(card.capability.key, 1) }
+            GlassBtn { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2) }
         }
         Flow {
             Layout.fillWidth: true; spacing: 5
             visible: !!card.capability.canAct && ["javascript", "storage", "popups"].includes(card.capability.key)
-            Button { text: qsTr("Autoriser…"); onClicked: card.policyRequested(card.capability.key, 1) }
-            Button { text: qsTr("Bloquer…"); onClicked: card.policyRequested(card.capability.key, 2) }
-            Button { visible: card.capability.key === "popups"; text: qsTr("Gestes explicites"); onClicked: card.policyRequested(card.capability.key, 0) }
+            GlassBtn { text: qsTr("Autoriser"); onClicked: card.policyRequested(card.capability.key, 1) }
+            GlassBtn { text: qsTr("Bloquer"); onClicked: card.policyRequested(card.capability.key, 2) }
+            GlassBtn { visible: card.capability.key === "popups"; text: qsTr("Gestes explicites"); onClicked: card.policyRequested(card.capability.key, 0) }
         }
         Label { visible: ["camera", "mic"].includes(card.capability.key); Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#C4D6EB"; font.pixelSize: 11; text: qsTr("Pour interrompre un flux déjà accordé, rechargez ou fermez l’onglet. L’arrêt n’est pas vérifiable ici.") }
-        Button { visible: card.capability.policy === 4 || (!!card.capability.canAct && ["camera", "mic"].includes(card.capability.key)); text: qsTr("Recharger l’onglet"); onClicked: card.reloadRequested() }
-        Button { visible: card.capability.key === "cookies"; text: browserStore.blockThirdPartyCookies ? qsTr("Autoriser les cookies tiers du profil") : qsTr("Bloquer les cookies tiers du profil"); onClicked: card.cookieRequested() }
+        GlassBtn { visible: card.capability.policy === 4 || (!!card.capability.canAct && ["camera", "mic"].includes(card.capability.key)); text: qsTr("Recharger l’onglet"); onClicked: card.reloadRequested() }
+        GlassBtn { visible: card.capability.key === "cookies"; text: browserStore.blockThirdPartyCookies ? qsTr("Autoriser les cookies tiers du profil") : qsTr("Bloquer les cookies tiers du profil"); onClicked: card.cookieRequested() }
+        ColumnLayout {
+            visible: card.capability.key === "network"
+            Layout.fillWidth: true; spacing: 4
+            Label {
+                text: qsTr("Traqueurs & pubs bloqués : %1").arg(browserStore.totalBlockedTrackers())
+                color: "#38BDF8"; font.pixelSize: 12; font.bold: true
+            }
+            Label {
+                text: qsTr("Échantillon réseau récent : %1").arg(card.capability.sampleCount || 0)
+                color: "#A9C1DC"; font.pixelSize: 11
+            }
+            GlassBtn {
+                text: browserStore.blockTrackers ? qsTr("Désactiver le bloqueur") : qsTr("Activer le bloqueur de traqueurs")
+                onClicked: browserStore.blockTrackers = !browserStore.blockTrackers
+            }
+        }
         Label { visible: !!card.capability.recent && card.capability.key !== "network"; Layout.fillWidth: true; text: qsTr("Événements Qt récents (60 s), pas une preuve d’utilisation active."); color: "#A9C1DC"; font.pixelSize: 11; wrapMode: Text.WordWrap }
-        Label { visible: card.capability.key === "network"; text: qsTr("Échantillon du profil : ") + (card.capability.sampleCount || 0); color: "#A9C1DC"; font.pixelSize: 11 }
         Repeater {
             model: card.capability.events || []
             delegate: Label {
