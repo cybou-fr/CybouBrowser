@@ -19,7 +19,7 @@
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-<p align="center"><sub>C++17 · Qt Quick / QML · Qt WebEngine · Development preview (v0.8.0)</sub></p>
+<p align="center"><sub>Development preview · v0.8.0</sub></p>
 
 ---
 
@@ -101,7 +101,7 @@ The browser-owned UI uses the CYBOU navy/red/white brand and the Dark Glass / Al
 
 ## Build on Windows
 
-**Tested:** Qt 6.12.0 with MSVC 2022 x64 (19.44). Requires Qt 6.9+ with Quick, Quick Controls 2, WebEngine Quick/Core, Network, LinguistTools and Test, plus CMake.
+**Build requirements:** a C++20-capable compiler, CMake 3.24+, and Qt 6.9+ with Quick, Quick Controls 2, WebEngine Quick/Core, Network, LinguistTools and Test. The previously tested Windows toolchain is Qt 6.12.0 with MSVC 2022 x64 (19.44); the C++20 migration still requires a fresh local build and regression-test run.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
