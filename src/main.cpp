@@ -111,6 +111,9 @@ int main(int argc, char *argv[])
     }
     QVariantMap initialProps;
     if (app.arguments().contains("--private")) initialProps["privateMode"] = true;
+    if (app.arguments().contains("--open-library")) initialProps["initialLibrarySection"] = "Téléchargements";
+    if (app.arguments().contains("--open-settings")) initialProps["initialSettingsOpen"] = true;
+    if (app.arguments().contains("--open-menu")) initialProps["initialMenuOpen"] = true;
     if (!initialUrl.isEmpty()) initialProps["initialUrlArgument"] = initialUrl;
     if (!initialProps.isEmpty()) engine.setInitialProperties(initialProps);
     engine.loadFromModule("Cybou", "Main");

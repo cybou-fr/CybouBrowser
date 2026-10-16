@@ -1,7 +1,9 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import QtQuick.Dialogs as NativeDialogs
+import Cybou
 
 Drawer {
     id: panel
@@ -13,7 +15,49 @@ Drawer {
     edge: Qt.RightEdge
     width: Math.min(520, parent.width - 40)
     height: parent.height
-    background: Rectangle { color: "#F2081426"; border.color: "#1E3E6B" }
+    background: Rectangle {
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#D80A1F38" }
+            GradientStop { position: 1.0; color: "#E8061224" }
+        }
+        border.color: CybouTheme.borderHighlight
+        border.width: 1
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#90000000"
+            shadowBlur: 1.0
+            shadowHorizontalOffset: -12
+        }
+        Rectangle {
+            anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+            width: 1; color: CybouTheme.glassSheen
+        }
+    }
+
+    component GlassButton: Button {
+        id: gbtn
+        scale: down ? 0.95 : hovered ? 1.03 : 1.0
+        Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
+        contentItem: Text {
+            text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
+            font.pixelSize: 13; font.bold: gbtn.highlighted || gbtn.hovered
+            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: 8
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: gbtn.highlighted ? "#E0183A68" : gbtn.down ? "#DD0D2038" : gbtn.hovered ? "#DD224572" : "#80142F52" }
+                GradientStop { position: 1.0; color: gbtn.highlighted ? "#E80E2444" : gbtn.down ? "#EE071222" : gbtn.hovered ? "#EE163052" : "#900B1D35" }
+            }
+            border.color: gbtn.highlighted ? CybouTheme.borderActive : gbtn.hovered ? "#7DA5CC" : CybouTheme.borderHighlight
+            border.width: 1
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: gbtn.highlighted ? "#50FFFFFF" : CybouTheme.glassSheenSubtle; radius: parent.radius
+            }
+        }
+    }
     function refreshPermissions() { sitePermissions = profile ? profile.listAllPermissions() : [] }
     onOpened: { refreshPermissions(); statusText = "" }
     ColumnLayout {
@@ -69,7 +113,7 @@ Drawer {
                         else if (currentIndex === 2) wallpaperFileDialog.open()
                     }
                 }
-                Button {
+                GlassButton {
                     text: qsTr("Choisir une image de fond…")
                     visible: browserStore.wallpaperType === "custom"
                     onClicked: wallpaperFileDialog.open()
@@ -90,7 +134,7 @@ Drawer {
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: "TÉLÉCHARGEMENTS"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Label { Layout.fillWidth: true; text: browserStore.downloadsPath; wrapMode: Text.WrapAnywhere; color: "#94A3B8"; font.pixelSize: 12 }
-                Button { text: "Choisir le dossier…"; onClicked: downloadFolder.open() }
+                GlassButton { text: "Choisir le dossier…"; onClicked: downloadFolder.open() }
                 CheckBox { text: "Toujours demander où enregistrer"; checked: browserStore.askDownloadLocation; onToggled: browserStore.askDownloadLocation = checked }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: qsTr("CONTROL BAR"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
@@ -124,7 +168,7 @@ Drawer {
                     }
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: "Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies. Le blocage ne remplace pas un bloqueur de traqueurs." }
-                Button { text: "Effacer les données de navigation…"; enabled: !browserStore.cacheBusy; onClicked: clearDialog.open() }
+                GlassButton { text: "Effacer les données de navigation…"; enabled: !browserStore.cacheBusy; onClicked: clearDialog.open() }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; visible: browserStore.cacheBusy || panel.statusText.length > 0; text: browserStore.cacheBusy ? "Nettoyage du cache en cours…" : panel.statusText; color: "#7DD3FC"; font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 RowLayout {
@@ -137,12 +181,22 @@ Drawer {
                     model: panel.sitePermissions
                     delegate: Rectangle {
                         required property var modelData
-                        Layout.fillWidth: true; implicitHeight: 104; radius: 12; color: "#0F233C"; border.color: "#1E3E6B"
+                        Layout.fillWidth: true; implicitHeight: 104; radius: 12
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#70102646" }
+                            GradientStop { position: 1.0; color: "#800A1A32" }
+                        }
+                        border.color: CybouTheme.borderHighlight
+                        border.width: 1
+                        Rectangle {
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                            height: 1; color: CybouTheme.glassSheenSubtle; radius: parent.radius
+                        }
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 10; spacing: 3
                             Label { Layout.fillWidth: true; text: modelData.origin.toString(); elide: Text.ElideMiddle; font.bold: true; color: "#FFFFFF" }
                             Label { Layout.fillWidth: true; text: browserStore.permissionName(modelData.permissionType) + " · " + (modelData.state === 2 ? "Autorisé" : modelData.state === 3 ? "Refusé" : "Demander"); color: modelData.state === 2 ? "#10B981" : modelData.state === 3 ? "#EF4444" : "#F59E0B"; font.pixelSize: 12 }
-                            Button { text: "Réinitialiser"; onClicked: { modelData.reset(); panel.refreshPermissions() } }
+                            GlassButton { text: "Réinitialiser"; onClicked: { modelData.reset(); panel.refreshPermissions() } }
                         }
                     }
                 }
@@ -172,17 +226,38 @@ Drawer {
         id: clearDialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        width: Math.min(470, parent.width - 40)
+        width: 450
         title: panel.privateMode ? "Effacer les données privées" : "Effacer les données de navigation"
         modal: true
+        header: Label { text: clearDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         standardButtons: Dialog.Ok | Dialog.Cancel
+        background: Rectangle {
+            radius: CybouTheme.dialogRadius
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#E80E2648" }
+                GradientStop { position: 1.0; color: "#F4061224" }
+            }
+            border.color: CybouTheme.borderHighlight
+            border.width: 1.5
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#A0000000"
+                shadowBlur: 1.0
+                shadowVerticalOffset: 12
+            }
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: CybouTheme.glassSheen; radius: parent.radius
+            }
+        }
         onOpened: {
             historyCheck.checked = !panel.privateMode
             sessionCheck.checked = false
         }
         contentItem: ColumnLayout {
             spacing: 8
-            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: "Période : toutes les données du profil de cette fenêtre. Les favoris et fichiers téléchargés sont conservés." }
+            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: "Période : toutes les données du profil de cette fenêtre. Les favoris et fichiers téléchargés sont conservés."; color: CybouTheme.mainText }
             CheckBox { id: cookiesCheck; text: "Cookies (déconnexion des sites)"; checked: true }
             CheckBox { id: cacheCheck; text: "Cache des pages"; checked: true }
             CheckBox { id: historyCheck; text: "Historique de navigation"; enabled: !panel.privateMode }

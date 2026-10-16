@@ -23,12 +23,95 @@ ApplicationWindow {
     palette.highlight: "#1D4ED8"
     palette.highlightedText: "#FFFFFF"
     palette.placeholderText: CybouTheme.mutedText
+
+    component GlassMenuItem: MenuItem {
+        id: gitem
+        implicitHeight: 32
+        scale: down ? 0.98 : 1.0
+        contentItem: Text {
+            leftPadding: 8; rightPadding: 8
+            text: gitem.text
+            color: gitem.enabled ? (gitem.highlighted ? "#FFFFFF" : CybouTheme.mainText) : CybouTheme.mutedText
+            font.pixelSize: 13
+            verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: 6
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: gitem.highlighted ? "#50285285" : "transparent" }
+                GradientStop { position: 1.0; color: gitem.highlighted ? "#40183864" : "transparent" }
+            }
+            border.color: gitem.highlighted ? CybouTheme.borderHighlight : "transparent"
+            border.width: 1
+            Rectangle {
+                visible: gitem.highlighted
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: "#35FFFFFF"; radius: parent.radius
+            }
+        }
+    }
+
+    component GlassMenuSeparator: MenuSeparator {
+        padding: 4
+        contentItem: Rectangle {
+            implicitHeight: 1
+            color: CybouTheme.borderSubtle
+        }
+    }
+
+    component GlassButton: Button {
+        id: gbtn
+        scale: down ? 0.95 : hovered ? 1.03 : 1.0
+        Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
+        contentItem: Text {
+            text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
+            font.pixelSize: 13; font.bold: gbtn.highlighted || gbtn.hovered
+            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: 8
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: gbtn.highlighted ? "#E0183A68" : gbtn.down ? "#DD0D2038" : gbtn.hovered ? "#DD224572" : "#80142F52" }
+                GradientStop { position: 1.0; color: gbtn.highlighted ? "#E80E2444" : gbtn.down ? "#EE071222" : gbtn.hovered ? "#EE163052" : "#900B1D35" }
+            }
+            border.color: gbtn.highlighted ? CybouTheme.borderActive : gbtn.hovered ? "#7DA5CC" : CybouTheme.borderHighlight
+            border.width: 1
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: gbtn.highlighted ? "#50FFFFFF" : CybouTheme.glassSheenSubtle; radius: parent.radius
+            }
+        }
+    }
+
+    component GlassDialogBackground: Rectangle {
+        radius: CybouTheme.dialogRadius
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#E80E2648" }
+            GradientStop { position: 1.0; color: "#F4061224" }
+        }
+        border.color: CybouTheme.borderHighlight
+        border.width: 1.5
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#A0000000"
+            shadowBlur: 1.0
+            shadowVerticalOffset: 12
+        }
+        Rectangle {
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+            height: 1; color: CybouTheme.glassSheen; radius: parent.radius
+        }
+    }
     property int activeTab: 0
     readonly property int chromeRowHeight: CybouTheme.chromeRowHeight
     readonly property int chromeControlHeight: CybouTheme.chromeControlHeight
     property var currentView: views.count > activeTab ? views.itemAt(activeTab) : null
     property bool privateMode: false
     property string initialUrlArgument: ""
+    property string initialLibrarySection: ""
+    property bool initialSettingsOpen: false
+    property bool initialMenuOpen: false
     property var closedTabs: []
     property var downloadItems: []
     property var downloadQueue: []
@@ -591,6 +674,9 @@ ApplicationWindow {
         if (initialUrlArgument.length > 0) addTab(initialUrlArgument)
         else if (!tabs.count) addTab("")
         restoring = false
+        if (initialLibrarySection.length > 0) showLibrary(initialLibrarySection)
+        if (initialSettingsOpen) settingsPanel.open()
+        if (initialMenuOpen) menu.popup(menuButton, 0, menuButton.height)
     }
     Shortcut { sequence: "Ctrl+L"; onActivated: { address.forceActiveFocus(); address.selectAll() } }
     Shortcut { sequence: "Ctrl+T"; onActivated: addTab("") }
@@ -698,13 +784,35 @@ ApplicationWindow {
                         ToolTip.text: tabItem.label
                         Menu {
                             id: tabContext
-                            MenuItem { text: tabItem.isPinned ? "Désépingler l’onglet" : "Épingler l’onglet"; onTriggered: togglePin(tabItem.index) }
-                            MenuItem { text: tabItem.isMuted ? "Réactiver le son" : "Couper le son"; onTriggered: toggleMute(tabItem.index) }
-                            MenuItem { text: "Déplacer à gauche"; enabled: tabItem.index > 0; onTriggered: moveTab(tabItem.index, tabItem.index - 1) }
-                            MenuItem { text: "Déplacer à droite"; enabled: tabItem.index < tabs.count - 1; onTriggered: moveTab(tabItem.index, tabItem.index + 1) }
-                            MenuItem { text: "Dupliquer"; onTriggered: addTab(views.itemAt(tabItem.index).url.toString()) }
-                            MenuItem { text: "Fermer"; onTriggered: closeTab(tabItem.index) }
-                            MenuItem { text: "Rouvrir l’onglet fermé"; enabled: closedTabs.length > 0; onTriggered: reopenTab() }
+                            padding: 6
+                            background: Rectangle {
+                                implicitWidth: 200
+                                radius: 10
+                                gradient: Gradient {
+                                    GradientStop { position: 0.0; color: "#E00E2648" }
+                                    GradientStop { position: 1.0; color: "#F0061224" }
+                                }
+                                border.color: CybouTheme.borderHighlight
+                                border.width: 1.5
+                                layer.enabled: true
+                                layer.effect: MultiEffect {
+                                    shadowEnabled: true
+                                    shadowColor: "#90000000"
+                                    shadowBlur: 1.0
+                                    shadowVerticalOffset: 10
+                                }
+                                Rectangle {
+                                    anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                                    height: 1; color: CybouTheme.glassSheen; radius: parent.radius
+                                }
+                            }
+                            GlassMenuItem { text: tabItem.isPinned ? "Désépingler l’onglet" : "Épingler l’onglet"; onTriggered: togglePin(tabItem.index) }
+                            GlassMenuItem { text: tabItem.isMuted ? "Réactiver le son" : "Couper le son"; onTriggered: toggleMute(tabItem.index) }
+                            GlassMenuItem { text: "Déplacer à gauche"; enabled: tabItem.index > 0; onTriggered: moveTab(tabItem.index, tabItem.index - 1) }
+                            GlassMenuItem { text: "Déplacer à droite"; enabled: tabItem.index < tabs.count - 1; onTriggered: moveTab(tabItem.index, tabItem.index + 1) }
+                            GlassMenuItem { text: "Dupliquer"; onTriggered: addTab(views.itemAt(tabItem.index).url.toString()) }
+                            GlassMenuItem { text: "Fermer"; onTriggered: closeTab(tabItem.index) }
+                            GlassMenuItem { text: "Rouvrir l’onglet fermé"; enabled: closedTabs.length > 0; onTriggered: reopenTab() }
                         }
                     }
                 }
@@ -799,24 +907,46 @@ ApplicationWindow {
                 NavButton { id: menuButton; text: "☰"; hint: "Menu"; onClicked: menu.popup(menuButton, 0, menuButton.height) }
                 Menu {
                     id: menu
-                    MenuItem { text: "Nouvel onglet                         Ctrl+T"; onTriggered: addTab("") }
-                    MenuItem { text: "Rouvrir l’onglet fermé          Ctrl+Shift+T"; enabled: closedTabs.length > 0; onTriggered: reopenTab() }
-                    MenuItem { text: "Nouvelle fenêtre privée     Ctrl+Shift+N"; onTriggered: browserStore.newPrivateWindow() }
-                    MenuSeparator {}
-                    MenuItem { text: "Favoris"; onTriggered: showLibrary("Favoris") }
-                    MenuItem { text: "Historique                                Ctrl+H"; onTriggered: showLibrary("Historique") }
-                    MenuItem { text: "Téléchargements                      Ctrl+J"; onTriggered: showLibrary("Téléchargements") }
-                    MenuItem { text: "Rechercher dans la page           Ctrl+F"; onTriggered: { findVisible = true; findInput.forceActiveFocus() } }
-                    MenuItem { text: "Ouvrir un fichier…                        Ctrl+O"; onTriggered: openFileDialog.open() }
-                    MenuItem { text: "Enregistrer en PDF…                   Ctrl+P"; enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
-                    MenuSeparator {}
-                    MenuItem { text: "Zoom +"; onTriggered: currentView.zoomFactor = Math.min(3, currentView.zoomFactor + 0.1) }
-                    MenuItem { text: "Zoom −"; onTriggered: currentView.zoomFactor = Math.max(0.3, currentView.zoomFactor - 0.1) }
-                    MenuItem { text: "Zoom 100 %"; onTriggered: currentView.zoomFactor = 1 }
-                    MenuItem { text: "Plein écran                                  F11"; onTriggered: window.visibility === Window.FullScreen ? window.showNormal() : window.showFullScreen() }
-                    MenuSeparator {}
-                    MenuItem { text: "Paramètres                                     Ctrl+,"; onTriggered: settingsPanel.open() }
-                    MenuItem { text: "À propos de CYBOU"; onTriggered: about.open() }
+                    padding: 6
+                    background: Rectangle {
+                        implicitWidth: 260
+                        radius: 12
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#E00E2648" }
+                            GradientStop { position: 1.0; color: "#F0061224" }
+                        }
+                        border.color: CybouTheme.borderHighlight
+                        border.width: 1.5
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: "#90000000"
+                            shadowBlur: 1.0
+                            shadowVerticalOffset: 12
+                        }
+                        Rectangle {
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                            height: 1; color: CybouTheme.glassSheen; radius: parent.radius
+                        }
+                    }
+                    GlassMenuItem { text: "Nouvel onglet                         Ctrl+T"; onTriggered: addTab("") }
+                    GlassMenuItem { text: "Rouvrir l’onglet fermé          Ctrl+Shift+T"; enabled: closedTabs.length > 0; onTriggered: reopenTab() }
+                    GlassMenuItem { text: "Nouvelle fenêtre privée     Ctrl+Shift+N"; onTriggered: browserStore.newPrivateWindow() }
+                    GlassMenuSeparator {}
+                    GlassMenuItem { text: "Favoris"; onTriggered: showLibrary("Favoris") }
+                    GlassMenuItem { text: "Historique                                Ctrl+H"; onTriggered: showLibrary("Historique") }
+                    GlassMenuItem { text: "Téléchargements                      Ctrl+J"; onTriggered: showLibrary("Téléchargements") }
+                    GlassMenuItem { text: "Rechercher dans la page           Ctrl+F"; onTriggered: { findVisible = true; findInput.forceActiveFocus() } }
+                    GlassMenuItem { text: "Ouvrir un fichier…                        Ctrl+O"; onTriggered: openFileDialog.open() }
+                    GlassMenuItem { text: "Enregistrer en PDF…                   Ctrl+P"; enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
+                    GlassMenuSeparator {}
+                    GlassMenuItem { text: "Zoom +"; onTriggered: currentView.zoomFactor = Math.min(3, currentView.zoomFactor + 0.1) }
+                    GlassMenuItem { text: "Zoom −"; onTriggered: currentView.zoomFactor = Math.max(0.3, currentView.zoomFactor - 0.1) }
+                    GlassMenuItem { text: "Zoom 100 %"; onTriggered: currentView.zoomFactor = 1 }
+                    GlassMenuItem { text: "Plein écran                                  F11"; onTriggered: window.visibility === Window.FullScreen ? window.showNormal() : window.showFullScreen() }
+                    GlassMenuSeparator {}
+                    GlassMenuItem { text: "Paramètres                                     Ctrl+,"; onTriggered: settingsPanel.open() }
+                    GlassMenuItem { text: "À propos de CYBOU"; onTriggered: about.open() }
                 }
             }
         }
@@ -919,7 +1049,7 @@ ApplicationWindow {
         title: qsTr("Modifier la politique de ce site ?")
         width: 430; anchors.centerIn: parent; modal: true
         standardButtons: Dialog.Ok | Dialog.Cancel
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: behaviorDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: CybouTheme.mainText; text: behaviorDialog.policyOrigin + "\n\n" + (behaviorDialog.policyKey === "popups" ? qsTr("Ce choix modifie l’ouverture de nouvelles fenêtres pour cette origine. Autoriser inclut les fenêtres sans geste utilisateur.") : qsTr("Le changement sera appliqué lors de la prochaine navigation ou après un rechargement explicite. Bloquer JavaScript ou localStorage peut perturber les connexions et paiements.")) }
         onAccepted: if (currentView && browserStore.origin(currentView.url.toString()) === policyOrigin) {
@@ -929,7 +1059,25 @@ ApplicationWindow {
     Drawer {
         id: library
         edge: Qt.RightEdge; width: Math.min(460, window.width - 60); height: window.height
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; border.width: 1 }
+        background: Rectangle {
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#D80A1F38" }
+                GradientStop { position: 1.0; color: "#E8061224" }
+            }
+            border.color: CybouTheme.borderHighlight
+            border.width: 1
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#90000000"
+                shadowBlur: 1.0
+                shadowHorizontalOffset: -12
+            }
+            Rectangle {
+                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+                width: 1; color: CybouTheme.glassSheen
+            }
+        }
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 20; spacing: 14
             RowLayout {
@@ -937,13 +1085,27 @@ ApplicationWindow {
                 NavButton { text: "×"; hint: "Fermer"; onClicked: library.close() }
             }
             RowLayout {
-                Button { text: "Favoris"; onClicked: librarySection = "Favoris" }
-                Button { text: "Historique"; onClicked: librarySection = "Historique" }
-                Button { text: "Fichiers"; onClicked: librarySection = "Téléchargements" }
+                spacing: 8
+                GlassButton { text: "Favoris"; highlighted: librarySection === "Favoris"; onClicked: librarySection = "Favoris" }
+                GlassButton { text: "Historique"; highlighted: librarySection === "Historique"; onClicked: librarySection = "Historique" }
+                GlassButton { text: "Fichiers"; highlighted: librarySection === "Téléchargements"; onClicked: librarySection = "Téléchargements" }
             }
-            TextField { id: librarySearch; Layout.fillWidth: true; placeholderText: "Filtrer…"; visible: librarySection !== "Téléchargements" }
-            Button { text: "Effacer l’historique"; visible: librarySection === "Historique"; onClicked: clearHistoryDialog.open() }
-            Button { text: "Ouvrir le dossier Téléchargements"; visible: librarySection === "Téléchargements"; onClicked: browserStore.openDownloads() }
+            TextField {
+                id: librarySearch; Layout.fillWidth: true; placeholderText: "Filtrer…"
+                visible: librarySection !== "Téléchargements"
+                color: CybouTheme.mainText; placeholderTextColor: CybouTheme.mutedText
+                background: Rectangle {
+                    radius: 8
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: librarySearch.activeFocus ? "#E0143258" : "#C0102644" }
+                        GradientStop { position: 1.0; color: librarySearch.activeFocus ? "#F00A1A30" : "#D008172A" }
+                    }
+                    border.color: librarySearch.activeFocus ? CybouTheme.borderActive : CybouTheme.borderHighlight
+                    border.width: 1
+                }
+            }
+            GlassButton { text: "Effacer l’historique"; visible: librarySection === "Historique"; onClicked: clearHistoryDialog.open() }
+            GlassButton { text: "Ouvrir le dossier Téléchargements"; visible: librarySection === "Téléchargements"; onClicked: browserStore.openDownloads() }
             ListView {
                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 8
                 model: librarySection === "Favoris" ? browserStore.bookmarks : librarySection === "Historique" ? browserStore.history : downloadItems
@@ -953,21 +1115,33 @@ ApplicationWindow {
                     property bool download: librarySection === "Téléchargements"
                     property bool matches: download || (modelData.title + " " + modelData.url).toLowerCase().includes(librarySearch.text.toLowerCase())
                     width: ListView.view.width; height: matches ? (download ? 152 : 82) : 0; visible: matches
-                    radius: 12; color: CybouTheme.glassSurface; border.color: CybouTheme.borderSubtle
+                    radius: 10
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#60142F52" }
+                        GradientStop { position: 1.0; color: "#700A182E" }
+                    }
+                    border.color: CybouTheme.borderSubtle
+                    border.width: 1
+                    Rectangle {
+                        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                        height: 1; color: "#25FFFFFF"; radius: parent.radius
+                    }
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: 12; spacing: 4
                         Label { Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: CybouTheme.mainText; elide: Text.ElideRight; font.bold: true }
                         Label { Layout.fillWidth: true; text: entry.download ? window.downloadStatus(entry.modelData) : entry.modelData.url; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
                         ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                         RowLayout {
-                            Button { text: "Ouvrir"; visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
-                            Button { text: "Dossier"; visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
-                            Button { text: "Retirer"; visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
+                            spacing: 8
+                            GlassButton { text: "Ouvrir"; visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
+                            GlassButton { text: "Dossier"; visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
+                            GlassButton { text: "Retirer"; visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
                         }
                         RowLayout {
+                            spacing: 8
                             visible: entry.download && !entry.modelData.isFinished
-                            Button { text: entry.download && entry.modelData.isPaused ? "Reprendre" : "Pause"; enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
-                            Button { text: "Annuler"; onClicked: entry.modelData.cancel() }
+                            GlassButton { text: entry.download && entry.modelData.isPaused ? "Reprendre" : "Pause"; enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
+                            GlassButton { text: "Annuler"; onClicked: entry.modelData.cancel() }
                         }
                     }
                 }
@@ -1033,7 +1207,7 @@ ApplicationWindow {
         anchors.centerIn: parent; width: Math.min(500, window.width - 40); modal: true
         title: qsTr("Ouvrir un fichier téléchargé")
         padding: 20
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: downloadOpenDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         property bool allowed: visible && browserStore.canOpenDownloadedFile(window.pendingOpenPath)
         contentItem: ColumnLayout {
@@ -1082,7 +1256,7 @@ ApplicationWindow {
         anchors.centerIn: parent; width: 420; modal: true
         title: "Fermer cette fenêtre ?"
         standardButtons: Dialog.Ok | Dialog.Cancel
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: closeWorkDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: "Des téléchargements ou un export PDF sont en cours. Fermer cette fenêtre les interrompra." }
         onAccepted: {
@@ -1098,7 +1272,7 @@ ApplicationWindow {
         x: Math.max(12, (window.width - width) / 2)
         y: window.contentItem.height - height - 24
         width: Math.min(620, window.width - 32); padding: 14
-        background: Rectangle { radius: 10; color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; border.width: 1 }
+        background: GlassDialogBackground { radius: 10 }
         contentItem: Label { id: statusLabel; color: CybouTheme.mainText; wrapMode: Text.WordWrap; font.pixelSize: 12 }
     }
     Dialog {
@@ -1106,7 +1280,7 @@ ApplicationWindow {
         anchors.centerIn: parent; width: Math.min(460, window.width - 40)
         title: "Autorisation du site"; modal: true
         closePolicy: Popup.CloseOnEscape
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: permissionDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         contentItem: ColumnLayout {
             spacing: 14
@@ -1137,27 +1311,27 @@ ApplicationWindow {
     Dialog {
         id: clearHistoryDialog; anchors.centerIn: parent; title: "Effacer l’historique ?"; modal: true
         standardButtons: Dialog.Ok | Dialog.Cancel
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: clearHistoryDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { text: "Toutes les visites enregistrées seront supprimées."; color: CybouTheme.mainText }
         onAccepted: browserStore.clearHistory()
     }
     Dialog {
         id: connectionInfo; anchors.centerIn: parent; width: 400; title: "Connexion"; modal: true; standardButtons: Dialog.Ok
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: connectionInfo.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
     }
     Dialog {
         id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.8.0"; modal: true; standardButtons: Dialog.Ok
-        background: Rectangle { color: CybouTheme.glassCard; border.color: CybouTheme.borderHighlight; radius: CybouTheme.dialogRadius; border.width: 1 }
+        background: GlassDialogBackground {}
         header: Label { text: about.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {
         id: errorNotice; anchors.centerIn: parent; width: Math.min(520, window.width - 40); padding: 24; modal: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        background: Rectangle { color: CybouTheme.glassCard; radius: 16; border.color: CybouTheme.borderHighlight; border.width: 1 }
+        background: GlassDialogBackground { radius: 16 }
         contentItem: Label { id: errorText; wrapMode: Text.WordWrap; color: CybouTheme.mainText }
     }
     // System resizing preserves native platform behavior without a separate title bar.
