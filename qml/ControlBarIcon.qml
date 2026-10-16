@@ -1,19 +1,20 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 
 Button {
     id: icon
     required property var capability
-    property bool vertical: false
-    property bool separator: false
-    property bool previousPending: false
     property bool tabStop: false
+    readonly property int policy: capability.policy === undefined ? 3 : capability.policy
+    readonly property color stateColor: capability.pending ? "#9C5700" : policy === 1 ? "#176541" : policy === 2 ? "#BC243A" : policy === 3 ? "#778395" : policy === 4 ? "#945A06" : "#26486E"
+    readonly property string stateText: capability.pending ? qsTr("Demande en attente") : [qsTr("Demander"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
     signal hoverChanged(bool inside)
     signal focusStep(int direction)
-    implicitWidth: 32; implicitHeight: 32
-    padding: 7; hoverEnabled: true
-    focusPolicy: tabStop ? Qt.StrongFocus : Qt.ClickFocus
-    Accessible.name: capability.title + " · " + (capability.key === "position" ? "" : [qsTr("Demander"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][capability.policy || 0] + " · ") + (capability.pending ? qsTr("Demande en attente") + " · " : "") + capability.scope + " · " + capability.reason + " · " + qsTr("Ouvrir les détails")
+    implicitWidth: 40; implicitHeight: 28
+    padding: 5; hoverEnabled: true
+    focusPolicy: tabStop || activeFocus ? Qt.StrongFocus : Qt.ClickFocus
+    Accessible.name: (capability.title || "") + " · " + stateText + " · " + (capability.scope || "") + " · " + (capability.reason || "") + " · " + qsTr("Ouvrir les détails")
     onHoveredChanged: hoverChanged(hovered)
     Keys.onPressed: function(event) {
         if ([Qt.Key_Left, Qt.Key_Up, Qt.Key_Right, Qt.Key_Down].includes(event.key)) {
@@ -21,42 +22,30 @@ Button {
         }
     }
     background: Rectangle {
-        radius: 12
-        color: icon.down ? "#40FFFFFF" : icon.hovered || icon.activeFocus ? "#24FFFFFF" : "transparent"
-        border.width: icon.activeFocus ? 1 : 0; border.color: "#C7E3FF"
+        radius: 6
+        color: icon.down ? "#CCDCEF" : icon.hovered || icon.activeFocus ? "#E4EDF8" : "transparent"
+        border.width: icon.activeFocus || browserStore.highContrast ? 1 : 0
+        border.color: icon.activeFocus ? "#164A88" : "#8EA1B8"
     }
-    contentItem: Image {
-        source: "qrc:/assets/controlbar/" + icon.capability.key + ".svg"
-        sourceSize.width: 20; sourceSize.height: 20; fillMode: Image.PreserveAspectFit
-        opacity: icon.capability.policy === 3 ? 0.5 : 1
-    }
-    Rectangle {
-        visible: icon.separator
-        x: icon.vertical ? 6 : 0; y: icon.vertical ? 0 : 6
-        width: icon.vertical ? 22 : 1; height: icon.vertical ? 1 : 22
-        color: "#32FFFFFF"
-    }
-    Rectangle {
-        visible: icon.capability.key !== "position"
-        x: parent.width - 10; y: 3; width: 9; height: 9; radius: 4.5
-        color: icon.capability.pending ? "#FFBE58" : icon.capability.policy === 1 ? "#74E6AF" : icon.capability.policy === 2 ? "#FF7786" : "#1A304A"
-        border.color: "#809EBB"; border.width: 0.5
-        Text { anchors.centerIn: parent; text: icon.capability.pending ? "•" : icon.capability.policy === 1 ? "✓" : icon.capability.policy === 2 ? "−" : "?"; color: "#F4F8FF"; font.pixelSize: 7 }
+    contentItem: Item {
+        Image {
+            id: glyph
+            anchors.centerIn: parent; width: 18; height: 18
+            source: "qrc:/assets/controlbar/" + icon.capability.key + ".svg"
+            sourceSize.width: 36; sourceSize.height: 36
+            fillMode: Image.PreserveAspectFit; visible: false
+        }
+        MultiEffect { anchors.fill: glyph; source: glyph; colorization: 1; colorizationColor: icon.stateColor }
     }
     Rectangle {
-        visible: !!icon.capability.recent && !icon.capability.pending
-        x: parent.width - 7; y: parent.height - 7; width: 4; height: 4; radius: 2
-        color: icon.capability.blocked ? "#FF7786" : "#FFD08A"
+        visible: icon.policy !== 0 || !!icon.capability.pending
+        x: parent.width - 12; y: 1; width: 10; height: 10; radius: icon.policy === 2 ? 2 : 5
+        color: "#F5F7FB"; border.color: icon.stateColor; border.width: 1
+        Text { anchors.centerIn: parent; text: icon.capability.pending ? "!" : icon.policy === 1 ? "✓" : icon.policy === 2 || icon.policy === 3 ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
     }
-    SequentialAnimation {
-        id: requestPulse
-        loops: 2
-        NumberAnimation { target: icon; property: "opacity"; to: 0.55; duration: 180 }
-        NumberAnimation { target: icon; property: "opacity"; to: 1; duration: 220 }
-    }
-    onCapabilityChanged: {
-        const pending = !!capability.pending
-        if (pending && !previousPending && !browserStore.reduceMotion && !browserStore.disableGlow) requestPulse.start()
-        previousPending = pending
+    Rectangle {
+        visible: !!icon.capability.recent && !icon.capability.pending && icon.capability.key !== "network"
+        x: parent.width - 9; y: parent.height - 6; width: 4; height: 4; radius: 2
+        color: icon.capability.blocked ? "#BC243A" : "#9C5700"
     }
 }

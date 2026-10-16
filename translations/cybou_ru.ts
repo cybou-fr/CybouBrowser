@@ -2,14 +2,28 @@
 <!DOCTYPE TS[]>
 <TS version="2.1" language="ru_RU">
   <context>
+    <name>AdaptiveAddress</name>
+    <message>
+      <location filename="../qml/AdaptiveAddress.qml" line="9" />
+      <location filename="../qml/AdaptiveAddress.qml" line="19" />
+      <source>Rechercher ou saisir une adresse</source>
+      <translation>Поиск или адрес сайта</translation>
+    </message>
+    <message>
+      <location filename="../qml/AdaptiveAddress.qml" line="14" />
+      <source>Adresse et recherche</source>
+      <translation>Адрес и поиск</translation>
+    </message>
+  </context>
+  <context>
     <name>BrowserStore</name>
     <message>
-      <location filename="../src/browserstore.h" line="106" />
+      <location filename="../src/browserstore.h" line="108" />
       <source>Les adresses contenant un identifiant ou un mot de passe sont bloquées.</source>
       <translation>Адреса с именем пользователя или паролем заблокированы.</translation>
     </message>
     <message>
-      <location filename="../src/browserstore.h" line="108" />
+      <location filename="../src/browserstore.h" line="110" />
       <source>Mode HTTPS strict : cette connexion non chiffrée est bloquée. Utilisez une adresse HTTPS.</source>
       <translation>Строгий режим HTTPS: незашифрованное подключение заблокировано. Используйте адрес HTTPS.</translation>
     </message>
@@ -17,153 +31,134 @@
   <context>
     <name>CapabilityPopover</name>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="31" />
+      <location filename="../qml/CapabilityPopover.qml" line="32" />
       <source>Fermer les détails</source>
       <translation>Закрыть сведения</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="34" />
+      <location filename="../qml/CapabilityPopover.qml" line="35" />
       <source>Page locale</source>
       <translation>Локальная страница</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Demande d’accès reçue</source>
       <translation>Получен запрос доступа</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Observation du profil</source>
       <translation>Наблюдение за профилем</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Politique du profil</source>
       <translation>Политика профиля</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Toujours demander</source>
       <translation>Всегда спрашивать</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Autorisé</source>
       <translation>Разрешено</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Bloqué pour les prochaines demandes</source>
       <translation>Будущие запросы запрещены</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Fonction indisponible</source>
       <translation>Функция недоступна</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="35" />
+      <location filename="../qml/CapabilityPopover.qml" line="36" />
       <source>Recharger pour appliquer</source>
       <translation>Перезагрузить для применения</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="37" />
+      <location filename="../qml/CapabilityPopover.qml" line="38" />
       <source>Origine demandeuse : </source>
       <translation>Источник запроса: </translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="40" />
+      <location filename="../qml/CapabilityPopover.qml" line="41" />
       <source>Autoriser cette demande</source>
       <translation>Разрешить этот запрос</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="41" />
+      <location filename="../qml/CapabilityPopover.qml" line="42" />
       <source>Refuser</source>
       <translation>Отказать</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="46" />
+      <location filename="../qml/CapabilityPopover.qml" line="47" />
       <source>Demander</source>
       <translation>Спрашивать</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="47" />
+      <location filename="../qml/CapabilityPopover.qml" line="48" />
       <source>Toujours autoriser</source>
       <translation>Всегда разрешать</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="48" />
+      <location filename="../qml/CapabilityPopover.qml" line="49" />
       <source>Bloquer</source>
       <translation>Запретить</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="53" />
+      <location filename="../qml/CapabilityPopover.qml" line="54" />
       <source>Autoriser…</source>
       <translation>Разрешить…</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="54" />
+      <location filename="../qml/CapabilityPopover.qml" line="55" />
       <source>Bloquer…</source>
       <translation>Запретить…</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="55" />
+      <location filename="../qml/CapabilityPopover.qml" line="56" />
       <source>Gestes explicites</source>
       <translation>Только действия пользователя</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="57" />
+      <location filename="../qml/CapabilityPopover.qml" line="58" />
       <source>Pour interrompre un flux déjà accordé, rechargez ou fermez l’onglet. L’arrêt n’est pas vérifiable ici.</source>
       <translation>Чтобы прервать ранее разрешённый поток, перезагрузите или закройте вкладку. Подтвердить остановку здесь нельзя.</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="58" />
+      <location filename="../qml/CapabilityPopover.qml" line="59" />
       <source>Recharger l’onglet</source>
       <translation>Перезагрузить вкладку</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="59" />
+      <location filename="../qml/CapabilityPopover.qml" line="60" />
       <source>Autoriser les cookies tiers du profil</source>
       <translation>Разрешить сторонние cookies профиля</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="59" />
+      <location filename="../qml/CapabilityPopover.qml" line="60" />
       <source>Bloquer les cookies tiers du profil</source>
       <translation>Запретить сторонние cookies профиля</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="60" />
+      <location filename="../qml/CapabilityPopover.qml" line="61" />
       <source>Événements Qt récents (60 s), pas une preuve d’utilisation active.</source>
       <translation>События Qt за 60 с. Не подтверждают текущее использование.</translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="61" />
+      <location filename="../qml/CapabilityPopover.qml" line="62" />
       <source>Échantillon du profil : </source>
       <translation>Выборка профиля: </translation>
     </message>
     <message>
-      <location filename="../qml/CapabilityPopover.qml" line="67" />
+      <location filename="../qml/CapabilityPopover.qml" line="68" />
       <source>Refus</source>
       <translation>Отказ</translation>
-    </message>
-  </context>
-  <context>
-    <name>ControlBar</name>
-    <message>
-      <location filename="../qml/ControlBar.qml" line="98" />
-      <location filename="../qml/ControlBar.qml" line="101" />
-      <source>Position du panneau</source>
-      <translation>Положение панели</translation>
-    </message>
-    <message>
-      <location filename="../qml/ControlBar.qml" line="98" />
-      <source>Préférence globale</source>
-      <translation>Общая настройка</translation>
-    </message>
-    <message>
-      <location filename="../qml/ControlBar.qml" line="98" />
-      <source>Choisir haut, droite, bas ou gauche</source>
-      <translation>Выбрать сверху, справа, снизу или слева</translation>
     </message>
   </context>
   <context>
@@ -307,134 +302,129 @@
   <context>
     <name>ControlBarIcon</name>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="17" />
       <source>Ouvrir les détails</source>
       <translation>Открыть сведения</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="11" />
       <source>Demander</source>
       <translation>Спрашивать</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="11" />
       <source>Autorisé</source>
       <translation>Разрешено</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="11" />
       <source>Bloqué</source>
       <translation>Запрещено</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="11" />
       <source>Indisponible</source>
       <translation>Недоступно</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="11" />
       <source>Rechargement requis</source>
       <translation>Требуется перезагрузка</translation>
     </message>
     <message>
-      <location filename="../qml/ControlBarIcon.qml" line="16" />
+      <location filename="../qml/ControlBarIcon.qml" line="11" />
       <source>Demande en attente</source>
       <translation>Ожидается решение по запросу</translation>
     </message>
   </context>
   <context>
-    <name>ControlBarPositionPicker</name>
+    <name>ControlBarInline</name>
     <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="12" />
-      <source>Position du panneau</source>
-      <translation>Положение панели</translation>
-    </message>
-    <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
-      <source>Haut</source>
-      <translation>Сверху</translation>
-    </message>
-    <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
-      <source>Droite</source>
-      <translation>Справа</translation>
-    </message>
-    <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
-      <source>Bas</source>
-      <translation>Снизу</translation>
-    </message>
-    <message>
-      <location filename="../qml/ControlBarPositionPicker.qml" line="15" />
-      <source>Gauche</source>
-      <translation>Слева</translation>
+      <location filename="../qml/ControlBarInline.qml" line="86" />
+      <source>Autres contrôles du site</source>
+      <translation>Другие возможности сайта</translation>
     </message>
   </context>
   <context>
     <name>Main</name>
     <message>
-      <location filename="../qml/Main.qml" line="849" />
-      <location filename="../qml/Main.qml" line="867" />
+      <location filename="../qml/Main.qml" line="754" />
+      <location filename="../qml/Main.qml" line="903" />
       <source>La modification n’a pas pu être confirmée.</source>
       <translation>Не удалось подтвердить изменение.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="862" />
+      <location filename="../qml/Main.qml" line="898" />
       <source>Modifier la politique de ce site ?</source>
       <translation>Изменить политику сайта?</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="865" />
+      <location filename="../qml/Main.qml" line="901" />
       <source>Ce choix modifie l’ouverture de nouvelles fenêtres pour cette origine. Autoriser inclut les fenêtres sans geste utilisateur.</source>
       <translation>Изменяется политика окон этого origin. Разрешение также допускает окна без действия пользователя.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="865" />
+      <location filename="../qml/Main.qml" line="901" />
       <source>Le changement sera appliqué lors de la prochaine navigation ou après un rechargement explicite. Bloquer JavaScript ou localStorage peut perturber les connexions et paiements.</source>
       <translation>Изменение применяется при навигации или перезагрузке. Запрет JavaScript и localStorage может нарушить вход на сайты и оплату.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="958" />
+      <location filename="../qml/Main.qml" line="994" />
       <source>Ouvrir un fichier téléchargé</source>
       <translation>Открытие загруженного файла</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="963" />
+      <location filename="../qml/Main.qml" line="1002" />
       <source>Source : %1</source>
       <translation>Источник: %1</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="963" />
+      <location filename="../qml/Main.qml" line="1002" />
       <source>Source inconnue</source>
       <translation>Неизвестный источник</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="964" />
+      <location filename="../qml/Main.qml" line="1003" />
       <source>Ce fichier sera ouvert par une application externe. Continuez uniquement si vous faites confiance à sa source. CYBOU ne réalise pas d’analyse antivirus.</source>
       <translation>Файл будет открыт во внешнем приложении. Продолжайте только в том случае, если доверяете источнику. CYBOU не выполняет антивирусную проверку.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="964" />
+      <location filename="../qml/Main.qml" line="1003" />
       <source>L’ouverture de ce type de fichier est bloquée dans CYBOU. Les programmes, scripts, raccourcis et types inconnus doivent être examinés depuis leur dossier.</source>
       <translation>Открытие файлов этого типа в CYBOU заблокировано. Программы, скрипты, ярлыки и неизвестные типы следует проверять в папке загрузки.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="967" />
+      <location filename="../qml/Main.qml" line="1008" />
       <source>Annuler</source>
       <translation>Отмена</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="968" />
+      <location filename="../qml/Main.qml" line="1004" />
       <source>Afficher le dossier</source>
       <translation>Показать в папке</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="969" />
+      <location filename="../qml/Main.qml" line="721" />
+      <source>Connexion chiffrée (HTTPS), sans garantie sur le site</source>
+      <translation>Зашифрованное соединение (HTTPS), без гарантии надёжности сайта</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="721" />
+      <source>Connexion non chiffrée (HTTP)</source>
+      <translation>Незашифрованное соединение (HTTP)</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="721" />
+      <source>Page locale ou nouvel onglet</source>
+      <translation>Локальная страница или новая вкладка</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="1009" />
       <source>Ouvrir dans une application</source>
       <translation>Открыть в приложении</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="969" />
+      <location filename="../qml/Main.qml" line="1009" />
       <source>Impossible d’ouvrir ce fichier en toute sécurité.</source>
       <translation>Безопасное открытие этого файла недоступно.</translation>
     </message>
@@ -463,8 +453,8 @@
     </message>
     <message>
       <location filename="../qml/SettingsPanel.qml" line="69" />
-      <source>La dernière icône du panneau permet de choisir sa position. Les indicateurs ne prouvent pas qu’un appareil enregistre.</source>
-      <translation>Последняя иконка меняет положение панели. Индикаторы не подтверждают запись с устройств.</translation>
+      <source>Les contrôles du site sont intégrés à la navigation et masqués pendant la saisie de l’adresse. Les indicateurs ne prouvent pas qu’un appareil enregistre.</source>
+      <translation>Управление возможностями сайта встроено в навигацию и скрывается при вводе адреса. Индикаторы не подтверждают, что устройство ведёт запись.</translation>
     </message>
     <message>
       <location filename="../qml/SettingsPanel.qml" line="70" />
