@@ -4,12 +4,12 @@
   <context>
     <name>BrowserStore</name>
     <message>
-      <location filename="../src/browserstore.h" line="100" />
+      <location filename="../src/browserstore.h" line="106" />
       <source>Les adresses contenant un identifiant ou un mot de passe sont bloquées.</source>
       <translation>Адреса с именем пользователя или паролем заблокированы.</translation>
     </message>
     <message>
-      <location filename="../src/browserstore.h" line="102" />
+      <location filename="../src/browserstore.h" line="108" />
       <source>Mode HTTPS strict : cette connexion non chiffrée est bloquée. Utilisez une adresse HTTPS.</source>
       <translation>Строгий режим HTTPS: незашифрованное подключение заблокировано. Используйте адрес HTTPS.</translation>
     </message>
@@ -373,25 +373,70 @@
   <context>
     <name>Main</name>
     <message>
-      <location filename="../qml/Main.qml" line="828" />
-      <location filename="../qml/Main.qml" line="846" />
+      <location filename="../qml/Main.qml" line="849" />
+      <location filename="../qml/Main.qml" line="867" />
       <source>La modification n’a pas pu être confirmée.</source>
       <translation>Не удалось подтвердить изменение.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="841" />
+      <location filename="../qml/Main.qml" line="862" />
       <source>Modifier la politique de ce site ?</source>
       <translation>Изменить политику сайта?</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="844" />
+      <location filename="../qml/Main.qml" line="865" />
       <source>Ce choix modifie l’ouverture de nouvelles fenêtres pour cette origine. Autoriser inclut les fenêtres sans geste utilisateur.</source>
       <translation>Изменяется политика окон этого origin. Разрешение также допускает окна без действия пользователя.</translation>
     </message>
     <message>
-      <location filename="../qml/Main.qml" line="844" />
+      <location filename="../qml/Main.qml" line="865" />
       <source>Le changement sera appliqué lors de la prochaine navigation ou après un rechargement explicite. Bloquer JavaScript ou localStorage peut perturber les connexions et paiements.</source>
       <translation>Изменение применяется при навигации или перезагрузке. Запрет JavaScript и localStorage может нарушить вход на сайты и оплату.</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="958" />
+      <source>Ouvrir un fichier téléchargé</source>
+      <translation>Открытие загруженного файла</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="963" />
+      <source>Source : %1</source>
+      <translation>Источник: %1</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="963" />
+      <source>Source inconnue</source>
+      <translation>Неизвестный источник</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="964" />
+      <source>Ce fichier sera ouvert par une application externe. Continuez uniquement si vous faites confiance à sa source. CYBOU ne réalise pas d’analyse antivirus.</source>
+      <translation>Файл будет открыт во внешнем приложении. Продолжайте только в том случае, если доверяете источнику. CYBOU не выполняет антивирусную проверку.</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="964" />
+      <source>L’ouverture de ce type de fichier est bloquée dans CYBOU. Les programmes, scripts, raccourcis et types inconnus doivent être examinés depuis leur dossier.</source>
+      <translation>Открытие файлов этого типа в CYBOU заблокировано. Программы, скрипты, ярлыки и неизвестные типы следует проверять в папке загрузки.</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="967" />
+      <source>Annuler</source>
+      <translation>Отмена</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="968" />
+      <source>Afficher le dossier</source>
+      <translation>Показать в папке</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="969" />
+      <source>Ouvrir dans une application</source>
+      <translation>Открыть в приложении</translation>
+    </message>
+    <message>
+      <location filename="../qml/Main.qml" line="969" />
+      <source>Impossible d’ouvrir ce fichier en toute sécurité.</source>
+      <translation>Безопасное открытие этого файла недоступно.</translation>
     </message>
   </context>
   <context>

@@ -207,6 +207,10 @@ int main(int argc, char *argv[])
                         }
                     }
                 } else {
+                    const int smokeStage = root->property("smokeStage").toInt();
+                    if (smokeStage == 21 || smokeStage == 23)
+                        if (auto window = qobject_cast<QQuickWindow *>(root))
+                            window->grabWindow().save(smokeStage == 21 ? "build/download-review.png" : "build/download-blocked.png");
                     QMetaObject::invokeMethod(root, "pollSmokeTest", Q_RETURN_ARG(QVariant, state));
                     if (state.toInt() == 2 && controlBarTest) {
                         QMetaObject::invokeMethod(root, "beginControlBarTest"); *controlStarted = true; state = 0;

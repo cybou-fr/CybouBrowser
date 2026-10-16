@@ -57,6 +57,12 @@ HTTP(S) URLs containing credentials are always rejected by the interceptor, inde
 
 Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after explicit opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, and credential-URL denial. The fixture listens only on loopback and no security preferences are changed by this test.
 
+### Reviewing downloaded files
+
+The download library's Open action now shows the filename and download origin before handing a file to an external application. The default focused action is Cancel; no trust decision is remembered. External opening is restricted to an explicit list of document, image and media extensions. Programs, scripts, shortcuts, archives, HTML/SVG, macro document formats, extensionless and unknown files require examining the download folder. Saving these files is still supported. Missing files and symbolic links are rejected; the native launch function rechecks eligibility immediately before opening. The extension list does not verify file contents, scan for malware or guarantee the safety of an external application. Local HTML/SVG can still be opened explicitly through the browser's existing local-file picker with local content access restrictions.
+
+`--security-test` covers executable double extensions, scripts, shortcuts, alternate-stream syntax, ambiguous trailing characters, document eligibility, and the native launch guard using temporary files. The integrated smoke suite checks the review dialog against real completed `.txt` and `.bin` downloads, origin display, cancellation and cleanup. It captures `build/download-review.png` and `build/download-blocked.png` without launching an external application.
+
 ## Integrated smoke test
 
 ```powershell

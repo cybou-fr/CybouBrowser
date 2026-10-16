@@ -5,8 +5,34 @@
 #include <QtWebEngineCore/QWebEnginePage>
 #include <QtWebEngineCore/QWebEngineProfile>
 #include "../controlbar/RequestObserver.h"
+#include "DownloadPolicy.h"
+#include "../browserstore.h"
+#include <QTemporaryDir>
+#include <QFile>
 
 inline int runSecurityTests(QGuiApplication &app, quint16 port) {
+    for (const auto &name : QStringList{"tool.exe", "image.png.exe", "setup.msi", "script.ps1", "script.js", "script.bat", "link.lnk", "link.url", "app.desktop", "page.html", "drawing.svg", "macro.docm", "archive.zip", "unknown", "image.png.", "image.png ", "image.png:payload.exe"}) {
+        if (DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL" << name; return 2; }
+    }
+    for (const auto &name : QStringList{"report.PDF", "notes.txt", "photo.jpg", "table.xlsx"}) {
+        if (!DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL" << name; return 2; }
+    }
+    qInfo() << "DOWNLOAD_POLICY_TEST PASS";
+    {
+        QTemporaryDir files;
+        if (!files.isValid()) return 2;
+        const auto blockedPath = files.filePath("document.pdf.exe");
+        const auto documentPath = files.filePath("document.pdf");
+        for (const auto &path : {blockedPath, documentPath}) {
+            QFile file(path);
+            if (!file.open(QIODevice::WriteOnly) || file.write("test") != 4) return 2;
+        }
+        BrowserStore store;
+        if (store.canOpenDownloadedFile(blockedPath) || store.openDownloadedFile(blockedPath)
+            || !store.canOpenDownloadedFile(documentPath)
+            || store.canOpenDownloadedFile(files.filePath("missing.pdf"))) return 2;
+        qInfo() << "DOWNLOAD_LAUNCH_GUARD_TEST PASS: executable and missing file denied, document eligible for review";
+    }
     const struct { const char *url; bool blocked; } cases[] = {
         {"http://example.org/", true}, {"HTTP://example.org/", true},
         {"http://127.0.0.1/", true}, {"http://[::1]/", true},

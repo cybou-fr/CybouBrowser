@@ -20,6 +20,7 @@
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include "controlbar/RequestObserver.h"
+#include "security/DownloadPolicy.h"
 
 class BrowserStore : public QObject {
     Q_OBJECT
@@ -80,8 +81,13 @@ public:
         if (!url.isLocalFile() || !file.isFile() || !QStringList{"html", "htm", "txt", "pdf", "png", "jpg", "jpeg", "gif", "webp", "svg"}.contains(file.suffix().toLower())) return {};
         return QUrl::fromLocalFile(file.canonicalFilePath()).toString();
     }
+    Q_INVOKABLE bool canOpenDownloadedFile(const QString &path) const {
+        const QFileInfo file(path);
+        return file.isFile() && !file.isSymLink() && DownloadPolicy::allowsExternalOpen(file.fileName());
+    }
     Q_INVOKABLE bool openDownloadedFile(const QString &path) {
-        return QFileInfo(path).isFile() && QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+        // Recheck at launch time, even when the UI has already reviewed the file.
+        return canOpenDownloadedFile(path) && QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(path).canonicalFilePath()));
     }
     Q_INVOKABLE void showFileFolder(const QString &path) { QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(path).absolutePath())); }
     QString searchEngine() const { return settings.value("preferences/searchEngine", "DuckDuckGo").toString(); }

@@ -30,6 +30,14 @@ ApplicationWindow {
     property var downloadItems: []
     property var downloadQueue: []
     property var pendingDownload: null
+    property string pendingOpenPath: ""
+    property string pendingOpenOrigin: ""
+    function reviewDownloadedFile(item) {
+        if (!item || item.state !== WebEngineDownloadRequest.DownloadCompleted) return
+        pendingOpenPath = downloadPath(item)
+        pendingOpenOrigin = browserStore.origin(item.url.toString())
+        downloadOpenDialog.open()
+    }
     property var pdfTarget: null
     property bool pdfBusy: false
     property bool closingApproved: false
@@ -293,6 +301,19 @@ ApplicationWindow {
         }
         if (smokeStage === 2 && downloadItems.length && downloadItems[0].isFinished) {
             if (downloadItems[0].state !== WebEngineDownloadRequest.DownloadCompleted) return -1
+            reviewDownloadedFile(downloadItems[0])
+            smokeStage = 21
+            return 0
+        }
+        if (smokeStage === 21) {
+            if (!downloadOpenDialog.visible || !downloadOpenDialog.allowed || !pendingOpenPath.endsWith(".txt") || pendingOpenOrigin !== browserStore.origin(smokeBaseUrl)) return -1
+            downloadOpenDialog.reject()
+            smokeStage = 22
+            return 0
+        }
+        if (smokeStage === 22) {
+            if (downloadOpenDialog.visible || pendingOpenPath.length || pendingOpenOrigin.length) return 0
+            console.log("DOWNLOAD_REVIEW_TEST PASS: real completed download, source, cancellation and state cleanup")
             library.close()
             currentView.runJavaScript("Notification.requestPermission()")
             smokeStage = 3
@@ -356,6 +377,19 @@ ApplicationWindow {
         }
         if (smokeStage === 12 && downloadItems[0].isFinished) {
             if (downloadItems[0].state !== WebEngineDownloadRequest.DownloadCompleted || downloadItems[0].receivedBytes !== 4194304) return -1
+            reviewDownloadedFile(downloadItems[0])
+            smokeStage = 23
+            return 0
+        }
+        if (smokeStage === 23) {
+            if (!downloadOpenDialog.visible || downloadOpenDialog.allowed || !pendingOpenPath.endsWith(".bin")) return -1
+            console.log("DOWNLOAD_BLOCKED_TYPE_TEST PASS")
+            downloadOpenDialog.reject()
+            smokeStage = 24
+            return 0
+        }
+        if (smokeStage === 24) {
+            if (downloadOpenDialog.visible || pendingOpenPath.length) return 0
             library.close()
             currentView.url = "about:blank"; saveSession()
             settingsPanel.close()
@@ -823,7 +857,7 @@ ApplicationWindow {
         id: controlBar
         anchors.fill: parent
         controller: controlState
-        visible: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible
+        visible: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible
         onPolicyRequested: function(key, mode) {
             if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
             behaviorDialog.policyKey = key; behaviorDialog.policyMode = mode
@@ -880,7 +914,7 @@ ApplicationWindow {
                         Label { Layout.fillWidth: true; text: entry.download ? window.downloadStatus(entry.modelData) : entry.modelData.url; elide: Text.ElideRight; color: "#65758E"; font.pixelSize: 11 }
                         ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                         RowLayout {
-                            Button { text: "Ouvrir"; visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) { if (!browserStore.openDownloadedFile(window.downloadPath(entry.modelData))) showStatus("Impossible d’ouvrir le fichier.") } else { addTab(entry.modelData.url); library.close() } } }
+                            Button { text: "Ouvrir"; visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
                             Button { text: "Dossier"; visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
                             Button { text: "Retirer"; visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
                         }
@@ -930,6 +964,28 @@ ApplicationWindow {
                 }
             }
         }
+    }
+    Dialog {
+        id: downloadOpenDialog
+        anchors.centerIn: parent; width: Math.min(500, window.width - 40); modal: true
+        title: qsTr("Ouvrir un fichier téléchargé")
+        padding: 20
+        background: Rectangle { color: "#F5F7FB"; border.color: "#D5DEEA"; radius: 12 }
+        header: Label { text: downloadOpenDialog.title; padding: 20; bottomPadding: 8; color: "#0D2547"; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        property bool allowed: visible && browserStore.canOpenDownloadedFile(window.pendingOpenPath)
+        contentItem: ColumnLayout {
+            spacing: 14
+            Label { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; textFormat: Text.PlainText; font.bold: true; text: browserStore.fileName(browserStore.fileUrl(window.pendingOpenPath)) }
+            Label { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; textFormat: Text.PlainText; text: qsTr("Source : %1").arg(window.pendingOpenOrigin || qsTr("Source inconnue")) }
+            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: downloadOpenDialog.allowed ? qsTr("Ce fichier sera ouvert par une application externe. Continuez uniquement si vous faites confiance à sa source. CYBOU ne réalise pas d’analyse antivirus.") : qsTr("L’ouverture de ce type de fichier est bloquée dans CYBOU. Les programmes, scripts, raccourcis et types inconnus doivent être examinés depuis leur dossier.") }
+            Button { text: qsTr("Afficher le dossier"); onClicked: { browserStore.showFileFolder(window.pendingOpenPath); downloadOpenDialog.reject() } }
+        }
+        footer: DialogButtonBox {
+            background: Rectangle { color: "#F5F7FB"; radius: 12 }
+            Button { text: qsTr("Annuler"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole; focus: true; onClicked: downloadOpenDialog.reject() }
+            Button { text: qsTr("Ouvrir dans une application"); enabled: downloadOpenDialog.allowed; onClicked: { const path = window.pendingOpenPath; downloadOpenDialog.accept(); if (!browserStore.openDownloadedFile(path)) window.showStatus(qsTr("Impossible d’ouvrir ce fichier en toute sécurité.")) } }
+        }
+        onClosed: { window.pendingOpenPath = ""; window.pendingOpenOrigin = "" }
     }
     NativeDialogs.FileDialog {
         id: openFileDialog
