@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import Cybou
 
 Item {
@@ -21,7 +22,7 @@ Item {
         anchors.fill: parent
         source: "qrc:/assets/cybou-alpine-dawn-1920x1080.jpg"
         fillMode: Image.PreserveAspectCrop
-        asynchronous: true
+        asynchronous: false
         cache: true
         smooth: true
     }
@@ -32,17 +33,77 @@ Item {
         color: "#2806172F"
     }
 
-    // Floating glass card in center
+    // Ambient drop shadow beneath card
+    Rectangle {
+        id: cardShadow
+        anchors.centerIn: card
+        anchors.verticalCenterOffset: 14
+        width: card.width - 20
+        height: card.height - 16
+        radius: CybouTheme.cardRadius + 4
+        color: "#A0000000"
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            blurEnabled: true
+            blur: 1.0
+            blurMax: 32
+        }
+    }
+
+    // Floating frosted glass card in center
     Rectangle {
         id: card
         anchors.centerIn: parent
         anchors.verticalCenterOffset: root.height < 600 ? -10 : -25
         width: Math.min(620, Math.max(300, root.width - 48))
-        implicitHeight: contentCol.implicitHeight + 48
+        implicitHeight: contentCol.implicitHeight + (root.height < 600 ? 36 : 48)
         radius: CybouTheme.cardRadius
-        color: CybouTheme.glassCard
-        border.color: CybouTheme.borderHighlight
-        border.width: 1.5
+        clip: true
+        color: "transparent"
+
+        // Frosted window: aligned portion of blurred wallpaper
+        Item {
+            anchors.fill: parent
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blur: 0.85
+                blurMax: 40
+            }
+
+            ShaderEffectSource {
+                x: -card.x
+                y: -card.y
+                width: root.width
+                height: root.height
+                sourceItem: bg
+                live: true
+            }
+        }
+
+        // Tinted glass gradient wash
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: CybouTheme.glassCardTop }
+                GradientStop { position: 1.0; color: CybouTheme.glassCardBottom }
+            }
+        }
+
+        // Top specular highlight line
+        Rectangle {
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+            height: 1; color: CybouTheme.glassSheen
+        }
+
+        // Crisp glass border
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: "transparent"
+            border.color: CybouTheme.borderHighlight
+            border.width: 1.5
+        }
 
         ColumnLayout {
             id: contentCol
@@ -99,9 +160,16 @@ Item {
                 selectionColor: "#1D4ED8"; selectedTextColor: "#FFFFFF"
                 background: Rectangle {
                     radius: CybouTheme.controlRadius + 4
-                    color: CybouTheme.glassSurface
-                    border.color: searchInput.activeFocus ? CybouTheme.borderActive : CybouTheme.borderSubtle
-                    border.width: searchInput.activeFocus ? 1.5 : 1
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: searchInput.activeFocus ? "#E0143258" : "#C0102644" }
+                        GradientStop { position: 1.0; color: searchInput.activeFocus ? "#F00A1A30" : "#D008172A" }
+                    }
+                    border.color: searchInput.activeFocus ? CybouTheme.borderActive : CybouTheme.borderHighlight
+                    border.width: searchInput.activeFocus ? 2 : 1
+                    Rectangle {
+                        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                        height: 1; color: searchInput.activeFocus ? "#500088FF" : CybouTheme.glassSheenSubtle; radius: parent.radius
+                    }
                 }
                 onAccepted: {
                     if (text.trim().length > 0) {
@@ -119,13 +187,20 @@ Item {
                     onClicked: root.libraryRequested("Favoris")
                     contentItem: Text {
                         text: parent.text; color: CybouTheme.mainText
-                        font.pixelSize: 13; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 13; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
-                        implicitWidth: 100; implicitHeight: 34; radius: CybouTheme.controlRadius
-                        color: parent.hovered ? CybouTheme.glassHover : CybouTheme.glassSurface
-                        border.color: CybouTheme.borderSubtle
+                        implicitWidth: 104; implicitHeight: 36; radius: CybouTheme.controlRadius
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: parent.down ? "#DD0D2038" : parent.hovered ? "#DD224572" : "#C0142F52" }
+                            GradientStop { position: 1.0; color: parent.down ? "#EE071222" : parent.hovered ? "#EE163052" : "#D00B1D35" }
+                        }
+                        border.color: parent.hovered ? "#608BB8" : CybouTheme.borderHighlight
                         border.width: 1
+                        Rectangle {
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                            height: 1; color: CybouTheme.glassSheenSubtle; radius: parent.radius
+                        }
                     }
                 }
                 Button {
@@ -134,13 +209,20 @@ Item {
                     onClicked: root.libraryRequested("Historique")
                     contentItem: Text {
                         text: parent.text; color: CybouTheme.mainText
-                        font.pixelSize: 13; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 13; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
-                        implicitWidth: 100; implicitHeight: 34; radius: CybouTheme.controlRadius
-                        color: parent.hovered ? CybouTheme.glassHover : CybouTheme.glassSurface
-                        border.color: CybouTheme.borderSubtle
+                        implicitWidth: 104; implicitHeight: 36; radius: CybouTheme.controlRadius
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: parent.down ? "#DD0D2038" : parent.hovered ? "#DD224572" : "#C0142F52" }
+                            GradientStop { position: 1.0; color: parent.down ? "#EE071222" : parent.hovered ? "#EE163052" : "#D00B1D35" }
+                        }
+                        border.color: parent.hovered ? "#608BB8" : CybouTheme.borderHighlight
                         border.width: 1
+                        Rectangle {
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                            height: 1; color: CybouTheme.glassSheenSubtle; radius: parent.radius
+                        }
                     }
                 }
             }

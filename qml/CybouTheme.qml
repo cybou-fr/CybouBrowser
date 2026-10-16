@@ -23,6 +23,12 @@ QtObject {
     readonly property color neutral: "#9CB2CE"
     readonly property color unavailable: "#687C99"
 
+    // Glass specular highlights and reflections
+    readonly property color glassSheen: "#70FFFFFF"
+    readonly property color glassSheenSubtle: "#35FFFFFF"
+    readonly property color glassCardTop: "#750E2648"
+    readonly property color glassCardBottom: "#B0061224"
+
     // Geometry constants
     readonly property int chromeRowHeight: 36
     readonly property int chromeControlHeight: 28

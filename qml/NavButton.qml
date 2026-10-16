@@ -20,8 +20,17 @@ Button {
     }
     background: Rectangle {
         radius: 7
-        color: control.down ? "#1D3B66" : control.hovered ? "#142948" : "transparent"
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: control.down ? "#CC18355B" : control.hovered ? "#90244673" : "transparent" }
+            GradientStop { position: 1.0; color: control.down ? "#DD0E223D" : control.hovered ? "#60142C4E" : "transparent" }
+        }
+        color: "transparent"
         border.width: control.hovered ? 1 : 0
-        border.color: "#1E4273"
+        border.color: "#407DA5CC"
+        Rectangle {
+            visible: control.hovered
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+            height: 1; color: "#35FFFFFF"; radius: parent.radius
+        }
     }
 }

@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs as NativeDialogs
 import QtWebEngine
+import QtQuick.Effects
 import Cybou
 
 ApplicationWindow {
@@ -640,9 +641,18 @@ ApplicationWindow {
                         required property bool audible
                         width: isPinned ? (isMuted || audible ? 66 : 42) : Math.max(112, Math.min(200, tabStrip.width / Math.min(tabs.count, 5)))
                         height: chromeControlHeight; radius: 7
-                        color: activeTab === index ? "#122A4E" : tabMouse.containsMouse ? "#0E213B" : "transparent"
-                        border.width: activeTab === index ? 1 : 0
-                        border.color: "#1E4273"
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: activeTab === index ? "#E0183A68" : tabMouse.containsMouse ? "#701D3D6A" : "#200E223D" }
+                            GradientStop { position: 1.0; color: activeTab === index ? "#E80E2444" : tabMouse.containsMouse ? "#50122846" : "#200E223D" }
+                        }
+                        color: "transparent"
+                        border.width: 1
+                        border.color: activeTab === index ? "#498BB8E0" : tabMouse.containsMouse ? "#30608BB8" : "transparent"
+                        Rectangle {
+                            visible: activeTab === index
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                            height: 1; color: "#35FFFFFF"; radius: parent.radius
+                        }
                         MouseArea {
                             id: tabMouse
                             anchors.fill: parent; hoverEnabled: true
@@ -726,9 +736,16 @@ ApplicationWindow {
                     id: addressContainer
                     Layout.fillWidth: true; Layout.minimumWidth: 160; implicitHeight: chromeControlHeight
                     radius: 8
-                    color: address.activeFocus ? "#08162B" : "#0B1E38"
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: address.activeFocus ? "#E80B1E38" : "#CC0F2748" }
+                        GradientStop { position: 1.0; color: address.activeFocus ? "#F4061324" : "#DD091B32" }
+                    }
                     border.width: address.activeFocus ? 1.5 : 1
-                    border.color: address.activeFocus ? "#0088FF" : "#1B3B66"
+                    border.color: address.activeFocus ? "#0088FF" : "#357DA5CC"
+                    Rectangle {
+                        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                        height: 1; color: address.activeFocus ? "#4038BDF8" : "#25FFFFFF"; radius: parent.radius
+                    }
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 5; anchors.rightMargin: 4; spacing: 3
                         NavButton {
@@ -961,8 +978,25 @@ ApplicationWindow {
         x: 0; y: addressContainer.height + 6
         width: addressContainer.width
         padding: 6; focus: false; modal: false
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        background: Rectangle { color: CybouTheme.glassCard; radius: CybouTheme.controlRadius; border.color: CybouTheme.borderHighlight; border.width: 1 }
+        background: Rectangle {
+            radius: CybouTheme.controlRadius
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#F00E223D" }
+                GradientStop { position: 1.0; color: "#F8061120" }
+            }
+            border.color: CybouTheme.borderHighlight; border.width: 1
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#80000000"
+                shadowBlur: 1.0
+                shadowVerticalOffset: 12
+            }
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: "#40FFFFFF"; radius: parent.radius
+            }
+        }
         onClosed: suggestionIndex = -1
         contentItem: Column {
             spacing: 2

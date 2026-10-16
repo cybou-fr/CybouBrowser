@@ -18,7 +18,26 @@ Popup {
     height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    background: Rectangle { color: "#F2081528"; radius: 16; border.color: "#224775"; border.width: 1.5 }
+    background: Rectangle {
+        radius: 16
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#F00E223D" }
+            GradientStop { position: 1.0; color: "#F8061120" }
+        }
+        border.color: "#497DA5CC"
+        border.width: 1.5
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#80000000"
+            shadowBlur: 1.0
+            shadowVerticalOffset: 12
+        }
+        Rectangle {
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+            height: 1; color: "#50FFFFFF"; radius: parent.radius
+        }
+    }
     contentItem: ScrollView {
         implicitHeight: content.implicitHeight
         contentWidth: availableWidth
