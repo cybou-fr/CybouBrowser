@@ -30,4 +30,6 @@ Reload/Undo действуют только при совпадении исхо
 | Журнал | Ограниченные по времени confirmed events с явным scope profile/tab/unknown | Что `firstParty` одного сетевого запроса точно определяет tab |
 | Навигация | Локальные проверки IDN/URL/redirect/private-network, при реальном риске restricted mode и JS-off before-load | Что неизвестный сайт опасен или что off-the-record profile анонимен |
 
+**Реализованный узкий промежуточный шаг:** `TrackerExceptionLease` разрешает известные tracker-list запросы одной HTTPS-страницы на срок до 60 с только в отдельном off-the-record профиле, с countdown и revoke в Network glass-панели. Старые cookies/cache не наследуются; reload/expiry уничтожают контекст. Нельзя объявлять это независимыми Ads и Tracker категориями. **Следующий этап** расширяет уже реализованное поведение, а не проектирует исключения с нуля.
+
 **Существующие ограничения сохраняются:** Screen chooser не интегрирован; Notifications presentation не готова; cookies глобальны по нескольким профилям; Storage контролирует localStorage, не полный инвентарь IndexedDB/Service Workers; Network наблюдает только доступные ему HTTP(S)/ws события. Новые таблицы — acceptance criteria, а не shipped API. Подробнее: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
