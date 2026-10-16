@@ -49,6 +49,7 @@ Item {
                 const m = browserWindow.testOmnibox()
                 expect(m.visibleKeys.length === 11 && !m.overflowVisible, "all eleven controls at every size")
                 expect(m.addressWidth >= 120 && m.menuX > m.downloadX, "address fills available width and controls stay on the right")
+                expect(m.separatorX >= m.controlRight && m.downloadX >= m.separatorRight, "separator lies between capability panel and downloads")
                 expect(browserWindow.header.height === 74, "capabilities share the navigation row")
                 screenshot = "observable-browse-" + sizes[sizeIndex][0]
                 input = {kind:"key", key:Qt.Key_L, modifiers:Qt.ControlModifier}; phase = 4

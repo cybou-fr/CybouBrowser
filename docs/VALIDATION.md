@@ -46,3 +46,11 @@ Native `--transport-test` PASS, exit 0, including smoke and PDF output. Actual m
 Final `--controlbar-test` regression PASS, exit 0, 83,806 ms; hover interaction, window sizes, permission request identity, independent grant deadlines, document teardown, timeout denial, smoke and PDF checks pass after transport integration.
 
 Evidence: `docs/design/transport/`. Qt prints a deprecation guidance warning for the currently supported public QQuickWebEngineProfile constructor; this implementation uses no private Qt API. Real-device media shutdown, OS suspend/resume, cross-origin iframe behavior and independent proxy routing remain outside this validation.
+
+## Git integration and window chrome (2026-10-17)
+
+Merged origin/main, retaining the updated README structure and C++20 requirement while updating current HTTP/permission/hover behavior. No unmerged entries remain. C++20 Release build and security suite PASS.
+
+The unused ListView tab-strip area now explicitly receives title mouse events. A system drag starts only after the platform movement threshold, preserving double-click handling. Native tests PASS for small pointer movement, maximizing by double-click, restoring the previous 1100×720 size, and independent tab reordering. Actual system movement between monitors and maximized-window dragging remain manual Windows checks.
+
+The connection indicator becomes an explicit HTTP consent/revoke button for pending/temporary HTTP. Native transport suite PASS, exit 0: first consent through the glass panel, later consent and revoke through the new address-row button, isolated profile, stale consent, reload and 60-second expiry. Final Control Bar regression PASS, exit 0, 83,771 ms: separator placement and all eleven controls at four widths, address editing, glass hover, independent permission deadlines, timeout, smoke and PDF. The 820px layout and HTTP screenshot were visually inspected. Evidence: `docs/design/window-chrome/`.

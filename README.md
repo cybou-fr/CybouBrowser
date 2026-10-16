@@ -37,7 +37,7 @@ The full URL is always available for inspection and editing, but **the address b
 
 ### Non-negotiable principles
 
-- **Visible controls first.** Keep all eleven main capability icons in the **same navigation row** as the compact address. Do not replace them with three group buttons or move the Control Bar to another row.
+- **Visible controls first.** Keep all eleven main capability icons in the **same navigation row** as the address, which fills remaining width. Do not replace them with three group buttons or move the Control Bar to another row.
 - **One-click interaction.** A supported policy changes immediately, or a click acts on an actual pending permission request. Capabilities without a safe direct action open explanatory details instead.
 - **No permanent positive trust.** A previous visit does not earn future camera, microphone, geolocation, or other sensitive permissions. There is no “Always allow this site” privilege.
 - **No user-facing ASK workflow.** A page request highlights the relevant control. The browser does not interrupt ordinary browsing with a routine permission dialog.
@@ -80,10 +80,10 @@ A request's top-level site and actual requesting origin may differ (for example,
 
 | Area | Shipped in the code | Planned / unverified |
 | --- | --- | --- |
-| **Encrypted transport** | HTTPS-First and strict HTTPS-only modes. **Strict HTTPS defaults on for new preferences**; certificate errors are rejected. | Temporary request-scoped HTTP opt-in and migration of older saved settings. |
+| **Encrypted transport** | Production HTTPS strict; exact HTTP consent in a separate in-memory profile for 60 seconds. Legacy global opt-outs removed; certificate errors rejected. | Real-world transport compatibility and OS suspend/resume checks. |
 | **Tracker filtering** | A small in-memory list of known advertising and analytics host suffixes blocks selected third-party requests. | Comprehensive, versioned ad/tracker rules and verified category separation. |
 | **Observable traffic** | Bounded, sanitized metadata with origin, resource type, timestamp, blocked outcome, and reason. | Guaranteed per-tab attribution and visibility into all page/JavaScript activity. |
-| **Permission restrictions** | Live request handling, fail-closed timeout, and document lifetime limit. | Native C++ request coordinator, independent permission leases, and proven capture-stop behavior. |
+| **Permission restrictions** | Native C++ request coordinator, request identity checks, fail-closed timeout and independent grant deadlines enforced by document teardown. | Proven hardware capture-stop behavior on real devices. |
 | **Risk-adaptive mode** | Conservative WebEngine content policies and the transport/request interceptor. | Evidence-based risk engine and JS-off applied before suspicious content loads. |
 | **Proxy isolation** | **Not implemented.** | Dedicated, tested network/process isolation including DNS and WebRTC leak checks. |
 
@@ -166,3 +166,5 @@ Older design mockups and integration reports are retained in the repository for 
 Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. After a blocked HTTP attempt or failed known HTTPS upgrade, the Network panel offers explicit access to that exact address. Consent creates a separate off-the-record profile without normal cookies/cache for at most 60 seconds. One exact main-frame URL and same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and ws remain blocked. Reload, later navigation, revoke and expiry destroy the temporary view/profile; HTTP requires fresh consent. Page-controlled navigation is never automatically replayed with normal cookies. This separates profile data, not processes or proxy routes.
 
 The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
+
+The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.

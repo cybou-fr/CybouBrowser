@@ -154,6 +154,34 @@ int main(int argc, char *argv[])
             QMetaObject::invokeMethod(root, "verifyDragSmokeTest", Q_RETURN_ARG(QVariant, dragged));
             if (!dragged.toBool()) { dragWindow->grabWindow().save("build/drag-failure.png"); qCritical() << "TAB_DRAG_TEST FAIL" << points << root->property("activeTab") << "popup" << dragWindow->activeFocusItem(); app.exit(2); return; }
             qInfo() << "TAB_DRAG_TEST PASS";
+            dragWindow->showNormal();
+            dragWindow->resize(1100, 720);
+            QTest::qWait(100);
+            const QSize restoredSize = dragWindow->size();
+            QVariant titleCoordinates;
+            QMetaObject::invokeMethod(root, "testTitleDragPoint", Q_RETURN_ARG(QVariant, titleCoordinates));
+            auto titlePoint = titleCoordinates.toMap();
+            if (titlePoint.isEmpty()) titlePoint = titleCoordinates.value<QJSValue>().toVariant().toMap();
+            const QPoint titlePosition(titlePoint["x"].toInt(), titlePoint["y"].toInt());
+            const QPoint restoredPosition = dragWindow->position();
+            QTest::mousePress(dragWindow, Qt::LeftButton, Qt::NoModifier, titlePosition);
+            QTest::mouseMove(dragWindow, titlePosition + QPoint(1, 0));
+            QTest::mouseRelease(dragWindow, Qt::LeftButton, Qt::NoModifier, titlePosition + QPoint(1, 0));
+            if (dragWindow->position() != restoredPosition || dragWindow->size() != restoredSize) {
+                qCritical() << "WINDOW_TITLE_TEST FAIL: small pointer motion must not move the window"; app.exit(2); return;
+            }
+            QTest::mouseDClick(dragWindow, Qt::LeftButton, Qt::NoModifier, titlePosition);
+            QTest::qWait(150);
+            if (titlePoint["width"].toDouble() < 20 || dragWindow->visibility() != QWindow::Maximized) {
+                qCritical() << "WINDOW_TITLE_TEST FAIL: double click must maximize" << titlePoint << dragWindow->visibility(); app.exit(2); return;
+            }
+            QTest::mouseDClick(dragWindow, Qt::LeftButton, Qt::NoModifier, titlePosition);
+            QTest::qWait(150);
+            if (dragWindow->visibility() != QWindow::Windowed || dragWindow->size() != restoredSize) {
+                qCritical() << "WINDOW_TITLE_TEST FAIL: double click must restore last size" << dragWindow->size() << restoredSize; app.exit(2); return;
+            }
+            qInfo() << "WINDOW_TITLE_TEST PASS: empty tab strip double click maximizes and restores last size";
+            dragWindow->resize(1360, 900);
             QMetaObject::invokeMethod(root, "prepareSuggestionsSmokeTest");
             for (const char character : QByteArray("cybou-suggest")) QTest::keyClick(dragWindow, character);
             QTest::keyClick(dragWindow, Qt::Key_Down);

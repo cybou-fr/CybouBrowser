@@ -24,6 +24,20 @@ ApplicationWindow {
     palette.highlightedText: "#FFFFFF"
     palette.placeholderText: CybouTheme.mutedText
 
+    component WindowDragArea: MouseArea {
+        acceptedButtons: Qt.LeftButton
+        property point pressPosition
+        property bool moving: false
+        onPressed: function(mouse) { pressPosition = Qt.point(mouse.x, mouse.y); moving = false }
+        onPositionChanged: function(mouse) {
+            if (pressed && !moving && Math.abs(mouse.x - pressPosition.x) + Math.abs(mouse.y - pressPosition.y) >= Qt.application.styleHints.startDragDistance)
+                moving = window.startSystemMove()
+        }
+        onReleased: moving = false
+        onCanceled: moving = false
+        onDoubleClicked: window.maximizeToggle()
+    }
+
     component GlassMenuItem: MenuItem {
         id: gitem
         implicitHeight: 32
@@ -387,6 +401,14 @@ ApplicationWindow {
     function pollTransportTest() { return transportHarness.step() }
     function takeTransportScreenshot() { return transportHarness.takeScreenshot() }
     function takeTransportInput() { return transportHarness.takeInput() }
+    function testHttpButtonPoint() {
+        const p = httpButton.mapToItem(null, httpButton.width / 2, httpButton.height / 2)
+        return {kind:"click", x:p.x, y:p.y}
+    }
+    function testTitleDragPoint() {
+        const p = emptyTabDrag.mapToItem(null, emptyTabDrag.width / 2, emptyTabDrag.height / 2)
+        return {x:p.x, y:p.y, width:emptyTabDrag.width}
+    }
     TransportHarness { id: transportHarness; browserWindow: window; controller: controlState; bar: controlBar }
     function testTabCount() { return tabs.count }
     function testAddressMatches() { return currentView && address.text === (currentView.url.toString() === "about:blank" ? "" : currentView.url.toString()) }
@@ -397,10 +419,11 @@ ApplicationWindow {
         return settingsHidden && libraryHidden && fullscreenHidden
     }
     function testOmnibox() {
-        return { navWidth:navRow.width, fixedWidth:6 * 30 + 7 * navRow.spacing,
+        return { navWidth:navRow.width, fixedWidth:6 * 30 + 9 + 9 * navRow.spacing,
             addressWidth:addressContainer.width, editing:address.activeFocus,
             visibleKeys:controlBar.visibleKeys, overflowKeys:controlBar.hiddenKeys,
             overflowVisible:controlBar.overflowVisible, controlWidth:controlBar.effectiveWidth,
+            controlRight:controlBar.x + controlBar.width, separatorX:panelSeparator.x, separatorRight:panelSeparator.x + panelSeparator.width,
             downloadX:downloadsButton.x, menuX:menuButton.x, currentTabId:currentView ? currentView.tabUid : "",
             displayHost:address.displayHost, rawUrl:currentView ? currentView.url.toString() : "",
             input:address.text, selectedText:address.selectedText }
@@ -740,7 +763,7 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight
             color: privateMode ? "#060F1E" : "#081325"
-            MouseArea { anchors.fill: parent; onPressed: window.startSystemMove(); onDoubleClicked: window.maximizeToggle() }
+            WindowDragArea { anchors.fill: parent }
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: 8
                 spacing: 4
@@ -753,6 +776,14 @@ ApplicationWindow {
                     spacing: 3; clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     model: tabs
+                    WindowDragArea {
+                        id: emptyTabDrag
+                        parent: tabStrip
+                        // Flickable owns the unused strip too; provide an explicit title hit area there.
+                        x: Math.max(0, Math.min(tabStrip.width, tabStrip.contentWidth - tabStrip.contentX))
+                        width: Math.max(0, tabStrip.width - x); height: tabStrip.height
+                        z: 2
+                    }
                     delegate: Rectangle {
                         id: tabItem
                         required property int index
@@ -896,10 +927,26 @@ ApplicationWindow {
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 5; anchors.rightMargin: 4; spacing: 3
                         NavButton {
-                            text: currentView && currentView.url.toString().startsWith("https:") ? "🔒" : currentView && currentView.url.toString().startsWith("http:") ? "!" : "ⓘ"
-                            implicitWidth: 24
-                            hint: currentView && currentView.url.toString().startsWith("https:") ? qsTr("Connexion chiffrée (HTTPS), sans garantie sur le site") : currentView && currentView.url.toString().startsWith("http:") ? qsTr("Connexion non chiffrée (HTTP)") : qsTr("Page locale ou nouvel onglet")
-                            onClicked: connectionInfo.open()
+                            id: httpButton
+                            readonly property bool httpAction: window.transportState.httpPending || window.transportState.httpTemporary
+                            property string pressedToken: ""
+                            property bool pressedHttpAction: false
+                            text: httpAction ? "HTTP" : currentView && currentView.url.toString().startsWith("https:") ? "🔒" : "ⓘ"
+                            implicitWidth: httpAction ? 36 : 24
+                            hint: httpAction ? "" : currentView && currentView.url.toString().startsWith("https:") ? qsTr("Connexion chiffrée (HTTPS), sans garantie sur le site") : qsTr("Informations de connexion")
+                            Accessible.name: httpAction ? (window.transportState.httpTemporary ? qsTr("Révoquer l’accès HTTP temporaire") : qsTr("Autoriser cette adresse HTTP temporairement")) : hint
+                            onPressed: { pressedToken = window.transportState.httpToken; pressedHttpAction = httpAction }
+                            onClicked: {
+                                if (!pressedHttpAction) { if (!httpAction) connectionInfo.open(); return }
+                                if (pressedToken !== window.transportState.httpToken) return
+                                if (window.transportState.httpTemporary) window.replaceGrantedView(currentView)
+                                else window.allowTemporaryHttp(pressedToken)
+                            }
+                            contentItem: Text {
+                                text: httpButton.text; font.pixelSize: httpButton.httpAction ? 10 : 17; font.bold: httpButton.httpAction
+                                color: httpButton.httpAction ? "#FFD08A" : "#A0B3D0"
+                                horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                            }
                         }
                         AdaptiveAddress {
                             id: address
@@ -956,6 +1003,11 @@ ApplicationWindow {
                     }
                     onDecisionRequested: function(allow, requestId) { window.resolvePermission(allow, requestId) }
                     onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
+                }
+                Item {
+                    id: panelSeparator
+                    Layout.preferredWidth: 9; Layout.preferredHeight: 22
+                    Rectangle { anchors.centerIn: parent; width: 1; height: parent.height; color: "#456080" }
                 }
                 NavButton { id: downloadsButton; text: "↓"; hint: "Téléchargements · Ctrl+J"; onClicked: showLibrary("Téléchargements") }
                 NavButton { id: menuButton; text: "☰"; hint: "Menu"; onClicked: menu.popup(menuButton, 0, menuButton.height) }

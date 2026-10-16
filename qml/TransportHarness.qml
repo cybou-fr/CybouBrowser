@@ -75,14 +75,13 @@ Item {
                 browserWindow.navigate(target); phase = 8
             } else if (phase === 8 && browserWindow.transportState.httpPending) {
                 expect(!view.temporaryTransport, "later visit is denied again")
-                expect(browserWindow.allowTemporaryHttp(browserWindow.transportState.httpToken), "explicit consent for revoke test")
-                input = {x:80, y:300, kind:"move"}
+                input = browserWindow.testHttpButtonPoint()
                 phase = 9
             } else if (phase === 9 && view.temporaryTransport && view.title === "Transport ready" && !view.loading) {
                 trackedProfile = view.profile
                 input = bar.testInputPoint("network", "move"); phase = 10
             } else if (phase === 10 && bar.testCard().visible) {
-                input = bar.testHttpRevokePoint(); phase = 11
+                input = browserWindow.testHttpButtonPoint(); phase = 11
             } else if (phase === 11 && view.url.toString() === "about:blank" && !view.temporaryTransport) {
                 browserStore.httpsFirst = oldHttpsFirst
                 console.info("TRANSPORT_TEST PASS: exact navigation, same-origin resource gate, other tab, reload, stale token, 60-second expiry, explicit revoke")

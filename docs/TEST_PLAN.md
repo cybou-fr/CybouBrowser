@@ -1,6 +1,8 @@
 # Проверки
 
-Build: `cmake --build build --config Release --parallel 4` (Qt 6.12, MSVC 2022).
+Build: `cmake --build build --config Release --parallel 4` (C++20, Qt 6.12, MSVC 2022).
+
+Window chrome: the native harness double-clicks the unused tab-strip area to maximize and restore the previous window size; tab reordering is checked separately. Control Bar layout checks verify a separator between controls and downloads at every supported size. Transport tests click the dedicated address-row HTTP button to grant and revoke, while the first grant still exercises the glass-panel control. System window movement across monitors and dragging a maximized window remain manual Windows checks.
 
 HTTP transport: `build/Release/cybou.exe --transport-test`. A loopback fixture checks initial strict denial, real hover-panel consent, a separate off-the-record profile, same-origin assets, blocked cross-origin HTTP, no inheritance by another tab, stale-token rejection, reload requiring fresh consent, 60-second background expiry preserving the selected peer tab, real panel revoke, and destruction of the temporary native profile. `--security-test` also checks exact URL/query matching, concurrent single-use consumption, origin/firstParty restrictions, ws and credential rejection, canonical root URLs and explicit revocation. Screenshots: `build/transport-http-blocked.png`, `build/transport-http-temporary.png`. Test-only HTTP opt-out remains unavailable in normal launches.
 Run: `build/Release/cybou.exe --security-test`, `--smoke-test`, `--controlbar-test`.
