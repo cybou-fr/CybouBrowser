@@ -94,9 +94,9 @@ An unfamiliar website is not automatically malicious. CYBOU must base stronger r
 
 ## Security and UX: what we are building next
 
-The current eleven-icon **single-row** Control Bar and its interactive glass hover panels stay exactly where they are. Planned improvements focus on *real enforcement*: explicit deny rules across cross-origin iframes, verified and usable temporary camera/microphone permissions, a patched/sandboxed WebEngine, a versioned ad/tracker rules engine, temporary independent site exceptions **inside the existing Network hover panel**, truthful events/colors, and carefully gated navigation-risk checks.
+The current eleven-icon **single-row** Control Bar and its interactive glass hover panels stay exactly where they are. Planned improvements focus on *real enforcement*: explicit deny rules across cross-origin iframes, verified and usable temporary camera/microphone permissions, a patched/sandboxed WebEngine, a versioned ad/tracker rules engine, expansion of the **already implemented 60-second tracker exception** into independent ad/tracker policies inside the same Network hover panel, truthful events/colors, and carefully gated navigation-risk checks.
 
-**These are engineering plans, not shipped capabilities.** Profile-scoped traffic is not a tab counter; permission grants are not proof of physical capture; off-the-record HTTP sessions are not proxy/process isolation. See the [Security & UX Evolution Plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
+**The existing temporary tracker exception is shipped; the independent ad/tracker policies and other improvements described here are planned.** Profile-scoped traffic is not a tab counter; permission grants are not proof of physical capture; off-the-record HTTP sessions are not proxy/process isolation. See the [Security & UX Evolution Plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
 
 ## Everyday browser features
 
