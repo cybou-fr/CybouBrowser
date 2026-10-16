@@ -11,7 +11,7 @@ HTTP exceptions use a dedicated off-the-record profile per view, with an interce
 
 TrackerExceptionLease similarly owns an exact document navigation and a 60-second deadline in a separate profile. Tracker exceptions apply only to matching firstParty origins, after the initial document request; transport/credential checks precede any exception. Main.qml maps both kinds of temporary profiles by tab UID and tears them down through one view replacement path. Network samples add translated resource labels, categories and explicit filter decisions. The model exposes bounded per-category rows and profile-sample counts. A one-second UI countdown runs only while the current tab has a tracker exception; native expiry remains independent of QML timers.
 
-## Запланированная архитектурная эволюция (не реализована)
+## Дальнейшая архитектурная эволюция (новые компоненты пока не реализованы)
 
 Сохранить существующие `ControlBarInline.qml`, интерактивный `CapabilityPopover.qml` и сетевую визуализацию; менять реальные источники политики/данных и их контракты, не делать ещё одну панель.
 
@@ -27,4 +27,4 @@ TrackerExceptionLease similarly owns an exact document navigation and a 60-secon
 
 Порядок принятия решения: **обязательные network denies HTTPS/URL credentials** → независимые verified tracker/ad rules с временными site exceptions → результат block/allow с подтверждаемой причиной → bounded sanitized event → QML model/hover. Интерцептор не обращается к QML и не компилирует крупные правила на горячем пути. Внутренний `firstParty` текущего request сам по себе не устанавливает вкладку. Измерять CPU/memory/latency при burst, ложные срабатывания и отмену действий после смены контекста.
 
-До фактического внедрения остаются существующие `PermissionCoordinator`, `ControlBarController`, `TrackerBlocker`, `RequestObserver`. Этапы описаны в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md) и [ROADMAP](ROADMAP.md).
+Текущая система уже включает `PermissionCoordinator`, `ControlBarController`, `TrackerBlocker`, `RequestObserver` и **`TrackerExceptionLease`** — строго ограниченный tracker-only доступ в отдельном 60-секундном профиле. Новый `RuleEngine` и независимые Ads/Tracker политики по-прежнему не реализованы. Развивать существующий контракт исключения, а не создавать второй несовместимый механизм. Этапы описаны в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md) и [ROADMAP](ROADMAP.md).
