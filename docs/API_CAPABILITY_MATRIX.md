@@ -1,3 +1,6 @@
+
+> **Состояние на 17.10.2026:** текущий продукт — C++20, C++ PermissionCoordinator с независимыми deadline, 11 кнопок inline в **одной** навигационной строке, интерактивные glass hover panels, HTTPS strict и временный single-URL HTTP opt-in в отдельном профиле. Ранние audit-строки в этом документе сохранены как историческая справка (часть описывает 0.5/0.7 с другими layout/dialog сценариями) и **не являются сегодняшним UI-контрактом**. Актуальные требования: [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md), [CONTROL_BAR_UX](CONTROL_BAR_UX.md), [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), [ROADMAP](ROADMAP.md).
+
 # Observable Browsing capability matrix — current working tree
 
 | Area | Real observation | Control | Scope | Limitation |
