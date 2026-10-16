@@ -39,6 +39,9 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool highContrast READ highContrast NOTIFY preferencesChanged)
     Q_PROPERTY(bool disableGlow READ disableGlow WRITE setDisableGlow NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarLanguage READ controlBarLanguage WRITE setControlBarLanguage NOTIFY languageChanged)
+    Q_PROPERTY(QString wallpaperType READ wallpaperType WRITE setWallpaperType NOTIFY preferencesChanged)
+    Q_PROPERTY(QString customWallpaperPath READ customWallpaperPath WRITE setCustomWallpaperPath NOTIFY preferencesChanged)
+    Q_PROPERTY(int glassBlurLevel READ glassBlurLevel WRITE setGlassBlurLevel NOTIFY preferencesChanged)
 public:
     explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
@@ -135,6 +138,29 @@ public:
     void setControlBarLanguage(const QString &language) {
         if ((language != "fr" && language != "ru") || language == controlBarLanguage()) return;
         settings.setValue("ui/controlBar/language", language); emit languageChanged(); emit preferencesChanged();
+    }
+    QString wallpaperType() const { return settings.value("preferences/wallpaperType", "alpine").toString(); }
+    void setWallpaperType(const QString &value) {
+        if (!QStringList{"alpine", "dark", "custom"}.contains(value) || value == wallpaperType()) return;
+        settings.setValue("preferences/wallpaperType", value); emit preferencesChanged();
+    }
+    QString customWallpaperPath() const { return settings.value("preferences/customWallpaperPath", "").toString(); }
+    void setCustomWallpaperPath(const QString &path) {
+        if (path == customWallpaperPath()) return;
+        settings.setValue("preferences/customWallpaperPath", path); emit preferencesChanged();
+    }
+    Q_INVOKABLE bool setCustomWallpaper(const QUrl &url) {
+        const QFileInfo file(url.toLocalFile());
+        if (!url.isLocalFile() || !file.isFile() || !QStringList{"jpg", "jpeg", "png", "webp", "bmp"}.contains(file.suffix().toLower())) return false;
+        settings.setValue("preferences/customWallpaperPath", file.canonicalFilePath());
+        settings.setValue("preferences/wallpaperType", "custom");
+        emit preferencesChanged();
+        return true;
+    }
+    int glassBlurLevel() const { return settings.value("preferences/glassBlurLevel", 2).toInt(); }
+    void setGlassBlurLevel(int level) {
+        if (level < 0 || level > 2 || level == glassBlurLevel()) return;
+        settings.setValue("preferences/glassBlurLevel", level); emit preferencesChanged();
     }
     RequestObserver *observerFor(QQuickWebEngineProfile *profile) const { return observers.value(profile); }
     void setSearchEngine(const QString &value) {

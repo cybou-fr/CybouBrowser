@@ -56,6 +56,38 @@ Drawer {
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; text: "Les fenêtres privées démarrent toujours sur un nouvel onglet."; font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
+                Label { text: qsTr("APPARENCE & FOND D’ÉCRAN"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
+                Label { text: qsTr("Fond de la page d’accueil"); color: "#E2E8F0"; font.bold: true }
+                ComboBox {
+                    id: wallpaperSelector
+                    Layout.fillWidth: true
+                    model: [qsTr("Alpine Dawn (Recommandé)"), qsTr("Nuit profonde (Dégradé sombre)"), qsTr("Image personnalisée…")]
+                    currentIndex: browserStore.wallpaperType === "dark" ? 1 : browserStore.wallpaperType === "custom" ? 2 : 0
+                    onActivated: {
+                        if (currentIndex === 0) browserStore.wallpaperType = "alpine"
+                        else if (currentIndex === 1) browserStore.wallpaperType = "dark"
+                        else if (currentIndex === 2) wallpaperFileDialog.open()
+                    }
+                }
+                Button {
+                    text: qsTr("Choisir une image de fond…")
+                    visible: browserStore.wallpaperType === "custom"
+                    onClicked: wallpaperFileDialog.open()
+                }
+                Label {
+                    Layout.fillWidth: true; wrapMode: Text.WrapAnywhere
+                    visible: browserStore.wallpaperType === "custom" && browserStore.customWallpaperPath.length > 0
+                    text: browserStore.customWallpaperPath; color: "#94A3B8"; font.pixelSize: 11
+                }
+                Label { text: qsTr("Intensité du verre dépoli (Frosted Glass)"); color: "#E2E8F0"; font.bold: true }
+                ComboBox {
+                    id: blurSelector
+                    Layout.fillWidth: true
+                    model: [qsTr("Désactivé (Économie GPU)"), qsTr("Subtil"), qsTr("Intense (Recommandé)")]
+                    currentIndex: browserStore.glassBlurLevel
+                    onActivated: browserStore.glassBlurLevel = currentIndex
+                }
+                Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: "TÉLÉCHARGEMENTS"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Label { Layout.fillWidth: true; text: browserStore.downloadsPath; wrapMode: Text.WrapAnywhere; color: "#94A3B8"; font.pixelSize: 12 }
                 Button { text: "Choisir le dossier…"; onClicked: downloadFolder.open() }
@@ -123,6 +155,18 @@ Drawer {
         title: "Dossier des téléchargements"
         currentFolder: browserStore.fileUrl(browserStore.downloadsPath)
         onAccepted: if (!browserStore.setDownloadFolder(selectedFolder)) panel.statusText = "Ce dossier n’est pas accessible en écriture."
+    }
+    NativeDialogs.FileDialog {
+        id: wallpaperFileDialog
+        title: qsTr("Choisir une image de fond")
+        nameFilters: [qsTr("Images (*.jpg *.jpeg *.png *.webp *.bmp)")]
+        onAccepted: {
+            if (selectedFile) {
+                if (!browserStore.setCustomWallpaper(selectedFile)) {
+                    panel.statusText = qsTr("Format d'image non valide.")
+                }
+            }
+        }
     }
     Dialog {
         id: clearDialog

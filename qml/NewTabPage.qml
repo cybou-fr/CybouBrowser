@@ -10,17 +10,42 @@ Item {
     signal navigateRequested(string text)
     signal libraryRequested(string section)
 
-    // Fallback base color before image load
-    Rectangle {
-        anchors.fill: parent
-        color: CybouTheme.navyDeep
+    // Wallpaper source resolution
+    readonly property string wallpaperSource: {
+        if (typeof browserStore !== "undefined") {
+            if (browserStore.wallpaperType === "custom" && browserStore.customWallpaperPath.length > 0)
+                return browserStore.fileUrl(browserStore.customWallpaperPath)
+            if (browserStore.wallpaperType === "dark")
+                return ""
+        }
+        return "qrc:/assets/cybou-alpine-dawn-1920x1080.jpg"
     }
 
-    // Alpine dawn wallpaper
+    // Blur level resolution
+    readonly property real blurFactor: {
+        if (typeof browserStore !== "undefined") {
+            if (browserStore.glassBlurLevel === 0) return 0.0
+            if (browserStore.glassBlurLevel === 1) return 0.45
+        }
+        return 0.85
+    }
+
+    // Fallback base color and Deep Night gradient
+    Rectangle {
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#0B1D36" }
+            GradientStop { position: 0.5; color: "#061324" }
+            GradientStop { position: 1.0; color: "#030A14" }
+        }
+    }
+
+    // Wallpaper image
     Image {
         id: bg
         anchors.fill: parent
-        source: "qrc:/assets/cybou-alpine-dawn-1920x1080.jpg"
+        source: root.wallpaperSource
+        visible: source.toString().length > 0
         fillMode: Image.PreserveAspectCrop
         asynchronous: false
         cache: true
@@ -31,6 +56,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: "#2806172F"
+        visible: bg.visible
     }
 
     // Ambient drop shadow beneath card
@@ -68,10 +94,11 @@ Item {
         // Frosted window: aligned portion of blurred wallpaper
         Item {
             anchors.fill: parent
+            visible: bg.visible && root.blurFactor > 0.01
             layer.enabled: true
             layer.effect: MultiEffect {
                 blurEnabled: true
-                blur: 0.85
+                blur: root.blurFactor
                 blurMax: 40
             }
 
