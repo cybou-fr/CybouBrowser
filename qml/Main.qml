@@ -21,6 +21,8 @@ ApplicationWindow {
     palette.highlightedText: "#0D2547"
     palette.placeholderText: "#738197"
     property int activeTab: 0
+    readonly property int chromeRowHeight: 36
+    readonly property int chromeControlHeight: 28
     property var currentView: views.count > activeTab ? views.itemAt(activeTab) : null
     property bool privateMode: false
     property var closedTabs: []
@@ -127,7 +129,7 @@ ApplicationWindow {
         if (smokeStage === 7 && smokeCookieRead) {
             if (smokeCookiePresent) return -1
             currentView.url = "about:blank"; saveSession()
-            settingsPanel.open()
+            settingsPanel.close()
             return 2
         }
         return 0
@@ -287,18 +289,18 @@ ApplicationWindow {
     header: ColumnLayout {
         spacing: 0
         Rectangle {
-            Layout.fillWidth: true; implicitHeight: 46
+            Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight
             color: privateMode ? "#D9DDEC" : "#E5EBF3"
             DragHandler { target: null; onActiveChanged: if (active) window.startSystemMove() }
             TapHandler { onDoubleTapped: window.maximizeToggle() }
             RowLayout {
-                anchors.fill: parent; anchors.leftMargin: 12
+                anchors.fill: parent; anchors.leftMargin: 8
                 spacing: 4
-                Image { source: "qrc:/assets/cybou.png"; sourceSize.width: 32; sourceSize.height: 32; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
+                Image { source: "qrc:/assets/cybou.png"; sourceSize.width: 32; sourceSize.height: 32; Layout.preferredWidth: 22; Layout.preferredHeight: 22 }
                 ListView {
                     id: tabStrip
                     Layout.fillWidth: true; Layout.fillHeight: true
-                    Layout.topMargin: 6
+                    Layout.topMargin: 4; Layout.bottomMargin: 4
                     orientation: ListView.Horizontal
                     spacing: 3; clip: true
                     boundsBehavior: Flickable.StopAtBounds
@@ -308,10 +310,9 @@ ApplicationWindow {
                         required property int index
                         required property string label
                         required property string favicon
-                        width: Math.max(125, Math.min(232, tabStrip.width / Math.min(tabs.count, 5)))
-                        height: 40; radius: 10
+                        width: Math.max(112, Math.min(200, tabStrip.width / Math.min(tabs.count, 5)))
+                        height: chromeControlHeight; radius: 7
                         color: activeTab === index ? "white" : tabMouse.containsMouse ? "#F0F3F8" : "transparent"
-                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 10; color: parent.color }
                         MouseArea {
                             id: tabMouse
                             anchors.fill: parent; hoverEnabled: true
@@ -323,10 +324,10 @@ ApplicationWindow {
                             }
                         }
                         RowLayout {
-                            anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 4; spacing: 8
-                            Image { source: tabItem.favicon || "qrc:/assets/cybou.png"; Layout.preferredWidth: 17; Layout.preferredHeight: 17; sourceSize.width: 32; sourceSize.height: 32 }
+                            anchors.fill: parent; anchors.leftMargin: 9; anchors.rightMargin: 3; spacing: 6
+                            Image { source: tabItem.favicon || "qrc:/assets/cybou.png"; Layout.preferredWidth: 15; Layout.preferredHeight: 15; sourceSize.width: 32; sourceSize.height: 32 }
                             Text { text: tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: "#0D2547"; font.pixelSize: 12 }
-                            NavButton { text: "×"; implicitWidth: 27; implicitHeight: 27; hint: "Fermer · Ctrl+W"; onClicked: closeTab(tabItem.index) }
+                            NavButton { text: "×"; implicitWidth: 22; implicitHeight: 24; hint: "Fermer · Ctrl+W"; onClicked: closeTab(tabItem.index) }
                         }
                         Menu {
                             id: tabContext
@@ -340,38 +341,39 @@ ApplicationWindow {
                 }
                 NavButton { text: "+"; hint: "Nouvel onglet · Ctrl+T"; onClicked: addTab("") }
                 Label { visible: privateMode; text: "PRIVÉ"; color: "#526080"; font.pixelSize: 10; padding: 8 }
-                Item { Layout.preferredWidth: 30 }
-                NavButton { text: "−"; hint: "Réduire"; implicitWidth: 46; implicitHeight: 46; onClicked: window.showMinimized() }
-                NavButton { text: window.visibility === Window.Maximized ? "❐" : "□"; hint: "Agrandir / restaurer"; implicitWidth: 46; implicitHeight: 46; onClicked: window.maximizeToggle() }
+                Item { Layout.preferredWidth: 18 }
+                NavButton { text: "−"; hint: "Réduire"; implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.showMinimized() }
+                NavButton { text: window.visibility === Window.Maximized ? "❐" : "□"; hint: "Agrandir / restaurer"; implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.maximizeToggle() }
                 Button {
                     id: closeWindow
-                    text: "×"; implicitWidth: 46; implicitHeight: 46; hoverEnabled: true
+                    text: "×"; implicitWidth: 38; implicitHeight: chromeRowHeight; padding: 0; hoverEnabled: true
                     Accessible.name: "Fermer CYBOU"
                     background: Rectangle { color: closeWindow.hovered ? "#E11D2E" : "transparent" }
-                    contentItem: Text { text: "×"; color: closeWindow.hovered ? "white" : "#0D2547"; font.pixelSize: 22; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    contentItem: Text { text: "×"; color: closeWindow.hovered ? "white" : "#0D2547"; font.pixelSize: 20; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                     onClicked: window.close()
                 }
             }
         }
         Rectangle {
-            Layout.fillWidth: true; implicitHeight: 58; color: "white"
+            Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight; color: "white"
             RowLayout {
-                anchors.fill: parent; anchors.margins: 9; spacing: 5
+                anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.topMargin: 4; anchors.bottomMargin: 4; spacing: 4
                 NavButton { text: "←"; hint: "Retour"; enabled: currentView ? currentView.canGoBack : false; onClicked: currentView.goBack() }
                 NavButton { text: "→"; hint: "Suivant"; enabled: currentView ? currentView.canGoForward : false; onClicked: currentView.goForward() }
                 NavButton { text: currentView && currentView.loading ? "×" : "↻"; hint: "Actualiser / arrêter"; onClicked: currentView.loading ? currentView.stop() : currentView.reload() }
                 NavButton { text: "⌂"; hint: "Accueil"; onClicked: currentView.url = "about:blank" }
                 Rectangle {
-                    Layout.fillWidth: true; implicitHeight: 38; color: address.activeFocus ? "#FFFFFF" : "#F0F3F8"; radius: 19
+                    Layout.fillWidth: true; implicitHeight: chromeControlHeight; color: address.activeFocus ? "#FFFFFF" : "#F0F3F8"; radius: 7
                     border.color: address.activeFocus ? "#8097B8" : "#E8EDF4"
                     RowLayout {
-                        anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 6; spacing: 4
-                        NavButton { text: "ⓘ"; implicitWidth: 28; hint: "Informations sur la connexion"; onClicked: connectionInfo.open() }
+                        anchors.fill: parent; anchors.leftMargin: 5; anchors.rightMargin: 4; spacing: 3
+                        NavButton { text: "ⓘ"; implicitWidth: 24; hint: "Informations sur la connexion"; onClicked: connectionInfo.open() }
                         TextField {
                             id: address
-                            Layout.fillWidth: true
+                            Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 0
+                            topPadding: 0; bottomPadding: 0; leftPadding: 4; rightPadding: 4
                             placeholderText: "Rechercher ou saisir une adresse"
-                            color: "#0D2547"; font.pixelSize: 14; selectByMouse: true
+                            color: "#0D2547"; font.pixelSize: 13; selectByMouse: true
                             background: Item {}
                             onAccepted: navigate(text)
                             onActiveFocusChanged: if (!activeFocus) refreshAddress()
