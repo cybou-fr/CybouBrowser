@@ -28,6 +28,8 @@ Button {
     signal focusStep(int direction)
     implicitWidth: 40; implicitHeight: 28
     padding: 5; hoverEnabled: true
+    scale: icon.down ? 0.93 : icon.hovered ? 1.05 : 1.0
+    Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
     focusPolicy: tabStop || activeFocus ? Qt.StrongFocus : Qt.ClickFocus
     Accessible.name: (capability.title || "") + " · " + stateText + " · " + (capability.scope || "") + " · " + (capability.reason || "") + " · " + qsTr("Ouvrir les détails")
     onHoveredChanged: hoverChanged(hovered)
@@ -41,6 +43,8 @@ Button {
         color: icon.down ? "#1D3B66" : icon.hovered ? "#162E4F" : (icon.policy === 1 || !!icon.capability.pending ? Qt.rgba(icon.stateColor.r, icon.stateColor.g, icon.stateColor.b, 0.12) : (icon.policy === 2 ? "#20EF4444" : "transparent"))
         border.width: icon.activeFocus || (icon.policy === 1 || icon.policy === 2 || !!icon.capability.pending) ? 1 : (icon.hovered ? 1 : 0)
         border.color: icon.activeFocus ? "#38BDF8" : (icon.capability.pending ? "#F59E0B80" : (icon.policy === 1 ? Qt.rgba(icon.brandColor.r, icon.brandColor.g, icon.brandColor.b, 0.35) : (icon.policy === 2 ? "#EF444460" : (icon.hovered ? "#1E3E6B" : "transparent"))))
+        Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
+        Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
     }
     contentItem: Item {
         Image {

@@ -47,7 +47,11 @@ Drawer {
                         implicitWidth: 40; implicitHeight: 24; radius: 12
                         x: restoreSwitch.leftPadding; y: (restoreSwitch.height - height) / 2
                         color: restoreSwitch.checked ? "#0088FF" : "#1E3A5F"
-                        Rectangle { x: restoreSwitch.checked ? 19 : 3; y: 3; width: 18; height: 18; radius: 9; color: "white" }
+                        Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150 } }
+                        Rectangle {
+                            x: restoreSwitch.checked ? 19 : 3; y: 3; width: 18; height: 18; radius: 9; color: "white"
+                            Behavior on x { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150; easing.type: Easing.OutQuad } }
+                        }
                     }
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; text: "Les fenêtres privées démarrent toujours sur un nouvel onglet."; font.pixelSize: 12 }
@@ -80,7 +84,11 @@ Drawer {
                         implicitWidth: 40; implicitHeight: 24; radius: 12
                         x: cookieSwitch.leftPadding; y: (cookieSwitch.height - height) / 2
                         color: cookieSwitch.checked ? "#0088FF" : "#1E3A5F"
-                        Rectangle { x: cookieSwitch.checked ? 19 : 3; y: 3; width: 18; height: 18; radius: 9; color: "white" }
+                        Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150 } }
+                        Rectangle {
+                            x: cookieSwitch.checked ? 19 : 3; y: 3; width: 18; height: 18; radius: 9; color: "white"
+                            Behavior on x { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150; easing.type: Easing.OutQuad } }
+                        }
                     }
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: "Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies. Le blocage ne remplace pas un bloqueur de traqueurs." }

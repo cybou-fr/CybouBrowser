@@ -60,6 +60,10 @@ Item {
         radius: CybouTheme.cardRadius
         clip: true
         color: "transparent"
+        opacity: root.visible ? 1.0 : 0.0
+        scale: root.visible ? 1.0 : 0.96
+        Behavior on opacity { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 250; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 250; easing.type: Easing.OutCubic } }
 
         // Frosted window: aligned portion of blurred wallpaper
         Item {
@@ -166,6 +170,7 @@ Item {
                     }
                     border.color: searchInput.activeFocus ? CybouTheme.borderActive : CybouTheme.borderHighlight
                     border.width: searchInput.activeFocus ? 2 : 1
+                    Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150 } }
                     Rectangle {
                         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
                         height: 1; color: searchInput.activeFocus ? "#500088FF" : CybouTheme.glassSheenSubtle; radius: parent.radius
@@ -185,6 +190,8 @@ Item {
                 Button {
                     text: qsTr("Favoris")
                     onClicked: root.libraryRequested("Favoris")
+                    scale: down ? 0.95 : hovered ? 1.03 : 1.0
+                    Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
                     contentItem: Text {
                         text: parent.text; color: CybouTheme.mainText
                         font.pixelSize: 13; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
@@ -197,6 +204,7 @@ Item {
                         }
                         border.color: parent.hovered ? "#608BB8" : CybouTheme.borderHighlight
                         border.width: 1
+                        Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
                         Rectangle {
                             anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
                             height: 1; color: CybouTheme.glassSheenSubtle; radius: parent.radius
@@ -207,6 +215,8 @@ Item {
                     text: qsTr("Historique")
                     visible: !root.privateMode
                     onClicked: root.libraryRequested("Historique")
+                    scale: down ? 0.95 : hovered ? 1.03 : 1.0
+                    Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
                     contentItem: Text {
                         text: parent.text; color: CybouTheme.mainText
                         font.pixelSize: 13; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
@@ -219,6 +229,7 @@ Item {
                         }
                         border.color: parent.hovered ? "#608BB8" : CybouTheme.borderHighlight
                         border.width: 1
+                        Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
                         Rectangle {
                             anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
                             height: 1; color: CybouTheme.glassSheenSubtle; radius: parent.radius

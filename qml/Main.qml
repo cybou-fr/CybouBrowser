@@ -648,8 +648,10 @@ ApplicationWindow {
                         color: "transparent"
                         border.width: 1
                         border.color: activeTab === index ? "#498BB8E0" : tabMouse.containsMouse ? "#30608BB8" : "transparent"
+                        Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 140 } }
                         Rectangle {
-                            visible: activeTab === index
+                            opacity: activeTab === index ? 1.0 : tabMouse.containsMouse ? 0.4 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 140 } }
                             anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
                             height: 1; color: "#35FFFFFF"; radius: parent.radius
                         }
@@ -742,6 +744,7 @@ ApplicationWindow {
                     }
                     border.width: address.activeFocus ? 1.5 : 1
                     border.color: address.activeFocus ? "#0088FF" : "#357DA5CC"
+                    Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150 } }
                     Rectangle {
                         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
                         height: 1; color: address.activeFocus ? "#4038BDF8" : "#25FFFFFF"; radius: parent.radius
