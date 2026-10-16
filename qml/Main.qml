@@ -144,6 +144,7 @@ ApplicationWindow {
     property string findResult: ""
     property bool bookmarked: false
     property bool restoring: true
+    property real testControlBudget: -1
     readonly property var activeProfile: privateMode ? privateProfile : persistentProfile
     property var pendingPermission: null
     property var pendingPermissionView: null
@@ -231,6 +232,8 @@ ApplicationWindow {
         return privateMode && privateProfile && privateProfile.offTheRecord && persistentProfile === null && tabs.count === 1
     }
     function prepareDragSmokeTest() {
+        controlBar.dismiss()
+        library.close()
         tabs.clear()
         for (let i = 0; i < 3; ++i) addTab(smokeBaseUrl + "/drag" + i)
         tabStrip.forceLayout()
@@ -271,11 +274,24 @@ ApplicationWindow {
     function testTabCount() { return tabs.count }
     function testAddressMatches() { return currentView && address.text === (currentView.url.toString() === "about:blank" ? "" : currentView.url.toString()) }
     function testOverlayVisibility() {
-        settingsPanel.open(); const settingsHidden = !controlBar.visible; settingsPanel.close()
-        library.open(); const libraryHidden = !controlBar.visible; library.close()
-        window.showFullScreen(); const fullscreenHidden = !controlBar.visible; window.showNormal()
+        settingsPanel.open(); const settingsHidden = !controlBar.interactionsEnabled && !controlBar.hasPopup; settingsPanel.close()
+        library.open(); const libraryHidden = !controlBar.interactionsEnabled && !controlBar.hasPopup; library.close()
+        window.showFullScreen(); const fullscreenHidden = !controlBar.interactionsEnabled && !controlBar.hasPopup; window.showNormal()
         return settingsHidden && libraryHidden && fullscreenHidden
     }
+    function testOmnibox() {
+        return { navWidth:navRow.width, fixedWidth:6 * 30 + 7 * navRow.spacing,
+            addressWidth:addressContainer.width, editing:address.activeFocus,
+            visibleKeys:controlBar.visibleKeys, overflowKeys:controlBar.hiddenKeys,
+            overflowVisible:controlBar.overflowVisible, controlWidth:controlBar.effectiveWidth,
+            downloadX:downloadsButton.x, menuX:menuButton.x, currentTabId:currentView ? currentView.tabUid : "",
+            displayHost:address.displayHost, rawUrl:currentView ? currentView.url.toString() : "",
+            input:address.text, selectedText:address.selectedText }
+    }
+    function testAddressPoint() { const p = address.mapToItem(null, address.width / 2, address.height / 2); return {kind:"click",x:p.x,y:p.y} }
+    function testDraft(value) { address.text = value }
+    function testLocalTextFile() { for (const item of downloadItems) if (item.downloadFileName.endsWith(".txt")) return browserStore.fileUrl(downloadPath(item)); return "" }
+    function testBrowse() { address.focus = false; if (currentView) currentView.forceActiveFocus(); refreshAddress() }
     function beginControlBarTest() { controlHarness.begin() }
     function pollControlBarTest() { return controlHarness.step() }
     function takeControlBarScreenshot() { return controlHarness.takeScreenshot() }
@@ -537,8 +553,8 @@ ApplicationWindow {
         } else download.accept()
     }
     Timer { id: saveTimer; interval: 700; onTriggered: saveSession() }
-    onActiveTabChanged: { refreshAddress(); findVisible = false; cancelPermission() }
-    onCurrentViewChanged: { if (suggestionsPopup) suggestionsPopup.close(); if (address) { address.focus = false; refreshAddress() } }
+    onActiveTabChanged: { refreshAddress(); findVisible = false; cancelPermission(); if (controlBar) controlBar.dismiss() }
+    onCurrentViewChanged: { if (suggestionsPopup) suggestionsPopup.close(); if (controlBar) controlBar.dismiss(); if (address) { address.focus = false; refreshAddress() } }
     onClosing: function(event) {
         if (!closingApproved && (activeDownloads() || pdfBusy)) {
             event.accepted = false; closeWorkDialog.open(); return
@@ -564,7 +580,7 @@ ApplicationWindow {
         if (privateMode) privateProfile = privatePrototype.createObject(window).instance()
         else persistentProfile = normalPrototype.createObject(window).instance()
         browserStore.configureProfile(activeProfile)
-        const saved = !privateMode && browserStore.restoreSession ? browserStore.session() : []
+        const saved = !privateMode && !smokeMode && browserStore.restoreSession ? browserStore.session() : []
         for (let i = 0; i < saved.length; ++i) restoreTab(saved[i])
         if (!tabs.count) addTab("")
         restoring = false
@@ -588,7 +604,7 @@ ApplicationWindow {
     Shortcut { sequence: "Alt+Left"; onActivated: if (currentView) currentView.goBack() }
     Shortcut { sequence: "Alt+Right"; onActivated: if (currentView) currentView.goForward() }
     Shortcut { sequence: "F11"; onActivated: visibility === Window.FullScreen ? showNormal() : showFullScreen() }
-    Shortcut { sequence: "Escape"; onActivated: { findVisible = false; if (currentView) { currentView.findText(""); currentView.stop() } } }
+    Shortcut { sequence: "Escape"; enabled: !address.activeFocus && !controlBar.hasPopup; onActivated: { findVisible = false; if (currentView) { currentView.findText(""); currentView.stop() } } }
 
     header: ColumnLayout {
         spacing: 0
@@ -690,6 +706,7 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true; Layout.preferredHeight: chromeRowHeight; Layout.minimumHeight: chromeRowHeight; Layout.maximumHeight: chromeRowHeight; color: "white"
             RowLayout {
+                id: navRow
                 anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.topMargin: 4; anchors.bottomMargin: 4; spacing: 4
                 NavButton { text: "←"; hint: "Retour"; enabled: currentView ? currentView.canGoBack : false; onClicked: currentView.goBack() }
                 NavButton { text: "→"; hint: "Suivant"; enabled: currentView ? currentView.canGoForward : false; onClicked: currentView.goForward() }
@@ -697,18 +714,20 @@ ApplicationWindow {
                 NavButton { text: "⌂"; hint: "Accueil"; onClicked: currentView.url = "about:blank" }
                 Rectangle {
                     id: addressContainer
-                    Layout.fillWidth: true; implicitHeight: chromeControlHeight; color: address.activeFocus ? "#FFFFFF" : "#F0F3F8"; radius: 7
+                    Layout.fillWidth: true; Layout.minimumWidth: 160; implicitHeight: chromeControlHeight; color: address.activeFocus ? "#FFFFFF" : "#F0F3F8"; radius: 7
                     border.color: address.activeFocus ? "#8097B8" : "#E8EDF4"
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 5; anchors.rightMargin: 4; spacing: 3
-                        NavButton { text: "ⓘ"; implicitWidth: 24; hint: "Informations sur la connexion"; onClicked: connectionInfo.open() }
-                        TextField {
+                        NavButton {
+                            text: currentView && currentView.url.toString().startsWith("https:") ? "🔒" : currentView && currentView.url.toString().startsWith("http:") ? "!" : "ⓘ"
+                            implicitWidth: 24
+                            hint: currentView && currentView.url.toString().startsWith("https:") ? qsTr("Connexion chiffrée (HTTPS), sans garantie sur le site") : currentView && currentView.url.toString().startsWith("http:") ? qsTr("Connexion non chiffrée (HTTP)") : qsTr("Page locale ou nouvel onglet")
+                            onClicked: connectionInfo.open()
+                        }
+                        AdaptiveAddress {
                             id: address
                             Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 0
-                            topPadding: 0; bottomPadding: 0; leftPadding: 4; rightPadding: 4
-                            placeholderText: "Rechercher ou saisir une adresse"
-                            color: "#0D2547"; font.pixelSize: 13; selectByMouse: true
-                            background: Item {}
+                            displayHost: currentView ? browserStore.displayHost(currentView.url) : ""
                             onAccepted: window.acceptAddress()
                             onTextEdited: window.updateSuggestions()
                             onActiveFocusChanged: if (!activeFocus) { suggestionsPopup.close(); refreshAddress() }
@@ -716,13 +735,34 @@ ApplicationWindow {
                                 if (suggestionsPopup.visible && (event.key === Qt.Key_Down || event.key === Qt.Key_Up)) {
                                     suggestionIndex = event.key === Qt.Key_Down ? (suggestionIndex + 1) % suggestionRows.length : (suggestionIndex < 0 ? suggestionRows.length - 1 : (suggestionIndex + suggestionRows.length - 1) % suggestionRows.length)
                                     event.accepted = true
-                                } else if (event.key === Qt.Key_Escape && suggestionsPopup.visible) { suggestionsPopup.close(); event.accepted = true }
+                                } else if (event.key === Qt.Key_Escape) {
+                                    suggestionsPopup.close(); focus = false; window.refreshAddress()
+                                    if (currentView) currentView.forceActiveFocus()
+                                    event.accepted = true
+                                }
                             }
                         }
                         NavButton { text: bookmarked ? "★" : "☆"; hint: "Favori · Ctrl+D"; onClicked: bookmark() }
                     }
                 }
-                NavButton { text: "↓"; hint: "Téléchargements · Ctrl+J"; onClicked: showLibrary("Téléchargements") }
+                ControlBarInline {
+                    id: controlBar
+                    controller: controlState; popupHost: Overlay.overlay
+                    editing: address.activeFocus
+                    widthBudget: smokeMode && window.testControlBudget >= 0 ? window.testControlBudget : Math.max(0, navRow.width - 6 * 30 - 7 * navRow.spacing - 160)
+                    Layout.preferredWidth: effectiveWidth; Layout.minimumWidth: effectiveWidth; Layout.maximumWidth: effectiveWidth
+                    visible: !editing
+                    interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible && !permissionDialog.visible
+                    onPolicyRequested: function(key, mode) {
+                        if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
+                        behaviorDialog.policyKey = key; behaviorDialog.policyMode = mode
+                        behaviorDialog.policyOrigin = browserStore.origin(currentView.url.toString())
+                        behaviorDialog.open()
+                    }
+                    onDecisionRequested: function(allow) { window.resolvePermission(allow) }
+                    onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
+                }
+                NavButton { id: downloadsButton; text: "↓"; hint: "Téléchargements · Ctrl+J"; onClicked: showLibrary("Téléchargements") }
                 NavButton { id: menuButton; text: "☰"; hint: "Menu"; onClicked: menu.popup(menuButton, 0, menuButton.height) }
                 Menu {
                     id: menu
@@ -851,21 +891,7 @@ ApplicationWindow {
             }
             Text { Layout.alignment: Qt.AlignHCenter; text: privateMode ? "Les visites privées ne sont pas enregistrées dans l’historique." : "Un nouvel horizon. Un espace à vous."; color: "#8491A5"; font.pixelSize: 12 }
         }
-        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.6"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
-    }
-    ControlBar {
-        id: controlBar
-        anchors.fill: parent
-        controller: controlState
-        visible: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible
-        onPolicyRequested: function(key, mode) {
-            if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
-            behaviorDialog.policyKey = key; behaviorDialog.policyMode = mode
-            behaviorDialog.policyOrigin = browserStore.origin(currentView.url.toString())
-            behaviorDialog.open()
-        }
-        onDecisionRequested: function(allow) { window.resolvePermission(allow) }
-        onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
+        Text { anchors.bottom: parent.bottom; anchors.bottomMargin: 24; anchors.horizontalCenter: parent.horizontalCenter; text: "CYBOU  /  ÉDITION 0.7.1"; color: "#8A97AA"; font { pixelSize: 10; letterSpacing: 2 } }
     }
     Dialog {
         id: behaviorDialog
@@ -1077,7 +1103,7 @@ ApplicationWindow {
         Label { width: parent.width; wrapMode: Text.WordWrap; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
     }
     Dialog {
-        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.6"; modal: true; standardButtons: Dialog.Ok
+        id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.7.1"; modal: true; standardButtons: Dialog.Ok
         Label { width: parent.width; wrapMode: Text.WordWrap; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {

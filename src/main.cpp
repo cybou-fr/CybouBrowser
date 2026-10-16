@@ -14,6 +14,7 @@
 #include <QKeyEvent>
 #include <QFile>
 #include <QTranslator>
+#include <QtTest/QTest>
 #include <memory>
 #include "browserstore.h"
 #include "security/SecurityTests.h"
@@ -30,7 +31,7 @@ int main(int argc, char *argv[])
     const bool securityTest = app.arguments().contains("--security-test");
     const bool smokeTest = app.arguments().contains("--smoke-test") || controlBarTest || securityTest;
     if (smokeTest) app.setOrganizationName("CYBOU-Tests");
-    app.setApplicationVersion("0.6.0");
+    app.setApplicationVersion("0.7.1");
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
     if (smokeTest) qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
@@ -72,10 +73,6 @@ int main(int argc, char *argv[])
     }
     if (securityTest) return runSecurityTests(app, testServer.serverPort());
     BrowserStore store;
-    if (smokeTest) {
-        for (const auto &argument : app.arguments()) if (argument.startsWith("--test-position=")) store.setControlBarPosition(argument.mid(16));
-        qInfo() << "CONTROL_BAR_PREFERENCE" << store.controlBarPosition();
-    }
     QTranslator controlTranslator;
     QQmlApplicationEngine engine;
     auto translateControlBar = [&] {
@@ -107,37 +104,28 @@ int main(int argc, char *argv[])
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
         QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest] {
+            auto dragWindow = qobject_cast<QQuickWindow *>(root);
+            dragWindow->requestActivate(); QCoreApplication::processEvents();
+            QTest::mouseMove(dragWindow, QPoint(80, 300));
             QVariant dragCoordinates;
             QMetaObject::invokeMethod(root, "prepareDragSmokeTest", Q_RETURN_ARG(QVariant, dragCoordinates));
             auto points = dragCoordinates.toMap();
             if (points.isEmpty()) points = dragCoordinates.value<QJSValue>().toVariant().toMap();
-            auto dragWindow = qobject_cast<QQuickWindow *>(root);
             const QPointF start(points["x1"].toDouble(), points["y1"].toDouble());
             const QPointF end(points["x2"].toDouble(), points["y2"].toDouble());
-            auto sendMouse = [dragWindow](QEvent::Type type, const QPointF &point, Qt::MouseButton button, Qt::MouseButtons buttons) {
-                QMouseEvent event(type, point, dragWindow->mapToGlobal(point.toPoint()), button, buttons, Qt::NoModifier);
-                QCoreApplication::sendEvent(dragWindow, &event);
-                QCoreApplication::processEvents();
-            };
-            sendMouse(QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton);
-            sendMouse(QEvent::MouseMove, start + QPointF(12, 0), Qt::NoButton, Qt::LeftButton);
-            sendMouse(QEvent::MouseMove, end, Qt::NoButton, Qt::LeftButton);
-            sendMouse(QEvent::MouseButtonRelease, end, Qt::LeftButton, Qt::NoButton);
+            dragWindow->requestActivate(); QCoreApplication::processEvents();
+            QTest::mousePress(dragWindow, Qt::LeftButton, Qt::NoModifier, start.toPoint());
+            QTest::mouseMove(dragWindow, (start + QPointF(12, 0)).toPoint());
+            QTest::mouseMove(dragWindow, end.toPoint());
+            QTest::mouseRelease(dragWindow, Qt::LeftButton, Qt::NoModifier, end.toPoint());
             QVariant dragged;
             QMetaObject::invokeMethod(root, "verifyDragSmokeTest", Q_RETURN_ARG(QVariant, dragged));
-            if (!dragged.toBool()) { qCritical() << "TAB_DRAG_TEST FAIL" << points; app.exit(2); return; }
+            if (!dragged.toBool()) { dragWindow->grabWindow().save("build/drag-failure.png"); qCritical() << "TAB_DRAG_TEST FAIL" << points << root->property("activeTab") << "popup" << dragWindow->activeFocusItem(); app.exit(2); return; }
             qInfo() << "TAB_DRAG_TEST PASS";
             QMetaObject::invokeMethod(root, "prepareSuggestionsSmokeTest");
-            auto sendKey = [dragWindow](int key, const QString &text = QString()) {
-                QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier, text);
-                QCoreApplication::sendEvent(dragWindow, &press);
-                QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier, text);
-                QCoreApplication::sendEvent(dragWindow, &release);
-                QCoreApplication::processEvents();
-            };
-            sendKey(Qt::Key_unknown, "cybou-suggest");
-            sendKey(Qt::Key_Down);
-            sendKey(Qt::Key_Return);
+            for (const char character : QByteArray("cybou-suggest")) QTest::keyClick(dragWindow, character);
+            QTest::keyClick(dragWindow, Qt::Key_Down);
+            QTest::keyClick(dragWindow, Qt::Key_Return);
             QVariant suggestionResult;
             QMetaObject::invokeMethod(root, "verifySuggestionsSmokeTest", Q_RETURN_ARG(QVariant, suggestionResult));
             if (!suggestionResult.toBool()) { qCritical() << "ADDRESS_SUGGESTIONS_TEST FAIL"; app.exit(2); return; }
@@ -197,14 +185,13 @@ int main(int argc, char *argv[])
                     if (data.isEmpty()) data = input.value<QJSValue>().toVariant().toMap();
                     auto window = qobject_cast<QQuickWindow *>(root);
                     if (data.value("kind") == "key") {
-                        QKeyEvent event(QEvent::KeyPress, data.value("key").toInt(), Qt::NoModifier); QCoreApplication::sendEvent(window, &event);
+                        const auto modifiers = Qt::KeyboardModifiers(data.value("modifiers", 0).toInt());
+                        window->requestActivate(); QCoreApplication::processEvents();
+                        QTest::keyClick(window, Qt::Key(data.value("key").toInt()), modifiers);
                     } else if (!data.isEmpty()) {
                         const QPointF point(data["x"].toDouble(), data["y"].toDouble());
-                        QMouseEvent move(QEvent::MouseMove, point, window->mapToGlobal(point.toPoint()), Qt::NoButton, Qt::NoButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &move);
-                        if (data.value("kind") == "click") {
-                            QMouseEvent press(QEvent::MouseButtonPress, point, window->mapToGlobal(point.toPoint()), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &press);
-                            QMouseEvent release(QEvent::MouseButtonRelease, point, window->mapToGlobal(point.toPoint()), Qt::LeftButton, Qt::NoButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &release);
-                        }
+                        QTest::mouseMove(window, point.toPoint());
+                        if (data.value("kind") == "click") QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, point.toPoint());
                     }
                 } else {
                     const int smokeStage = root->property("smokeStage").toInt();

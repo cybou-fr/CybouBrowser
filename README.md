@@ -1,4 +1,4 @@
-# CYBOU Browser 0.6
+# CYBOU Browser 0.7.1
 
 Native C++17 / Qt Quick browser using Qt WebEngine. Navy, white and red identity follows the supplied CYBOU sheet. The compass/shield icon was reconstructed from that reference with the built-in imagegen tool. assets/cybou.png is embedded in the app; assets/cybou.ico contains 16–256 px Windows icon sizes embedded through assets/cybou.rc.
 
@@ -17,7 +17,7 @@ Linux/macOS: configure with the matching Qt kit and compiler. Source structure i
 
 ## Features
 
-- Control Bar: a 36px translucent browser-owned overlay with top/right/bottom/left placement, hover/pinned cards, FR/RU panel strings, keyboard navigation and separate policy/event marks. Native permissions, per-origin JS/popups/localStorage controls and a bounded profile network sample are wired. Unsupported screen capture is explicitly unavailable. See [integration report](docs/CONTROL_BAR_INTEGRATION.md) and [capability matrix](docs/API_CAPABILITY_MATRIX.md).
+- Adaptive Omnibox & Control Bar: in 0.7.1, site capability controls and permission indicators are integrated directly into the browser's navigation row between the address field and Downloads, replacing the previous floating page overlay rail. In BROWSE mode, the address displays a compact, verified hostname while available capability icons are shown inline (with hidden controls accessible via an overflow menu ···). In EDIT mode (focus or Ctrl+L), all capability controls hide to give the full URL maximum width. Hover/pinned detail cards, FR/RU strings, keyboard navigation and separate policy/event marks are preserved. See [integration report](docs/CONTROL_BAR_INTEGRATION.md), [omnibox integration](docs/OMNIBOX_071_INTEGRATION.md) and [capability matrix](docs/API_CAPABILITY_MATRIX.md).
 
 - Combined draggable tab/title bar; minimize, maximize/restore, close, edge resizing and F11 fullscreen.
 - Scrollable tabs, mouse drag reordering with edge autoscroll, favicons, middle-click close, duplicate and move-left/right menu, reopen closed tabs and keyboard switching. Both browser bars remain 36 logical px high, with 28 px tab/address controls.
@@ -53,9 +53,9 @@ Development build, not security audited. Passwords, extensions UI, physical-prin
 
 Settings → Sécurité offers an opt-in HTTPS-only mode, persisted globally and applied immediately to the interceptors of all open ordinary/private profiles and to future profiles. It blocks HTTP and unencrypted WebSocket (`ws:`) requests, including subresources, local hosts and LAN addresses. There are no automatic upgrades, fallback or hidden host exceptions. Existing connections and already rendered/cached content are not terminated or erased; reload open tabs after enabling. Sites requiring HTTP will stop working while this mode is enabled. A blocked foreground navigation shows an explanation; subresource failures are handled by the page.
 
-HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. Control Bar placement is unchanged pending the next specification.
+HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. In 0.7.1, Control Bar controls are integrated directly into the navigation bar (Adaptive Omnibox).
 
-Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after explicit opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, and credential-URL denial. The fixture listens only on loopback and no security preferences are changed by this test.
+Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after explicit opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, credential-URL denial, exact host formatting, IPv6, ACE/IDN punycode and safe display tests. The fixture listens only on loopback and no security preferences are changed by this test.
 
 ### Reviewing downloaded files
 
@@ -72,6 +72,6 @@ $env:QT_FORCE_STDERR_LOGGING = '1'
 
 Uses a separate QSettings organization and WebEngine storage name. Checks tab dragging with mouse events, close/reopen, bookmarks, history, preference updates, independent private windows and destruction of their profiles. A loopback-only HTTP fixture checks page loading, find matches, a real permission request and grant, cookie removal, permission reset, cache completion, PDF output signature, local-file loading, and a 4 MiB download with pause/resume and cancelled window closure. Artifacts go to build/test-downloads. Produces build/smoke-preview.png; exits 0 on success and 2 on test failure. No external sites required. Native OS file/folder dialog interaction is not automated by this test.
 
-Version 0.5 also checks address suggestions via keyboard events, deduplication/private history exclusion, pinned group boundaries, mute binding, tab-state restoration and compatibility with URL-only sessions. The final preview shows pinned/muted tabs and suggestions using temporary fixture data, removed after capture.
+Also checks address suggestions via keyboard events, deduplication/private history exclusion, pinned group boundaries, mute binding, tab-state restoration and compatibility with URL-only sessions. The final preview shows pinned/muted tabs and suggestions using temporary fixture data, removed after capture.
 
-Run `--controlbar-test` to extend this suite with Control Bar policy, origin isolation, consent invalidation, overlay, hover/keyboard/page-input, localization and snapshot checks. Actual DPR 1/1.25/1.5/2 runs and known verification gaps are documented in the integration report.
+Run `--controlbar-test` to execute the full Adaptive Omnibox suite: BROWSE vs EDIT mode transitions, budget-based responsive icon sizing, overflow dropdown behavior, hover and pinned details card, keyboard roving navigation, Russian/French catalog, about:blank / local file display, network telemetry stability, and snapshot generation (`build/omnibox-*.png`). Actual test runs and verification results are documented in the integration report.
