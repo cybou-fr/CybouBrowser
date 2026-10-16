@@ -1,5 +1,6 @@
 #pragma once
 #include "PermissionCoordinator.h"
+#include "../controlbar/ControlBarController.h"
 #include <QDebug>
 #include <memory>
 
@@ -36,6 +37,20 @@ inline bool runPermissionContextTests() {
     if (running.remainingTime() > 60000) return false;
     running.wallExpiresAt = QDateTime::currentMSecsSinceEpoch() - 1;
     if (!running.expired()) return false;
-    qInfo() << "PERMISSION_CONTEXT_TEST PASS: view/profile/tab/top-origin/epoch, iframe requester, destroyed context, invalid request and dual-clock deadline";
+    if (!ControlBarController::origin(QUrl("https:///path-without-host")).isEmpty()) return false;
+    QQuickWebEngineProfile webProfile;
+    ControlBarController controller;
+    controller.setProfile(&webProfile);
+    controller.setTabId("tab-1");
+    controller.setUrl(QUrl("https://top.example/article"));
+    if (controller.capability("camera").value("explicitDeny").toBool()) return false;
+    if (!controller.setPermissionPolicy("camera", 2)
+        || !controller.capability("camera").value("explicitDeny").toBool()) return false;
+    if (!controller.shouldDenyOrigin("camera", QUrl("https://iframe.example/widget"), QUrl("https://top.example/article"), "tab-1")
+        || controller.shouldDenyOrigin("camera", QUrl("https://iframe.example/widget"), QUrl("https://top.example/article"), "tab-2")
+        || controller.shouldDenyOrigin("mic", QUrl("https://iframe.example/widget"), QUrl("https://top.example/article"), "tab-1")) return false;
+    controller.inheritContext("tab-1", "tab-3", QUrl("https://top.example/article"), QUrl("https://top.example/article"));
+    if (!controller.shouldDenyOrigin("camera", QUrl("https://iframe.example/widget"), QUrl("https://top.example/article"), "tab-3")) return false;
+    qInfo() << "PERMISSION_CONTEXT_TEST PASS: view/profile/tab/top-origin/epoch, iframe requester, top-level deny propagation, destroyed context, invalid request and dual-clock deadline";
     return true;
 }

@@ -9,16 +9,17 @@ Button {
     property bool transportPending: false
     readonly property bool requestPending: !!capability.pending || transportPending
     readonly property int policy: capability.policy === undefined ? 3 : capability.policy
+    readonly property bool activeDeny: policy === 2 && (!!capability.explicitDeny || !!capability.blocked)
     readonly property color brandColor: {
         switch (capability.key) {
-        case "camera": return "#FF4D4D"
+        case "camera": return "#38BDF8"
         case "mic": return "#10B981"
         case "location": return "#38BDF8"
-        case "notifications": return "#F59E0B"
+        case "notifications": return "#60A5FA"
         case "javascript": return "#10B981"
-        case "popups": return "#FB923C"
-        case "cookies": return "#C084FC"
-        case "storage": return "#818CF8"
+        case "popups": return "#38BDF8"
+        case "cookies": return "#2DD4BF"
+        case "storage": return "#10B981"
         case "clipboard": return "#38BDF8"
         case "network": return "#2DD4BF"
         default: return "#94A3B8"
@@ -26,13 +27,14 @@ Button {
     }
     readonly property color stateColor: {
         if (requestPending) return "#F59E0B"
-        if (policy === 1) return brandColor
-        if (policy === 2) return "#EF4444"
+        if (policy === 1) return "#10B981"
+        if (activeDeny) return "#EF4444"
         if (policy === 4) return "#F59E0B"
+        if (policy === 0 && (capability.key === "network" || capability.key === "cookies")) return "#2DD4BF"
         if (policy === 3) return "#64748B"
         return "#8FA3BF"
     }
-    readonly property string stateText: requestPending ? qsTr("Demande en attente") : [qsTr("Indisponible sans demande"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
+    readonly property string stateText: requestPending ? qsTr("Demande en attente") : [qsTr("Indisponible sans demande"), qsTr("Autorisé"), activeDeny ? qsTr("Bloqué") : qsTr("Indisponible sans demande"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
     signal hoverChanged(bool inside)
     signal focusStep(int direction)
     implicitWidth: 40; implicitHeight: 28
@@ -49,9 +51,9 @@ Button {
     }
     background: Rectangle {
         radius: 7
-        color: icon.down ? "#1D3B66" : icon.hovered ? "#162E4F" : (icon.policy === 1 || icon.requestPending ? Qt.rgba(icon.stateColor.r, icon.stateColor.g, icon.stateColor.b, 0.12) : (icon.policy === 2 ? "#20EF4444" : "transparent"))
-        border.width: icon.activeFocus || (icon.policy === 1 || icon.policy === 2 || icon.requestPending) ? 1 : (icon.hovered ? 1 : 0)
-        border.color: icon.activeFocus ? "#38BDF8" : (icon.requestPending ? "#F59E0B80" : (icon.policy === 1 ? Qt.rgba(icon.brandColor.r, icon.brandColor.g, icon.brandColor.b, 0.35) : (icon.policy === 2 ? "#EF444460" : (icon.hovered ? "#1E3E6B" : "transparent"))))
+        color: icon.down ? "#1D3B66" : icon.hovered ? "#162E4F" : (icon.policy === 1 || icon.requestPending ? Qt.rgba(icon.stateColor.r, icon.stateColor.g, icon.stateColor.b, 0.12) : (icon.activeDeny ? "#20EF4444" : "transparent"))
+        border.width: icon.activeFocus || (icon.policy === 1 || icon.activeDeny || icon.requestPending) ? 1 : (icon.hovered ? 1 : 0)
+        border.color: icon.activeFocus ? "#38BDF8" : (icon.requestPending ? "#F59E0B80" : (icon.policy === 1 ? "#5510B981" : (icon.activeDeny ? "#EF444460" : (icon.hovered ? "#1E3E6B" : "transparent"))))
         Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
         Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
     }
@@ -66,10 +68,10 @@ Button {
         MultiEffect { anchors.fill: glyph; source: glyph; colorization: 1; colorizationColor: icon.stateColor }
     }
     Rectangle {
-        visible: icon.policy !== 0 || icon.requestPending
-        x: parent.width - 12; y: 1; width: 10; height: 10; radius: icon.policy === 2 ? 2 : 5
+        visible: icon.requestPending || icon.policy === 1 || icon.policy === 4 || icon.activeDeny
+        x: parent.width - 12; y: 1; width: 10; height: 10; radius: icon.activeDeny ? 2 : 5
         color: "#081426"; border.color: icon.stateColor; border.width: 1
-        Text { anchors.centerIn: parent; text: icon.requestPending ? "!" : icon.policy === 1 ? "✓" : icon.policy === 2 || icon.policy === 3 ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
+        Text { anchors.centerIn: parent; text: icon.requestPending ? "!" : icon.policy === 1 ? "✓" : icon.activeDeny ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
     }
     Rectangle {
         visible: !!icon.capability.recent && !icon.requestPending && icon.capability.key !== "network"

@@ -47,7 +47,8 @@ public:
     Q_INVOKABLE int popupMode(const QUrl &url, const QString &tab = {}) const;
     Q_INVOKABLE bool setBehavior(const QString &key, int mode);
     Q_INVOKABLE bool setPermissionPolicy(const QString &key, int mode);
-    Q_INVOKABLE bool shouldDeny(const QWebEnginePermission &permission) const;
+    Q_INVOKABLE bool shouldDenyOrigin(const QString &key, const QUrl &requester, const QUrl &topUrl = {}, const QString &tab = {}) const;
+    Q_INVOKABLE bool shouldDeny(const QWebEnginePermission &permission, const QUrl &topUrl = {}, const QString &tab = {}) const;
     Q_INVOKABLE void notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked);
     Q_INVOKABLE void finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed);
     Q_INVOKABLE void abandonPending(const QString &tab);

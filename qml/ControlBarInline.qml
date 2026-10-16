@@ -26,7 +26,7 @@ Item {
     property var selectedData: { controller.revision; const data = controller.capability(selectedKey); return selectedKey === "network" ? Object.assign({}, data, transportState) : data }
     signal policyRequested(string key, int mode)
     signal decisionRequested(bool allow, double requestId)
-    signal permissionResetRequested(string key)
+    signal permissionResetRequested(string key, int mode)
     signal allowHttpRequested(string token)
     signal revokeHttpRequested(string token)
     signal allowTrackersRequested(string token)
@@ -97,7 +97,7 @@ Item {
             onClicked: {
                 if (capability.pending) control.decisionRequested(true, pressedRequestId)
                 else if (["javascript", "storage", "popups"].includes(capability.key)) control.policyRequested(capability.key, capability.policy === 1 ? 2 : 1)
-                else if (["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key)) { control.permissionResetRequested(capability.key) }
+                else if (["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key) && (capability.policy === 1 || capability.blocked || capability.explicitDeny)) control.permissionResetRequested(capability.key, 0)
                 else control.openKey(capability.key, this, true)
             }
             onFocusStep: function(direction) { control.stepFocus(index, direction) }
@@ -131,7 +131,8 @@ Item {
         onClosed: { if (control.pinned && control.selectedIcon && control.selectedIcon.visible) control.selectedIcon.forceActiveFocus(); control.pinned = false }
         onPolicyRequested: function(key, mode) { control.policyRequested(key, mode) }
         onPermissionRequested: function(key, mode) {
-            if (mode === 0) control.permissionResetRequested(key)
+            if (mode === 0) control.permissionResetRequested(key, 0)
+            else if (control.selectedData.policy === 1) control.permissionResetRequested(key, mode)
             else {
                 if (control.selectedData.pending) control.decisionRequested(false, control.pendingRequestId)
                 if (!controller.setPermissionPolicy(key, mode)) control.policyRequested("error", 0)

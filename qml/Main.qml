@@ -313,7 +313,7 @@ ApplicationWindow {
             const wasCurrent = view === currentView
             const selected = activeTab
             const newUid = "tab-" + (++nextTabUid)
-            if (transportProfile) controlState.inheritContext(view.tabUid, newUid, view.url, targetUrl)
+            if (targetUrl !== "about:blank") controlState.inheritContext(view.tabUid, newUid, view.url, targetUrl)
             controlState.expireContext(view.tabUid)
             if (pdfTarget === view) { pdfTarget = null; pdfBusy = false }
             // Removing the repeater item destroys its WebEngineView; no beforeunload veto.
@@ -334,7 +334,8 @@ ApplicationWindow {
             requestId === undefined ? permissionCoordinator.pendingRequestId : requestId)
     }
     function askPermission(permission, view) {
-        permissionCoordinator.submit(permission, view, view.profile, view === currentView, controlState.shouldDeny(permission))
+        permissionCoordinator.submit(permission, view, view.profile, view === currentView,
+            controlState.shouldDeny(permission, view ? view.url : "", view ? view.tabUid : ""))
     }
     function clearBrowsingData(cookies, cache, history, permissions, session) {
         cancelPermission()
@@ -1024,8 +1025,9 @@ ApplicationWindow {
                             }
                         }
                     }
-                    onPermissionResetRequested: function(key) {
-                        if (currentView && controlState.setPermissionPolicy(key, 0))
+                    onPermissionResetRequested: function(key, mode) {
+                        const targetMode = mode === undefined ? 0 : mode
+                        if (currentView && controlState.setPermissionPolicy(key, targetMode))
                             window.replaceGrantedView(currentView, currentView.url.toString())
                     }
                     onDecisionRequested: function(allow, requestId) { window.resolvePermission(allow, requestId) }

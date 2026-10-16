@@ -102,7 +102,7 @@ Popup {
                     anchors.fill: popGlyph; source: popGlyph; colorization: 1
                     colorizationColor: {
                         switch (card.capability.key) {
-                        case "camera": return "#FF4D4D"
+                        case "camera": return "#38BDF8"
                         case "mic": return "#10B981"
                         case "location": return "#38BDF8"
                         case "notifications": return "#F59E0B"
@@ -129,7 +129,7 @@ Popup {
             }
         }
         Label { Layout.fillWidth: true; text: card.capability.scope || ""; color: "#94A3B8"; font.pixelSize: 11; wrapMode: Text.WordWrap }
-        Label { Layout.fillWidth: true; text: card.capability.pending ? qsTr("Demande d’accès reçue") : card.capability.key === "network" ? qsTr("Observation du profil") : card.capability.key === "cookies" ? qsTr("Politique du profil") : [qsTr("Accès bloqué sans demande"), qsTr("Autorisé"), qsTr("Bloqué pour les prochaines demandes"), qsTr("Fonction indisponible"), qsTr("Recharger pour appliquer")][card.capability.policy || 0]; color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true }
+        Label { Layout.fillWidth: true; text: card.capability.pending ? qsTr("Demande d’accès reçue") : card.capability.key === "network" ? qsTr("Observation du profil") : card.capability.key === "cookies" ? qsTr("Politique du profil") : card.capability.policy === 2 && !card.capability.explicitDeny && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key) ? qsTr("Sur demande (aucun accès actif)") : [qsTr("Accès bloqué sans demande"), qsTr("Autorisé"), qsTr("Bloqué pour les prochaines demandes"), qsTr("Fonction indisponible"), qsTr("Recharger pour appliquer")][card.capability.policy || 0]; color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true }
         Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
         Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {

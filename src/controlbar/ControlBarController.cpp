@@ -32,7 +32,7 @@ void ControlBarController::setProfile(QObject *object) {
     refresh();
 }
 QString ControlBarController::origin(const QUrl &url) {
-    if (url.scheme() != "https" && url.scheme() != "http") return {};
+    if ((url.scheme() != "https" && url.scheme() != "http") || url.host().isEmpty()) return {};
     QUrl value; value.setScheme(url.scheme().toLower()); value.setHost(url.host().toLower());
     const int port = url.port();
     if (port != -1 && !(port == 443 && value.scheme() == "https") && !(port == 80 && value.scheme() == "http")) value.setPort(port);
@@ -84,9 +84,16 @@ bool ControlBarController::setPermissionPolicy(const QString &key, int mode) {
     return writePolicy(m_url, key, mode);
 }
 
-bool ControlBarController::shouldDeny(const QWebEnginePermission &permission) const {
+bool ControlBarController::shouldDenyOrigin(const QString &key, const QUrl &requester, const QUrl &topUrl, const QString &tab) const {
+    const auto effectiveTop = topUrl.isEmpty() ? m_url : topUrl;
+    const auto effectiveTab = tab.isEmpty() ? m_tabId : tab;
+    return key == "screen"
+        || policyValue(effectiveTop, key, 0, effectiveTab).toInt() == 2
+        || policyValue(requester, key, 0, effectiveTab).toInt() == 2;
+}
+bool ControlBarController::shouldDeny(const QWebEnginePermission &permission, const QUrl &topUrl, const QString &tab) const {
     for (const auto &key : keysFor(permission.permissionType()))
-        if (key == "screen" || policyValue(permission.origin(), key, 0).toInt() == 2) return true;
+        if (shouldDenyOrigin(key, permission.origin(), topUrl, tab)) return true;
     return false;
 }
 void ControlBarController::notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked) {
@@ -147,9 +154,10 @@ void ControlBarController::refresh() {
         PolicyState state = PolicyState::Unavailable;
         QString scope = tr("Cet onglet · session temporaire");
         QString reason = valid ? tr("Utilisation réelle non observable. Aucun indicateur d’enregistrement.") : tr("Ouvrez un site HTTP ou HTTPS pour gérer ses permissions.");
-        bool canAct = valid, persistent = false;
+        bool canAct = valid, persistent = false, explicitDeny = false;
         if (valid && i < 6 && key != "screen") {
             state = grantedKeys.contains(key) ? PolicyState::Allow : PolicyState::Deny;
+            explicitDeny = policyValue(m_url, key, 0).toInt() == 2;
             persistent = false;
         }
         if (key == "screen") { canAct = false; reason = tr("Sélecteur de capture non intégré. Les demandes sont refusées, sans prétendre observer un partage."); }
@@ -158,12 +166,14 @@ void ControlBarController::refresh() {
         if (key == "javascript" || key == "storage") {
             const bool actual = key == "javascript" ? javascriptEnabled : storageEnabled;
             state = valid ? (reloadRequired ? PolicyState::ReloadRequired : actual ? PolicyState::Allow : PolicyState::Deny) : PolicyState::Unavailable;
+            explicitDeny = valid && !actual;
             reason = key == "javascript" ? tr("Politique par origine, appliquée à la navigation. Recharger pour retirer les effets des scripts déjà exécutés.") : tr("Contrôle de localStorage uniquement. Aucun comptage ni effacement complet d’IndexedDB ou des service workers.");
             scope = tr("Ce site · paramètres de la vue");
         }
         if (key == "popups" && valid) {
             const auto mode = popupMode(m_url);
             state = mode == 1 ? PolicyState::Allow : PolicyState::Deny;
+            explicitDeny = mode == 2;
             reason = mode == 0 ? tr("Seuls les liens ouverts par un geste explicite deviennent des onglets.") : tr("Politique des nouvelles fenêtres de ce site. Aucun comptage des tentatives supprimées en interne par Chromium.");
         }
         if (key == "cookies") {
@@ -195,7 +205,7 @@ void ControlBarController::refresh() {
             }
             recent = !eventRows.isEmpty();
         }
-        rows.append(QVariantMap{{"key", key}, {"title", titles[i]}, {"policy", int(state)}, {"scope", scope}, {"reason", reason}, {"origin", subject},
+        rows.append(QVariantMap{{"key", key}, {"title", titles[i]}, {"policy", int(state)}, {"explicitDeny", explicitDeny}, {"scope", scope}, {"reason", reason}, {"origin", subject},
                                 {"persistent", persistent}, {"canAct", canAct}, {"pending", pending}, {"recent", recent}, {"blocked", blocked}, {"requester", requester}, {"events", eventRows},
                                 {"sampleCount", key == "network" ? sample.size() : eventRows.size()}, {"networkCounts", key == "network" ? networkCounts : QVariantMap()}});
     }
