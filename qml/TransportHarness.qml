@@ -63,15 +63,11 @@ Item {
                 input = bar.testInputPoint("network", "move"); phase = 6
             } else if (phase === 6 && bar.testCard().visible) {
                 screenshot = "transport-http-temporary"
-                phase = 61
-            } else if (phase === 61) {
-                browserWindow.activeTab = peerIndex; phase = 7
-            } else if (phase === 7) {
-                const owner = browserWindow.testViewAt(ownerIndex)
-                if (!owner || owner.tabUid === ownerUid) return 0
-                expect(owner.url.toString() === "about:blank" && !owner.temporaryTransport, "60-second expiry destroys the HTTP view")
-                expect(browserWindow.activeTab === peerIndex && view.tabUid === peerUid && !view.temporaryTransport, "background expiry preserves the other tab")
-                browserWindow.activeTab = ownerIndex
+                input = bar.testHttpRevokePoint(); phase = 7
+            } else if (phase === 7 && view.url.toString() === "about:blank" && !view.temporaryTransport) {
+                expect(view.tabUid !== ownerUid, "popover revoke destroys the HTTP view")
+                const peer = browserWindow.testViewAt(peerIndex)
+                expect(peer && peer.tabUid === peerUid && !peer.temporaryTransport, "revoking one tab preserves the other tab")
                 browserWindow.navigate(target); phase = 8
             } else if (phase === 8 && browserWindow.transportState.httpPending) {
                 expect(!view.temporaryTransport, "later visit is denied again")
@@ -84,7 +80,7 @@ Item {
                 input = browserWindow.testHttpButtonPoint(); phase = 11
             } else if (phase === 11 && view.url.toString() === "about:blank" && !view.temporaryTransport) {
                 browserStore.httpsFirst = oldHttpsFirst
-                console.info("TRANSPORT_TEST PASS: exact navigation, same-origin resource gate, other tab, reload, stale token, 60-second expiry, explicit revoke")
+                console.info("TRANSPORT_TEST PASS: exact navigation, same-origin resource gate, other tab, reload, stale token, popover revoke, inline revoke")
                 phase = 12; return 2
             }
             return phase === 12 ? 2 : 0

@@ -24,7 +24,6 @@ public:
     void revokeHttpNavigation() { httpLease.revoke(); }
     bool allowTrackersForDocument(const QUrl &url, bool testHttp = false) { trackerProfile = trackerLease.start(url, testHttp); return trackerProfile; }
     bool canStartTrackerDocument(const QUrl &url) const { return trackerLease.canStart(url); }
-    qint64 trackerRemainingMs() const { return trackerLease.remainingMs(); }
     void revokeTrackers() { trackerLease.revoke(); }
     struct Event { QString origin; QString firstParty; int type; qint64 time; bool blocked; QString reason; QString decision; };
     void interceptRequest(QWebEngineUrlRequestInfo &info) override {

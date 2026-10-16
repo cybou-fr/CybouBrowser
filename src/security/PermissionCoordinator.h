@@ -31,7 +31,6 @@ public:
     Q_INVOKABLE void documentLoaded(QObject *view, quint64 epoch);
     Q_INVOKABLE void revokeAll();
     Q_INVOKABLE QStringList grantedKeys(QObject *view, quint64 epoch) const;
-    Q_INVOKABLE qint64 remainingLeaseMs(QObject *view, quint64 epoch) const;
 signals:
     void changed();
     void requestObserved(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked);

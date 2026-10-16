@@ -148,15 +148,6 @@ public:
         observer->setHttpsOnly(true);
         if (!profile->isOffTheRecord() || !observer->allowHttpNavigation(url)) { profile->deleteLater(); return nullptr; }
         m_temporaryHttpProfiles.insert(profile);
-        auto expiry = new QTimer(profile);
-        expiry->setSingleShot(true);
-        expiry->setTimerType(Qt::PreciseTimer);
-        connect(expiry, &QTimer::timeout, this, [this, guarded = QPointer<QQuickWebEngineProfile>(profile)] {
-            if (!guarded || !m_temporaryHttpProfiles.contains(guarded)) return;
-            if (auto observer = observers.value(guarded)) observer->revokeHttpNavigation();
-            emit temporaryTransportExpired(guarded);
-        });
-        expiry->start(60000);
         return profile;
     }
     Q_INVOKABLE bool isTemporaryHttpProfile(QObject *object) const {
@@ -181,14 +172,6 @@ public:
         observer->setHttpsOnly(!fixture);
         if (!profile->isOffTheRecord() || !observer->allowTrackersForDocument(url, fixture)) { profile->deleteLater(); return nullptr; }
         m_temporaryTrackerProfiles.insert(profile);
-        auto expiry = new QTimer(profile);
-        expiry->setSingleShot(true); expiry->setTimerType(Qt::PreciseTimer);
-        connect(expiry, &QTimer::timeout, this, [this, guarded = QPointer<QQuickWebEngineProfile>(profile)] {
-            if (!guarded || !m_temporaryTrackerProfiles.contains(guarded)) return;
-            if (auto observer = observers.value(guarded)) observer->revokeTrackers();
-            emit temporaryTransportExpired(guarded);
-        });
-        expiry->start(60000);
         return profile;
     }
     Q_INVOKABLE bool isTemporaryTrackerProfile(QObject *object) const {
@@ -198,10 +181,6 @@ public:
         const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
         auto observer = observers.value(profile);
         return m_temporaryTrackerProfiles.contains(profile) && observer && observer->canStartTrackerDocument(url);
-    }
-    Q_INVOKABLE qint64 trackerRemainingMs(QObject *object) const {
-        auto observer = observers.value(qobject_cast<QQuickWebEngineProfile *>(object));
-        return observer ? observer->trackerRemainingMs() : 0;
     }
     Q_INVOKABLE void releaseTemporaryProfile(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);

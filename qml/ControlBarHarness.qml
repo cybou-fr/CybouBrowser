@@ -114,31 +114,30 @@ Item {
                 expect(!!browserWindow.pendingPermission, "rejecting stale ID preserves the live request")
                 input = bar.testInputPoint("notifications","click"); phase = 9
             } else if (phase === 9 && view.title === "permission-granted") {
-                expect(view.hasPermissionLease, "grant has deadline")
+                expect(view.hasPermissionLease, "grant active for document")
                 expect(controller.capability("notifications").policy === 1, "temporary policy separate from activity")
                 expect(!controller.capability("notifications").pending, "request resolved")
                 expect(browserWindow.activeProfile.listAllPermissions().length === 0, "no stored native positive permission")
                 leasedTabUid = view.tabUid
-                firstRemainingMs = coordinator.remainingLeaseMs(view,view.navigationEpoch)
                 view.runJavaScript("navigator.geolocation.getCurrentPosition(()=>{},()=>{})")
                 phase = 21
             } else if (phase === 21 && browserWindow.pendingPermission) {
                 expect(controller.capability("location").pending, "second capability has an independent request")
                 grantObservedAt = Date.now(); phase = 22
-            } else if (phase === 22 && Date.now()-grantObservedAt >= 1200) {
+            } else if (phase === 22 && Date.now()-grantObservedAt >= 300) {
                 input = bar.testInputPoint("location","click"); phase = 23
             } else if (phase === 23 && controller.capability("location").policy === 1) {
-                expect(coordinator.remainingLeaseMs(view,view.navigationEpoch) < firstRemainingMs-1000, "later grant never extends earlier deadline")
                 expect(view.grantedKeys.includes("notifications") && view.grantedKeys.includes("location"), "both native grants tracked")
                 input = bar.testInputPoint("javascript","click"); phase = 10
             } else if (phase === 10) {
                 expect(view.policyNeedsReload, "direct click changes behavior")
                 bar.dismiss()
+                coordinator.revokeAll()
                 phase = 13
             } else if (phase === 13 && view.url.toString() === "about:blank") {
-                expect(!view.hasPermissionLease, "expired grant unloads document")
-                expect(view.tabUid !== leasedTabUid, "expiry destroys old WebEngineView and replaces its slot")
-                expect(!browserWindow.pendingPermission, "expiry leaves no pending request")
+                expect(!view.hasPermissionLease, "revocation unloads document")
+                expect(view.tabUid !== leasedTabUid, "revocation destroys old WebEngineView and replaces its slot")
+                expect(!browserWindow.pendingPermission, "revocation leaves no pending request")
                 browserWindow.navigate(smokeBaseUrl + "/controls"); phase = 14
             } else if (phase === 14 && view.title === "Scripts enabled" && !view.loading) {
                 view.runJavaScript("Notification.requestPermission().then(p=>document.title='timeout-'+p)")

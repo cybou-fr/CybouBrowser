@@ -160,8 +160,8 @@ Popup {
                 Layout.fillWidth: true; wrapMode: Text.WordWrap; textFormat: Text.PlainText
                 color: "#FFD08A"
                 visible: !!card.capability.httpPending || !!card.capability.httpTemporary
-                text: card.capability.httpTemporary ? qsTr("HTTP temporaire · 60 secondes maximum · profil réservé à cet onglet. Cookies et cache en mémoire.")
-                    : qsTr("Connexion HTTP bloquée : %1. Ouvrir cette adresse une fois, pendant 60 secondes maximum ? Les données ne seront pas chiffrées. Cookies et cache séparés.").arg(card.capability.httpOrigin || "")
+                text: card.capability.httpTemporary ? qsTr("HTTP temporaire actif pour cette page · profil réservé à cet onglet. Cookies et cache en mémoire.")
+                    : qsTr("Connexion HTTP bloquée : %1. Ouvrir cette adresse dans un profil isolé pour cette page ? Les données ne seront pas chiffrées. Cookies et cache séparés.").arg(card.capability.httpOrigin || "")
             }
             GlassBtn {
                 id: httpAllow
@@ -191,14 +191,14 @@ Popup {
             }
             Label {
                 Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
-                text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs : %1 s restantes. Cet onglet uniquement, cookies et cache séparés.").arg(card.capability.trackerSeconds || 0)
-                    : qsTr("Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Exception de 60 s, révoquée au prochain chargement.")
+                text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs active pour cette page. Cet onglet uniquement, cookies et cache séparés.")
+                    : qsTr("Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Révoquée au prochain chargement.")
             }
             GlassBtn {
                 id: trackerAllow
                 visible: !card.capability.trackerTemporary
                 enabled: !!card.capability.trackerCanAllow
-                text: qsTr("Autoriser les traqueurs · 60 s")
+                text: qsTr("Autoriser les traqueurs sur cette page")
                 onClicked: card.allowTrackersRequested(pressedHttpToken)
             }
             Label {

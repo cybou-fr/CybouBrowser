@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS[]>
 <TS version="2.1" language="ru_RU">
   <context>
@@ -161,16 +161,24 @@
       <translation>Отказ</translation>
     </message>
       <message>
-      <source>Exception de traqueurs : %1 s restantes. Cet onglet uniquement, cookies et cache séparés.</source>
-      <translation>Исключение для трекеров: осталось %1 с. Только эта вкладка, отдельные cookies и кеш.</translation>
+      <source>HTTP temporaire actif pour cette page · profil réservé à cet onglet. Cookies et cache en mémoire.</source>
+      <translation>Временный HTTP активен для этой страницы · отдельный профиль для вкладки. Cookies и кеш в памяти.</translation>
     </message>
     <message>
-      <source>Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Exception de 60 s, révoquée au prochain chargement.</source>
-      <translation>Если фильтр ломает этот HTTPS-сайт, откройте страницу во временном профиле без обычных cookies. Исключение на 60 с, до следующей загрузки.</translation>
+      <source>Connexion HTTP bloquée : %1. Ouvrir cette adresse dans un profil isolé pour cette page ? Les données ne seront pas chiffrées. Cookies et cache séparés.</source>
+      <translation>HTTP-соединение заблокировано: %1. Открыть этот адрес в изолированном профиле для этой страницы? Данные не будут зашифрованы. Отдельные cookies и кеш.</translation>
     </message>
     <message>
-      <source>Autoriser les traqueurs · 60 s</source>
-      <translation>Разрешить трекеры · 60 с</translation>
+      <source>Exception de traqueurs active pour cette page. Cet onglet uniquement, cookies et cache séparés.</source>
+      <translation>Исключение для трекеров активно для этой страницы. Только эта вкладка, отдельные cookies и кеш.</translation>
+    </message>
+    <message>
+      <source>Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Révoquée au prochain chargement.</source>
+      <translation>Если фильтр ломает этот HTTPS-сайт, откройте страницу во временном профиле без обычных cookies. Сбрасывается при следующей загрузке.</translation>
+    </message>
+    <message>
+      <source>Autoriser les traqueurs sur cette page</source>
+      <translation>Разрешить трекеры на этой странице</translation>
     </message>
     <message>
       <source>Disponible pour une page HTTPS chargée, hors exception HTTP.</source>

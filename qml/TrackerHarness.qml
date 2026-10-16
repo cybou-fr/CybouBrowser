@@ -62,29 +62,17 @@ Item {
                 ownerUid = view.tabUid; trackedProfile = view.profile
                 input = bar.testInputPoint("network", "move"); phase = 6
             } else if (phase === 6 && bar.testCard().visible) {
-                screenshot = "tracker-exception-countdown"; phase = 61
-            } else if (phase === 61) {
-                browserWindow.activeTab = peerIndex; phase = 7
-            } else if (phase === 7) {
-                const owner = browserWindow.testViewAt(ownerIndex)
-                if (!owner || owner.tabUid === ownerUid) return 0
-                expect(!owner.temporaryContext && owner.url.toString() === "about:blank", "60-second expiry destroys exception document")
-                expect(browserWindow.activeTab === peerIndex && view.tabUid === peerUid, "background expiry preserves peer selection")
-                browserWindow.activeTab = ownerIndex; browserWindow.navigate(target); phase = 8
+                screenshot = "tracker-exception-active"
+                input = bar.testTrackerPoint(true); phase = 7
+            } else if (phase === 7 && !view.temporaryContext && view.url.toString() === "about:blank") {
+                expect(view.tabUid !== ownerUid, "panel revoke destroys exception document")
+                const peer = browserWindow.testViewAt(peerIndex)
+                expect(peer && peer.tabUid === peerUid && !peer.temporaryContext, "revoking owner preserves peer tab")
+                browserWindow.navigate(target); phase = 8
             } else if (phase === 8 && view.title === "Tracker blocked" && !view.loading) {
-                expect(browserWindow.allowTemporaryTrackers(browserWindow.transportState.httpToken), "new visit asks again")
-                input = {kind:"move",x:80,y:300}; phase = 9
-            } else if (phase === 9 && view.temporaryTrackers && view.title === "Tracker allowed" && !view.loading) {
-                trackedProfile = view.profile
-                initialSeconds = browserWindow.transportState.trackerSeconds; observedAt = Date.now(); phase = 91
-            } else if (phase === 91 && Date.now()-observedAt >= 1500) {
-                expect(browserWindow.transportState.trackerSeconds > 0 && browserWindow.transportState.trackerSeconds < initialSeconds, "countdown decreases without extending lease")
-                input = bar.testInputPoint("network", "move"); phase = 10
-            } else if (phase === 10 && bar.testCard().visible) {
-                input = bar.testTrackerPoint(true); phase = 11
-            } else if (phase === 11 && !view.temporaryContext && view.url.toString() === "about:blank") {
+                expect(!view.temporaryContext, "new visit after revoke blocks trackers again")
                 browserStore.blockTrackers = oldBlockTrackers
-                console.info("TRACKER_TEST PASS: actual blocked/allowed fixture, scoped profile, peer isolation, stale token, reload, countdown, background expiry, panel revoke")
+                console.info("TRACKER_TEST PASS: actual blocked/allowed fixture, scoped profile, peer isolation, stale token, reload, panel revoke")
                 phase = 12; return 2
             }
             return phase === 12 ? 2 : 0

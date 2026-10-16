@@ -205,18 +205,14 @@ ApplicationWindow {
     readonly property var currentProfile: currentView ? currentView.profile : activeProfile
     property var temporaryProfiles: ({})
     readonly property var transportState: {
-        trackerClock
         const view = currentView
         const pending = !!view && view.blockedHttpUrl.length > 0 && view.blockedHttpEpoch === view.navigationEpoch
         return {httpPending:pending, httpOrigin:pending ? browserStore.origin(view.blockedHttpUrl) : "",
             httpToken:view ? view.tabUid + "@" + view.navigationEpoch : "",
             httpTemporary:!!view && view.temporaryTransport,
             trackerTemporary:!!view && view.temporaryTrackers,
-            trackerSeconds:view && view.temporaryTrackers ? Math.ceil(browserStore.trackerRemainingMs(view.profile) / 1000) : 0,
             trackerCanAllow:!!view && !view.loading && !view.temporaryContext && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
     }
-    property double trackerClock: Date.now()
-    Timer { interval:1000; repeat:true; running:!!window.currentView && window.currentView.temporaryTrackers; onTriggered:window.trackerClock = Date.now() }
     function allowTemporaryTrackers(token) {
         if (!currentView || !transportState.trackerCanAllow || token !== transportState.httpToken) return false
         const profile = browserStore.createTemporaryTrackerProfile(currentView.url)
@@ -267,16 +263,6 @@ ApplicationWindow {
         if (!profile) return
         delete temporaryProfiles[uid]
         browserStore.releaseTemporaryProfile(profile)
-    }
-    Connections {
-        target: browserStore
-        function onTemporaryTransportExpired(profile) {
-            for (let i = 0; i < views.count; ++i) {
-                const view = views.itemAt(i)
-                if (view && view.profile === profile) { window.replaceGrantedView(view); return }
-            }
-            browserStore.releaseTemporaryProfile(profile)
-        }
     }
     readonly property var pendingPermission: permissionCoordinator.hasPending ? permissionCoordinator.pendingPermission : null
     readonly property var pendingPermissionView: permissionCoordinator.pendingView
@@ -1148,10 +1134,7 @@ ApplicationWindow {
                 permissionCoordinator.revision
                 return permissionCoordinator.grantedKeys(web, navigationEpoch)
             }
-            readonly property bool hasPermissionLease: {
-                permissionCoordinator.revision
-                return permissionCoordinator.remainingLeaseMs(web, navigationEpoch) > 0
-            }
+            readonly property bool hasPermissionLease: grantedKeys.length > 0
             Component.onDestruction: {
                 if (permissionCoordinator) permissionCoordinator.forgetView(web)
                 if (controlState) controlState.expireContext(tabUid)

@@ -8,7 +8,6 @@
 using Type = QWebEnginePermission::PermissionType;
 namespace {
 constexpr qint64 RequestTimeoutMs = 15000;
-constexpr qint64 LeaseDurationMs = 60000;
 constexpr qsizetype MaxLeases = 64;
 bool transientProfile(QObject *object) {
     const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
@@ -48,7 +47,7 @@ void PermissionCoordinator::watch(QObject *object) {
 }
 bool PermissionCoordinator::submit(const QWebEnginePermission &permission, QObject *view, QObject *profile,
                                    bool foreground, bool policyDenied) {
-    expire(); // Check absolute deadlines even if the GUI timer was delayed.
+    expire(); // Check pending request deadline even if the GUI timer was delayed.
     if (!permission.isValid()) return false;
     SiteContext context{view, profile, view ? view->property("tabUid").toString() : QString(),
                         view ? SiteContext::origin(view->property("url").toUrl()) : QUrl(),
@@ -74,8 +73,7 @@ bool PermissionCoordinator::resolve(bool allow, QObject *activeView, QObject *ac
         && SiteContext::origin(pending.permission.origin()) == pending.context.requestingOrigin
         && m_leases.size() < MaxLeases;
     if (granted) {
-        // One independent deadline per concrete request; later grants never renew earlier ones.
-        m_leases.append({pending.id, pending.context, keysFor(pending.permission.permissionType()), PermissionDeadline(LeaseDurationMs)});
+        m_leases.append({pending.id, pending.context, keysFor(pending.permission.permissionType())});
         pending.permission.grant();
     } else if (pending.permission.isValid()) pending.permission.deny();
     emit decisionFinished(pending.permission, pending.context.tabUid, granted);
@@ -97,25 +95,11 @@ void PermissionCoordinator::documentLoaded(QObject *view, quint64 epoch) {
 QStringList PermissionCoordinator::grantedKeys(QObject *view, quint64 epoch) const {
     QStringList result;
     for (const auto &lease : m_leases) if (lease.context.view == view && lease.context.navigationEpoch == epoch
-                                         && lease.context.profile && !lease.deadline.expired()) result.append(lease.keys);
+                                         && lease.context.profile) result.append(lease.keys);
     result.removeDuplicates(); return result;
-}
-qint64 PermissionCoordinator::remainingLeaseMs(QObject *view, quint64 epoch) const {
-    qint64 remaining = std::numeric_limits<qint64>::max();
-    for (const auto &lease : m_leases) if (lease.context.view == view && lease.context.navigationEpoch == epoch)
-        remaining = std::min(remaining, lease.deadline.remainingTime());
-    return remaining == std::numeric_limits<qint64>::max() ? 0 : remaining;
 }
 void PermissionCoordinator::expire() {
     if (m_pending && (m_pending->deadline.expired() || !m_pending->permission.isValid())) cancel();
-    QList<QPointer<QObject>> expiredViews;
-    for (const auto &lease : m_leases) if (lease.deadline.expired() && lease.context.view
-                                          && !expiredViews.contains(lease.context.view)) expiredViews.append(lease.context.view);
-    for (const auto &view : expiredViews) {
-        qInfo() << "PERMISSION_DOCUMENT_EXPIRED";
-        forgetView(view);
-        if (view) emit revokeDocument(view);
-    }
     schedule();
 }
 void PermissionCoordinator::revokeAll() {
@@ -126,9 +110,6 @@ void PermissionCoordinator::revokeAll() {
     for (const auto &view : views) if (view) emit revokeDocument(view);
 }
 void PermissionCoordinator::schedule() {
-    qint64 remaining = m_pending ? m_pending->deadline.remainingTime() : std::numeric_limits<qint64>::max();
-    for (const auto &lease : m_leases) remaining = std::min(remaining, lease.deadline.remainingTime());
-    if (QCoreApplication::arguments().contains("--controlbar-test")) qInfo() << "PERMISSION_DEADLINE" << remaining << "leases" << m_leases.size();
-    if (remaining == std::numeric_limits<qint64>::max()) m_timer.stop();
-    else m_timer.start(int(std::clamp<qint64>(remaining, 1, std::numeric_limits<int>::max())));
+    if (!m_pending) m_timer.stop();
+    else m_timer.start(int(std::clamp<qint64>(m_pending->deadline.remainingTime(), 1, std::numeric_limits<int>::max())));
 }

@@ -21,5 +21,5 @@ struct PermissionLease {
     quint64 requestId;
     SiteContext context;
     QStringList keys;
-    PermissionDeadline deadline;
 };
+
