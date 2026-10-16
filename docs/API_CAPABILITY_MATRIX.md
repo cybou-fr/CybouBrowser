@@ -10,7 +10,7 @@
 | JS/localStorage | view setting readback | toggle + guarded reload/undo | tab + origin, memory | no DOM/storage inventory |
 | popups | newWindowRequested | gesture default; temporary allow/deny | tab + origin | Chromium-suppressed attempts unknown |
 | cookies | profile cookie filter | explicit global setting | all open profiles | no complete count |
-| network | sanitized interceptor events incl. blocked result/reason | strict HTTPS preference + limited built-in tracker rules | profile; firstParty metadata, never proven tab attribution | no bodies, exhaustive ad rules or proxy guarantee |
+| network | sanitized interceptor events with translated resource labels, category, blocked result/reason and tracker-exception decisions | strict HTTPS; limited built-in tracker rules; exact HTTP temporary access; **60-second tracker-only exception in separate OTR profile** from existing Network panel | profile scope, firstParty metadata not proven tab attribution; isolated exception per document | no full independent Ads/Trackers engine, no bodies, no proxy/process guarantee |
 
 Normative details: [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md). Build/test evidence: [VALIDATION](VALIDATION.md).
 
