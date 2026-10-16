@@ -23,9 +23,6 @@
 
 ---
 
-![CYBOU Browser — Observable Browsing at 1360 px](docs/design/observable-browsing/observable-browse-1360.png)
-
-<p align="center"><sub><strong>Browse mode.</strong> Compact address, a permanent inline capability bar, and independent Downloads / Menu buttons. Image from the repository's UI screenshots.</sub></p>
 
 ## A browser built around what pages **do**
 
@@ -46,38 +43,6 @@ The full URL is always available for inspection and editing, but **the address b
 
 The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Security Model](docs/SECURITY_MODEL.md), and [Capability Contract](docs/CAPABILITY_CONTRACT.md).
 
-## Screenshots
-
-<table>
-  <tr>
-    <td width="50%">
-      <img src="docs/design/observable-browsing/observable-browse-820.png" alt="CYBOU Browse mode at 820 pixels" width="100%" />
-      <br /><sub><strong>Browse · 820 px</strong><br />The compact URL yields space to all eleven controls.</sub>
-    </td>
-    <td width="50%">
-      <img src="docs/design/observable-browsing/observable-edit-1360.png" alt="CYBOU Edit mode at 1360 pixels" width="100%" />
-      <br /><sub><strong>Edit · 1360 px</strong><br />The full address is available via click or Ctrl+L without hiding the Control Bar.</sub>
-    </td>
-  </tr>
-</table>
-
-<details>
-  <summary><strong>Additional UI captures</strong> — 1024, 1360 and 1920 px</summary>
-
-  | Browse | Edit |
-  | --- | --- |
-  | [1024 px](docs/design/observable-browsing/observable-browse-1024.png) | [1024 px](docs/design/observable-browsing/observable-edit-1024.png) |
-  | [1360 px](docs/design/observable-browsing/observable-browse-1360.png) | [1360 px](docs/design/observable-browsing/observable-edit-1360.png) |
-  | [1920 px](docs/design/observable-browsing/observable-browse-1920.png) | [1920 px](docs/design/observable-browsing/observable-edit-1920.png) |
-
-</details>
-
-<details>
-  <summary><strong>Alpine Dawn</strong> — start-page visual from an earlier 0.8 capture</summary>
-
-  ![CYBOU Alpine Dawn start page, earlier 0.8 screenshot](docs/design/cybou-08-alpine-dawn.png)
-
-</details>
 
 ## Your page, your controls
 
