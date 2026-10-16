@@ -41,7 +41,7 @@ Button {
     Accessible.name: (capability.title || "") + " · " + stateText + " · " + (capability.scope || "") + " · " + (capability.reason || "") + " · " + qsTr("Gérer cet accès temporaire")
     ToolTip.visible: hovered
     ToolTip.delay: 250
-    ToolTip.text: (capability.title || "") + " · " + stateText + "\n" + (capability.requester || capability.scope || "") + "\n" + (capability.reason || "")
+    ToolTip.text: (capability.title || "") + " · " + stateText + "\n" + (capability.requester || capability.scope || "") + "\n" + (capability.reason || "") + (!capability.pending && ["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key) ? "\n" + qsTr("Recharger la page et réinitialiser ses accès temporaires") : "")
     onHoveredChanged: hoverChanged(hovered)
     Keys.onPressed: function(event) {
         if ([Qt.Key_Left, Qt.Key_Up, Qt.Key_Right, Qt.Key_Down].includes(event.key)) {

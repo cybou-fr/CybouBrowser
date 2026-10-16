@@ -6,11 +6,13 @@
 #include <QtWebEngineCore/QWebEngineProfile>
 #include "../controlbar/RequestObserver.h"
 #include "DownloadPolicy.h"
+#include "PermissionTests.h"
 #include "../browserstore.h"
 #include <QTemporaryDir>
 #include <QFile>
 
 inline int runSecurityTests(QGuiApplication &app, quint16 port) {
+    if (!runPermissionContextTests()) { qCritical() << "PERMISSION_CONTEXT_TEST FAIL"; return 2; }
     const struct { const char *url; const char *host; } addresses[] = {
         {"https://a.b.example.org/long/path?q=full", "a.b.example.org"},
         {"http://user:secret@example.org:8080/path", "example.org:8080"},

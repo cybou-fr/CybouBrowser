@@ -188,10 +188,8 @@ ApplicationWindow {
     property bool restoring: true
     property real testControlBudget: -1
     readonly property var activeProfile: privateMode ? privateProfile : persistentProfile
-    property var pendingPermission: null
-    property var pendingPermissionView: null
-    property string pendingTopOrigin: ""
-    property string pendingRequestOrigin: ""
+    readonly property var pendingPermission: permissionCoordinator.hasPending ? permissionCoordinator.pendingPermission : null
+    readonly property var pendingPermissionView: permissionCoordinator.pendingView
     property int nextTabUid: 0
     function applyViewPolicy(view, target) {
         view.settings.javascriptEnabled = controlState.settingFor(target, "javascript", view.tabUid)
@@ -207,7 +205,7 @@ ApplicationWindow {
         tabId: window.currentView ? window.currentView.tabUid : ""
         javascriptEnabled: window.currentView ? window.currentView.settings.javascriptEnabled : true
         storageEnabled: window.currentView ? window.currentView.settings.localStorageEnabled : true
-        grantedKeys: window.currentView && window.currentView.permissionLease.running ? window.currentView.grantedKeys : []
+        grantedKeys: window.currentView ? window.currentView.grantedKeys : []
         reloadRequired: window.currentView ? window.currentView.policyNeedsReload : false
         onPolicyChanged: function(origin, key) {
             for (let i = 0; i < views.count; ++i) {
@@ -218,43 +216,45 @@ ApplicationWindow {
             }
         }
     }
-    Timer { id: permissionTimeout; interval: 15000; onTriggered: window.cancelPermission() }
-    function cancelPermission() {
-        if (pendingPermission && pendingPermission.isValid) {
-            controlState.finishPermission(pendingPermission, pendingPermissionView ? pendingPermissionView.tabUid : "", false)
-            pendingPermission.deny()
+    PermissionCoordinator {
+        id: permissionCoordinator
+        onRequestObserved: function(permission, tab, top, blocked) {
+            controlState.notePermission(permission, tab, top, blocked)
         }
-        if (pendingPermissionView) controlState.abandonPending(pendingPermissionView.tabUid)
-        pendingPermission = null
-        pendingPermissionView = null
-        permissionTimeout.stop()
+        onDecisionFinished: function(permission, tab, allowed) {
+            controlState.finishPermission(permission, tab, allowed)
+            controlState.abandonPending(tab)
+        }
+        onRevokeDocument: function(view) { window.replaceGrantedView(view) }
     }
-    function resolvePermission(allow) {
-        if (pendingPermission && pendingPermission.isValid) {
-            const valid = allow && pendingPermissionView === currentView && pendingPermissionView.profile === activeProfile
-                && browserStore.origin(currentView.url.toString()) === pendingTopOrigin
-                && browserStore.origin(pendingPermission.origin.toString()) === pendingRequestOrigin
-            const granted = controlBar.visibleKeys.filter(key => controlState.capability(key).pending)
-            controlState.finishPermission(pendingPermission, pendingPermissionView ? pendingPermissionView.tabUid : "", valid)
-            if (valid) { pendingPermissionView.grantedKeys = pendingPermissionView.grantedKeys.concat(granted); pendingPermission.grant(); pendingPermissionView.permissionLease.restart() } else pendingPermission.deny()
+    function replaceGrantedView(view, replacementUrl) {
+        const targetUrl = replacementUrl === undefined ? "about:blank" : replacementUrl
+        if (!view) return
+        for (let i = 0; i < tabs.count; ++i) {
+            if (views.itemAt(i) !== view) continue
+            const pinned = tabs.get(i).isPinned
+            const muted = tabs.get(i).isMuted
+            const wasCurrent = view === currentView
+            const selected = activeTab
+            controlState.expireContext(view.tabUid)
+            if (pdfTarget === view) { pdfTarget = null; pdfBusy = false }
+            // Removing the repeater item destroys its WebEngineView; no beforeunload veto.
+            tabs.remove(i)
+            tabs.insert(i, {initialUrl:targetUrl, label:"Nouvel onglet", favicon:"",
+                isPinned:pinned, isMuted:muted, audible:false, tabUid:"tab-" + (++nextTabUid)})
+            activeTab = selected
+            saveTimer.restart()
+            if (wasCurrent && replacementUrl === undefined) window.showStatus(qsTr("Accès temporaire révoqué. Rouvrez la page pour continuer."))
+            return
         }
-        if (pendingPermissionView) controlState.abandonPending(pendingPermissionView.tabUid)
-        pendingPermission = null; pendingPermissionView = null; permissionTimeout.stop()
+    }
+    function cancelPermission() { permissionCoordinator.cancel() }
+    function resolvePermission(allow, requestId) {
+        return permissionCoordinator.resolve(allow, currentView, activeProfile,
+            requestId === undefined ? permissionCoordinator.pendingRequestId : requestId)
     }
     function askPermission(permission, view) {
-        if (!permission.isValid) return
-        const types = WebEnginePermission.PermissionType
-        const supported = [types.MediaAudioCapture, types.MediaVideoCapture, types.MediaAudioVideoCapture, types.Notifications, types.Geolocation, types.ClipboardReadWrite]
-        const blocked = view !== currentView || pendingPermission || !supported.includes(permission.permissionType) || controlState.shouldDeny(permission)
-        controlState.notePermission(permission, view.tabUid, view.url, !!blocked)
-        if (blocked) {
-            permission.deny(); return
-        }
-        pendingPermission = permission
-        pendingPermissionView = view
-        pendingTopOrigin = browserStore.origin(view.url.toString())
-        pendingRequestOrigin = browserStore.origin(permission.origin.toString())
-        permissionTimeout.restart()
+        permissionCoordinator.submit(permission, view, view.profile, view === currentView, controlState.shouldDeny(permission))
     }
     function clearBrowsingData(cookies, cache, history, permissions, session) {
         cancelPermission()
@@ -264,6 +264,7 @@ ApplicationWindow {
         if (history && !privateMode) browserStore.clearHistory()
         if (session && !privateMode) browserStore.saveSession([])
         if (permissions) {
+            permissionCoordinator.revokeAll()
             const decisions = activeProfile.listAllPermissions()
             for (const decision of decisions) decision.reset()
             controlState.clearPermissionPolicies()
@@ -344,7 +345,7 @@ ApplicationWindow {
     function pollControlBarTest() { return controlHarness.step() }
     function takeControlBarScreenshot() { return controlHarness.takeScreenshot() }
     function takeControlBarInput() { return controlHarness.takeInput() }
-    ControlBarHarness { id: controlHarness; browserWindow: window; controller: controlState; bar: controlBar }
+    ControlBarHarness { id: controlHarness; browserWindow: window; controller: controlState; bar: controlBar; coordinator: permissionCoordinator }
     property int smokeStage: 0
     property int smokePdfResult: 0
     property bool smokeLocalLoaded: false
@@ -387,7 +388,7 @@ ApplicationWindow {
             if (pendingPermission.permissionType !== WebEnginePermission.PermissionType.Notifications) return -1
             if (!controlState.capability("notifications").pending || controlState.capability("notifications").requester !== browserStore.origin(smokeBaseUrl)) return -1
             resolvePermission(true)
-            if (!currentView.permissionLease.running || !currentView.grantedKeys.includes("notifications")) return -1
+            if (!currentView.hasPermissionLease || !currentView.grantedKeys.includes("notifications")) return -1
             smokeStage = 4
             currentView.runJavaScript("document.cookie", function(value) { smokeCookiePresent = value.includes("cybou_smoke=present"); smokeCookieRead = true })
             return 0
@@ -854,6 +855,7 @@ ApplicationWindow {
                 ControlBarInline {
                     id: controlBar
                     controller: controlState; popupHost: Overlay.overlay
+                    pendingRequestId: permissionCoordinator.pendingRequestId
                     editing: false
                     widthBudget: 374
                     Layout.preferredWidth: effectiveWidth; Layout.minimumWidth: effectiveWidth; Layout.maximumWidth: effectiveWidth
@@ -875,7 +877,11 @@ ApplicationWindow {
                             }
                         }
                     }
-                    onDecisionRequested: function(allow) { window.resolvePermission(allow) }
+                    onPermissionResetRequested: function(key) {
+                        if (currentView && controlState.setPermissionPolicy(key, 0))
+                            window.replaceGrantedView(currentView, currentView.url.toString())
+                    }
+                    onDecisionRequested: function(allow, requestId) { window.resolvePermission(allow, requestId) }
                     onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
                 }
                 NavButton { id: downloadsButton; text: "↓"; hint: "Téléchargements · Ctrl+J"; onClicked: showLibrary("Téléchargements") }
@@ -966,10 +972,18 @@ ApplicationWindow {
             required property string tabUid
             property string policyOrigin: ""
             property int navigationEpoch: 0
-            property var grantedKeys: []
-            property alias permissionLease: leaseTimer
-            Timer { id: leaseTimer; interval: 60000; onTriggered: { controlState.expireContext(web.tabUid); web.policyOrigin = ""; web.url = "about:blank"; window.showStatus(qsTr("Accès temporaire expiré. Rouvrez la page pour continuer.")) } }
-            Component.onDestruction: { if (window.pendingPermissionView === web) window.cancelPermission(); controlState.expireContext(tabUid) }
+            readonly property var grantedKeys: {
+                permissionCoordinator.revision
+                return permissionCoordinator.grantedKeys(web, navigationEpoch)
+            }
+            readonly property bool hasPermissionLease: {
+                permissionCoordinator.revision
+                return permissionCoordinator.remainingLeaseMs(web, navigationEpoch) > 0
+            }
+            Component.onDestruction: {
+                if (permissionCoordinator) permissionCoordinator.forgetView(web)
+                if (controlState) controlState.expireContext(tabUid)
+            }
             property bool policyNeedsReload: false
             property string upgradedFromHttpUrl: ""
             anchors.fill: parent
@@ -1009,15 +1023,13 @@ ApplicationWindow {
                     const nextOrigin = browserStore.origin(request.url.toString())
                     if (web.policyOrigin !== nextOrigin) controlState.expireContext(web.tabUid)
                     web.policyOrigin = nextOrigin
-                    web.grantedKeys = []
-                    leaseTimer.stop()
                     window.applyViewPolicy(web, request.url)
                 }
             }
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
-            onUrlChanged: { if (browserStore.origin(web.url.toString()).length === 0) { controlState.expireContext(web.tabUid); web.policyOrigin = "" }; if (web === currentView) policyBanner.close(); if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
+            onUrlChanged: { if (browserStore.origin(web.url.toString()).length === 0) { permissionCoordinator.forgetView(web); controlState.expireContext(web.tabUid); web.policyOrigin = "" }; if (web === currentView) policyBanner.close(); if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
             onCertificateError: function(error) {
                 if (web.upgradedFromHttpUrl.length > 0 && !browserStore.httpsOnly && index === activeTab) {
                     error.rejectCertificate()
@@ -1045,6 +1057,7 @@ ApplicationWindow {
             onLoadingChanged: function(info) {
                 if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) smokeLocalLoaded = true
                 if (info.status === WebEngineView.LoadSucceededStatus) {
+                    permissionCoordinator.documentLoaded(web, web.navigationEpoch)
                     web.upgradedFromHttpUrl = ""
                     if (!privateMode) browserStore.recordVisit(url.toString(), title)
                 }

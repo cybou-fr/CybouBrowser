@@ -9,3 +9,7 @@ ControlBar harness must enforce all 11 controls during URL editing and at 820 px
 Manual release gates: real mic+camera requests; cross-origin iframe requesting origin; timeout after 15s; grant deadline unload after 60s; close/tab navigation; restart without restored grants; Undo after same-origin navigation; blocked tracker network event with reason; HTTPS HTTP/ws strict; cookies persistence independent from permissions. Real media use and proxy routing cannot be certified by model color.
 
 Record actual test outcomes and unverified cases in VALIDATION.md. Never label manual tests passed without running them.
+
+C++ permission coverage (`--security-test`): view/profile/tab/top-origin/navigation-epoch mismatch; cross-origin requester preserved; destroyed weak context; invalid native request; monotonic ceiling despite wall-clock rollback and expiry after forward jump.
+
+Native coordinator coverage (`--controlbar-test`): stale same-origin epoch denies the actual request; old request ID cannot resolve a later native request; a real reset-icon click replaces the denied view at the same URL without adding a tab; notification and geolocation grants have independent deadlines; later grant does not renew the first; earliest deadline destroys the WebEngineView and replaces its slot with a new UID; a new document must ask again; 15-second unanswered request is denied.

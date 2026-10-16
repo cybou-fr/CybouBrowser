@@ -2,7 +2,7 @@
 
 | Area | Real observation | Control | Scope | Limitation |
 |---|---|---|---|---|
-| camera/mic/location/notifications/clipboard | native permissionRequested, originating request object | current grant only, no queryPermission pregrant | document, requester, tab, profile; 15s pending / 60s after last grant | grant does not prove use |
+| camera/mic/location/notifications/clipboard | native permissionRequested, originating request object | current grant only, no queryPermission pregrant | document, requester, tab, profile; 15s pending / independent 60s grant deadlines; earliest unloads document | grant does not prove use |
 | screen | unsupported native capture request | deny | request | chooser unavailable |
 | JS/localStorage | view setting readback | toggle + guarded reload/undo | tab + origin, memory | no DOM/storage inventory |
 | popups | newWindowRequested | gesture default; temporary allow/deny | tab + origin | Chromium-suppressed attempts unknown |

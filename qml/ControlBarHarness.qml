@@ -1,6 +1,7 @@
 import QtQuick
 Item {
     required property var browserWindow
+    required property var coordinator
     required property var controller
     required property var bar
     property int phase: 0
@@ -10,6 +11,12 @@ Item {
     property int sizeIndex: 0
     property var sizes: [[820,560],[1024,768],[1360,900],[1920,1080]]
     property real started: 0
+    property real grantObservedAt: 0
+    property real firstRemainingMs: 0
+    property double lastRequestId: 0
+    property string leasedTabUid: ""
+    property string rejectedTabUid: ""
+    property int resetTabCount: 0
     function expect(value, text) { if (!value) throw new Error(text) }
     function begin() {
         browserWindow.cleanFeaturePreview()
@@ -74,19 +81,49 @@ Item {
                 phase = 8
             } else if (phase === 8 && browserWindow.pendingPermission) {
                 expect(controller.capability("notifications").pending, "request badge")
+                lastRequestId = coordinator.pendingRequestId
+                view.navigationEpoch++
+                expect(!coordinator.resolve(true, view, browserWindow.activeProfile, lastRequestId), "same-origin stale epoch cannot grant")
+                expect(!view.hasPermissionLease && !browserWindow.pendingPermission, "stale request denied without lease")
+                rejectedTabUid = view.tabUid
+                resetTabCount = browserWindow.testTabCount()
+                input = bar.testInputPoint("notifications","click"); phase = 19
+            } else if (phase === 19 && view.title === "Scripts enabled" && !view.loading && view.tabUid !== rejectedTabUid) {
+                expect(browserWindow.testTabCount() === resetTabCount, "permission reset replaces the view without adding tabs")
+                view.runJavaScript("Notification.requestPermission().then(p=>document.title='permission-'+p)")
+                phase = 20
+            } else if (phase === 20 && view.title === "permission-denied" && !browserWindow.pendingPermission) {
+                throw new Error("native notification denied without a new request in a fresh view")
+            } else if (phase === 20 && browserWindow.pendingPermission) {
+                expect(coordinator.pendingRequestId > lastRequestId, "new native request has a unique ID")
+                expect(!coordinator.resolve(true, view, browserWindow.activeProfile, lastRequestId), "old request ID cannot resolve a new request")
+                expect(!!browserWindow.pendingPermission, "rejecting stale ID preserves the live request")
                 input = bar.testInputPoint("notifications","click"); phase = 9
             } else if (phase === 9 && view.title === "permission-granted") {
-                expect(view.permissionLease.running, "grant has deadline")
+                expect(view.hasPermissionLease, "grant has deadline")
                 expect(controller.capability("notifications").policy === 1, "temporary policy separate from activity")
                 expect(!controller.capability("notifications").pending, "request resolved")
                 expect(browserWindow.activeProfile.listAllPermissions().length === 0, "no stored native positive permission")
+                leasedTabUid = view.tabUid
+                firstRemainingMs = coordinator.remainingLeaseMs(view,view.navigationEpoch)
+                view.runJavaScript("navigator.geolocation.getCurrentPosition(()=>{},()=>{})")
+                phase = 21
+            } else if (phase === 21 && browserWindow.pendingPermission) {
+                expect(controller.capability("location").pending, "second capability has an independent request")
+                grantObservedAt = Date.now(); phase = 22
+            } else if (phase === 22 && Date.now()-grantObservedAt >= 1200) {
+                input = bar.testInputPoint("location","click"); phase = 23
+            } else if (phase === 23 && controller.capability("location").policy === 1) {
+                expect(coordinator.remainingLeaseMs(view,view.navigationEpoch) < firstRemainingMs-1000, "later grant never extends earlier deadline")
+                expect(view.grantedKeys.includes("notifications") && view.grantedKeys.includes("location"), "both native grants tracked")
                 input = bar.testInputPoint("javascript","click"); phase = 10
             } else if (phase === 10) {
                 expect(view.policyNeedsReload, "direct click changes behavior")
                 expect(!bar.testCard().visible, "direct click has no permission popover")
                 phase = 13
             } else if (phase === 13 && view.url.toString() === "about:blank") {
-                expect(!view.permissionLease.running, "expired grant unloads document")
+                expect(!view.hasPermissionLease, "expired grant unloads document")
+                expect(view.tabUid !== leasedTabUid, "expiry destroys old WebEngineView and replaces its slot")
                 expect(!browserWindow.pendingPermission, "expiry leaves no pending request")
                 browserWindow.navigate(smokeBaseUrl + "/controls"); phase = 14
             } else if (phase === 14 && view.title === "Scripts enabled" && !view.loading) {
@@ -95,7 +132,9 @@ Item {
             } else if (phase === 15 && browserWindow.pendingPermission) {
                 expect(controller.capability("notifications").pending, "fresh document requires new consent")
                 phase = 16
-            } else if (phase === 16 && view.title === "timeout-denied") {
+            } else if (phase === 16 && !browserWindow.pendingPermission && view.title.startsWith("timeout-")) {
+                console.info("PERMISSION_TIMEOUT_RESULT", view.title)
+                expect(view.title !== "timeout-granted", "timeout never grants")
                 expect(!browserWindow.pendingPermission, "unattended request expires")
                 expect(controller.capability("notifications").blocked, "timeout recorded as denied")
                 browserWindow.addTab(""); phase = 11

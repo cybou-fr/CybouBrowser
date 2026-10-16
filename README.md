@@ -23,7 +23,7 @@ The following older feature inventory is being reconciled with the normative con
 
 - **Dark Glass UI & Alpine Dawn**: In 0.8.0, all browser-owned chrome (tab strip, navigation row, omnibox, control bar icons, overflow menu, capability popover, library drawer, settings panel, search suggestions, and modal dialogs) is unified under the CYBOU Dark Glass visual language (`CybouTheme`). The `about:blank` new tab page features the high-resolution Alpine Dawn landscape (`assets/cybou-alpine-dawn-1920x1080.jpg`), original CYBOU branding, centered floating glass card, and responsive layout. Untrusted third-party web content is left unmodified.
 - **Capability-first chrome**: eleven compact controls remain visible in the navigation row while the full URL is edited. Hover provides a tooltip; supported policies and live requests use direct clicks.
-- **Temporary permissions**: AskEveryTime engine policy, no arbitrary native pregrants, no modal ASK, 15-second pending timeout and a 60-second document deadline after the last grant. No claim of active-device monitoring.
+- **Temporary permissions**: AskEveryTime engine policy, no arbitrary native pregrants, no modal ASK, 15-second pending timeout and independent 60-second grant deadlines; the earliest deadline destroys and replaces the WebEngineView. No claim of active-device monitoring.
 - **Network observation**: bounded, sanitized profile-scoped events include blocked outcomes and reasons. A small built-in tracker suffix list blocks selected third-party requests.
 
 
@@ -48,7 +48,7 @@ Shortcuts: Ctrl+L address, Ctrl+T new tab, Ctrl+W close, Ctrl+Shift+T reopen, Ct
 
 Certificate errors are rejected; insecure mixed content and local file access from web content are disabled. Only user-initiated HTTP(S) new-window requests become tabs. Chromium sandboxing remains enabled.
 
-Foreground supported requests appear on their capability icon. One click grants the current request; unattended requests are denied after 15 seconds. Both profiles use AskEveryTime. A view-owned 60-second deadline unloads the document after the last grant. Actual camera/microphone activity is not observable. Native notification presentation remains outstanding.
+Foreground supported requests appear on their capability icon. One click grants the current request; unattended requests are denied after 15 seconds. Both profiles use AskEveryTime. C++ PermissionCoordinator checks the exact profile/tab/origin/navigation epoch and maintains independent 60-second deadlines. The earliest deadline destroys and replaces the WebEngineView. Actual camera/microphone activity is not observable. Native notification presentation remains outstanding.
 
 Control Bar never equates a permission grant with active device use. Permission events and the profile-wide HTTP(S) metadata sample are memory-only and bounded. No bodies, headers, query strings or URL paths are retained by this observer. Cookie filtering remains a global preference affecting all open profiles, rather than a fictional site-only control. New panel strings can be switched FR/RU in Settings; unrelated legacy UI remains French.
 

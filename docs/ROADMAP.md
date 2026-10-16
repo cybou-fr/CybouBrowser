@@ -7,7 +7,7 @@
 | P0 продуктовые документы | implemented | сверка контрактов с исходниками |
 | P0 запрет сохранённых положительных grants | implemented; notification test PASS, restart/media pending | restart + iframe/media на Qt 6.12 |
 | P0 no modal / pending timeout / document lease | implemented; notification lifecycle test PASS | timeout, комбинированные grants, уничтожение документа |
-| P0 C++ PermissionCoordinator и независимые leases | planned | epoch/request IDs, независимые сроки и fail-closed teardown |
+| P0 C++ PermissionCoordinator и независимые leases | implemented; native notification + geolocation tests PASS | реальные media/iframe и sleep/resume |
 | P0 Undo/Reload исходного контекста | implemented basic tab+URL+navigation epoch guard | typed C++ transaction |
 | P1 постоянные 11 иконок, tooltip, прямой клик | implemented; layout + input tests PASS at DPR 1 | четыре размера, DPI и FR/RU |
 | P1 сетевые события блокировки | implemented profile scope | реальная блокировка, bounded burst, zero secrets |

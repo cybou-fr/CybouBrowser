@@ -8,6 +8,7 @@ Item {
     property real widthBudget: 0
     property bool editing: false
     property bool interactionsEnabled: true
+    property double pendingRequestId: 0
     readonly property int slotWidth: 34
     readonly property int visibleCount: icons.count
     readonly property bool overflowVisible: !editing && visibleCount < icons.count
@@ -23,7 +24,8 @@ Item {
     property int rovingIndex: 0
     property var selectedData: { controller.revision; return controller.capability(selectedKey) }
     signal policyRequested(string key, int mode)
-    signal decisionRequested(bool allow)
+    signal decisionRequested(bool allow, double requestId)
+    signal permissionResetRequested(string key)
     signal reloadRequested()
     implicitWidth: effectiveWidth; implicitHeight: 28
     function keys(first, last) {
@@ -68,6 +70,8 @@ Item {
         model: control.controller.model
         delegate: ControlBarIcon {
             required property int index
+            property double pressedRequestId: 0
+            onPressed: pressedRequestId = control.pendingRequestId
             enabled: control.interactionsEnabled
             x: index * control.slotWidth; width: control.slotWidth; height: 28
             visible: index < control.visibleCount && !control.editing
@@ -75,9 +79,9 @@ Item {
             onActiveFocusChanged: if (activeFocus) control.rovingIndex = index
             onHoverChanged: function(inside) { }
             onClicked: {
-                if (capability.pending) control.decisionRequested(true)
+                if (capability.pending) control.decisionRequested(true, pressedRequestId)
                 else if (["javascript", "storage", "popups"].includes(capability.key)) control.policyRequested(capability.key, capability.policy === 1 ? 2 : 1)
-                else if (["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key)) { controller.setPermissionPolicy(capability.key, 0); control.reloadRequested() }
+                else if (["camera", "mic", "location", "notifications", "clipboard"].includes(capability.key)) { control.permissionResetRequested(capability.key) }
                 else control.openKey(capability.key, this, true)
             }
             onFocusStep: function(direction) { control.stepFocus(index, direction) }
@@ -111,7 +115,7 @@ Item {
         onClosed: { if (control.pinned && control.selectedIcon && control.selectedIcon.visible) control.selectedIcon.forceActiveFocus(); control.pinned = false }
         onPolicyRequested: function(key, mode) { control.policyRequested(key, mode) }
         onPermissionRequested: function(key, mode) { if (!controller.setPermissionPolicy(key, mode)) control.policyRequested("error", 0) }
-        onDecisionRequested: function(allow) { control.decisionRequested(allow) }
+        onDecisionRequested: function(allow) { control.decisionRequested(allow, control.pendingRequestId) }
         onReloadRequested: control.reloadRequested()
         onCookieRequested: browserStore.blockThirdPartyCookies = !browserStore.blockThirdPartyCookies
     }
