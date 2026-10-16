@@ -896,9 +896,19 @@ ApplicationWindow {
                     interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible && !permissionDialog.visible
                     onPolicyRequested: function(key, mode) {
                         if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
-                        behaviorDialog.policyKey = key; behaviorDialog.policyMode = mode
-                        behaviorDialog.policyOrigin = browserStore.origin(currentView.url.toString())
-                        behaviorDialog.open()
+                        if (currentView) {
+                            const origin = browserStore.origin(currentView.url.toString())
+                            const prevMode = controlState.settingFor(currentView.url, key)
+                            if (controlState.setBehavior(key, mode)) {
+                                if (key === "javascript" || key === "storage" || key === "popups") {
+                                    policyBanner.show(origin, key, mode, prevMode)
+                                } else {
+                                    window.showStatus(qsTr("Politique mise à jour pour %1").arg(origin))
+                                }
+                            } else {
+                                window.showStatus(qsTr("La modification n’a pas pu être confirmée."))
+                            }
+                        }
                     }
                     onDecisionRequested: function(allow) { window.resolvePermission(allow) }
                     onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
@@ -954,6 +964,67 @@ ApplicationWindow {
             Rectangle { height: 2; width: parent.width * (currentView ? currentView.loadProgress / 100 : 0); color: "#0088FF"; visible: currentView ? currentView.loading : false }
         }
         Rectangle {
+            id: policyBanner
+            Layout.fillWidth: true
+            implicitHeight: bannerVisible ? 36 : 0
+            visible: implicitHeight > 0
+            clip: true
+            color: "#E80B1F38"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: CybouTheme.borderSubtle }
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: CybouTheme.glassSheenSubtle }
+            Behavior on implicitHeight { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 180; easing.type: Easing.OutCubic } }
+            RowLayout {
+                anchors.fill: parent; anchors.leftMargin: 16; anchors.rightMargin: 12; spacing: 10
+                Label {
+                    id: policyBannerText
+                    Layout.fillWidth: true
+                    color: CybouTheme.mainText
+                    font.pixelSize: 12
+                    elide: Text.ElideRight
+                }
+                GlassButton {
+                    text: qsTr("Recharger")
+                    implicitHeight: 24; padding: 4
+                    onClicked: {
+                        policyBanner.close()
+                        if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload() }
+                    }
+                }
+                GlassButton {
+                    text: qsTr("Annuler")
+                    implicitHeight: 24; padding: 4
+                    onClicked: policyBanner.undo()
+                }
+                NavButton {
+                    text: "×"
+                    implicitWidth: 22; implicitHeight: 22
+                    hint: qsTr("Fermer")
+                    onClicked: policyBanner.close()
+                }
+            }
+            property bool bannerVisible: false
+            property string lastKey: ""
+            property int lastPrevMode: 0
+            property string lastOrigin: ""
+            Timer { id: bannerTimer; interval: 8000; onTriggered: policyBanner.bannerVisible = false }
+            function show(origin, key, mode, prevMode) {
+                lastOrigin = origin; lastKey = key; lastPrevMode = prevMode
+                const name = key === "javascript" ? "JavaScript" : key === "storage" ? qsTr("Stockage local") : qsTr("Fenêtres popups")
+                const state = mode === 1 ? qsTr("activé") : qsTr("bloqué")
+                policyBannerText.text = qsTr("%1 %2 pour %3. Recharger la page pour appliquer ?").arg(name).arg(state).arg(origin)
+                bannerVisible = true
+                bannerTimer.restart()
+            }
+            function undo() {
+                if (lastKey.length && currentView) {
+                    controlState.setBehavior(lastKey, lastPrevMode)
+                    window.applyViewPolicy(currentView, currentView.url)
+                }
+                close()
+            }
+            function close() { bannerVisible = false; bannerTimer.stop() }
+        }
+        Rectangle {
             Layout.fillWidth: true; implicitHeight: findVisible ? 48 : 0; visible: findVisible; color: "#0A182F"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#11243E" }
             RowLayout {
@@ -1003,7 +1074,7 @@ ApplicationWindow {
                     if (request.isMainFrame && web === currentView) { errorText.text = reason; errorNotice.open() }
                     return
                 }
-                window.applyViewPolicy(web, request.url)
+                if (request.isMainFrame) window.applyViewPolicy(web, request.url)
             }
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")

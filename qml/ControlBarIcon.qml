@@ -22,7 +22,14 @@ Button {
         default: return "#94A3B8"
         }
     }
-    readonly property color stateColor: capability.pending ? "#F59E0B" : policy === 1 ? brandColor : policy === 2 ? "#EF4444" : policy === 3 ? "#64748B" : policy === 4 ? "#F59E0B" : brandColor
+    readonly property color stateColor: {
+        if (capability.pending) return "#F59E0B"
+        if (policy === 1) return brandColor
+        if (policy === 2) return "#EF4444"
+        if (policy === 4) return "#F59E0B"
+        if (policy === 3) return "#64748B"
+        return "#8FA3BF"
+    }
     readonly property string stateText: capability.pending ? qsTr("Demande en attente") : [qsTr("Demander"), qsTr("Autorisé"), qsTr("Bloqué"), qsTr("Indisponible"), qsTr("Rechargement requis")][policy]
     signal hoverChanged(bool inside)
     signal focusStep(int direction)
