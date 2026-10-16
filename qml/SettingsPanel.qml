@@ -148,7 +148,9 @@ Drawer {
                 CheckBox { text: qsTr("Désactiver les pulsations"); checked: browserStore.disableGlow; onToggled: browserStore.disableGlow = checked }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: qsTr("Les contrôles du site sont intégrés à la navigation et masqués pendant la saisie de l’adresse. Les indicateurs ne prouvent pas qu’un appareil enregistre."); color: "#65758E"; font.pixelSize: 12 }
                 Label { text: qsTr("SÉCURITÉ"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
-                CheckBox { text: qsTr("Connexions HTTPS uniquement"); checked: browserStore.httpsOnly; onToggled: browserStore.httpsOnly = checked }
+                CheckBox { text: qsTr("Mode HTTPS-First (Mise à niveau automatique)"); checked: browserStore.httpsFirst; onToggled: browserStore.httpsFirst = checked }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Met à niveau automatiquement les requêtes HTTP non chiffrées vers HTTPS sécurisé, avec avertissement et repli sécurisé si le site ne supporte pas le chiffrement.") }
+                CheckBox { text: qsTr("Connexions HTTPS uniquement (strict)"); checked: browserStore.httpsOnly; onToggled: browserStore.httpsOnly = checked }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Bloque HTTP et les WebSocket non chiffrés dans tous les profils, y compris sur le réseau local. Aucun repli HTTP. Rechargez les onglets pour interrompre les connexions déjà ouvertes. Les protocoles externes sont désactivés et WebRTC utilise uniquement les interfaces publiques.") }
                 Label { text: "CONFIDENTIALITÉ"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Switch {

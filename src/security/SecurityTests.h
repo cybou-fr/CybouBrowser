@@ -79,6 +79,27 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         qInfo() << "TRACKER_BLOCKER_TEST PASS: third-party analytics and ad networks blocked, first-party preserved";
     }
 
+    {
+        BrowserStore store;
+        const QUrl publicHttp("http://example.org/path?q=1");
+        const QUrl publicHttps("https://example.org/path?q=1");
+        const QUrl localHttp("http://localhost:8080/test");
+        const QUrl ipHttp("http://127.0.0.1:3000/");
+
+        if (!store.httpsFirst()) { qCritical() << "HTTPS_FIRST_TEST: httpsFirst not default true"; return 2; }
+        if (!store.shouldUpgradeToHttps(publicHttp)) { qCritical() << "HTTPS_FIRST_TEST: shouldUpgradeToHttps failed for publicHttp"; return 2; }
+        if (store.shouldUpgradeToHttps(publicHttps)) { qCritical() << "HTTPS_FIRST_TEST: shouldUpgradeToHttps upgraded publicHttps"; return 2; }
+        if (store.shouldUpgradeToHttps(localHttp)) { qCritical() << "HTTPS_FIRST_TEST: shouldUpgradeToHttps upgraded localHttp"; return 2; }
+        if (store.shouldUpgradeToHttps(ipHttp)) { qCritical() << "HTTPS_FIRST_TEST: shouldUpgradeToHttps upgraded ipHttp"; return 2; }
+
+        const QUrl upgraded = store.upgradeToHttps(publicHttp);
+        if (upgraded != QUrl("https://example.org/path?q=1")) { qCritical() << "HTTPS_FIRST_TEST: upgradeToHttps mismatch" << upgraded; return 2; }
+
+        store.allowHttpFallback("example.org");
+        if (store.shouldUpgradeToHttps(publicHttp)) { qCritical() << "HTTPS_FIRST_TEST: fallback origin not exempted"; return 2; }
+        qInfo() << "HTTPS_FIRST_TEST PASS: automatic upgrade of public HTTP, local hosts excluded, fallback supported";
+    }
+
     QWebEngineProfile profile;
     RequestObserver interceptor(&profile);
     profile.setUrlRequestInterceptor(&interceptor);

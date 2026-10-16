@@ -34,6 +34,7 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool blockThirdPartyCookies READ blockThirdPartyCookies WRITE setBlockThirdPartyCookies NOTIFY preferencesChanged)
     Q_PROPERTY(bool cacheBusy READ cacheBusy NOTIFY cacheBusyChanged)
     Q_PROPERTY(bool httpsOnly READ httpsOnly WRITE setHttpsOnly NOTIFY preferencesChanged)
+    Q_PROPERTY(bool httpsFirst READ httpsFirst WRITE setHttpsFirst NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
     Q_PROPERTY(bool highContrast READ highContrast NOTIFY preferencesChanged)
@@ -106,6 +107,39 @@ public:
         settings.setValue("preferences/httpsOnly", enabled);
         for (auto observer : observers) observer->setHttpsOnly(enabled);
         emit preferencesChanged();
+    }
+    bool httpsFirst() const { return settings.value("preferences/httpsFirst", true).toBool(); }
+    void setHttpsFirst(bool enabled) {
+        if (enabled == httpsFirst()) return;
+        settings.setValue("preferences/httpsFirst", enabled);
+        emit preferencesChanged();
+    }
+    Q_INVOKABLE bool isLocalHost(const QUrl &url) const {
+        const auto host = url.host().toLower();
+        return host == "localhost" || host == "127.0.0.1" || host == "::1" || host.endsWith(".local") || host.isEmpty();
+    }
+    Q_INVOKABLE bool shouldUpgradeToHttps(const QUrl &url) const {
+        if (!httpsFirst()) return false;
+        if (url.scheme().compare("http", Qt::CaseInsensitive) != 0) return false;
+        if (isLocalHost(url)) return false;
+        if (hasHttpFallback(origin(url.toString()))) return false;
+        return true;
+    }
+    Q_INVOKABLE QUrl upgradeToHttps(const QUrl &url) const {
+        QUrl upgraded = url;
+        upgraded.setScheme("https");
+        if (upgraded.port() == 80) upgraded.setPort(-1);
+        return upgraded;
+    }
+    Q_INVOKABLE void allowHttpFallback(const QString &hostOrOrigin) {
+        QUrl u(hostOrOrigin);
+        const QString h = u.host().isEmpty() ? hostOrOrigin.trimmed().toLower() : u.host().toLower();
+        m_httpFallbackHosts.insert(h);
+    }
+    Q_INVOKABLE bool hasHttpFallback(const QString &hostOrOrigin) const {
+        QUrl u(hostOrOrigin);
+        const QString h = u.host().isEmpty() ? hostOrOrigin.trimmed().toLower() : u.host().toLower();
+        return m_httpFallbackHosts.contains(h);
     }
     bool blockTrackers() const { return settings.value("preferences/blockTrackers", true).toBool(); }
     void setBlockTrackers(bool enabled) {
@@ -312,5 +346,6 @@ private:
     static bool isWebUrl(const QString &url) {
         const auto scheme = QUrl(url).scheme(); return scheme == "http" || scheme == "https";
     }
+    QSet<QString> m_httpFallbackHosts;
     mutable QSettings settings;
 };

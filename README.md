@@ -52,11 +52,23 @@ Cleanup supports cookies, HTTP cache, history, permission decisions and saved ta
 
 Development build, not security audited. Passwords, extensions UI, physical-printer UI, automatic updates, installer, crash recovery, platform polish and comprehensive security/accessibility testing remain outstanding. Keep Qt/Chromium patched.
 
-### Strict transport mode
+### HTTPS-First and transport security
 
-Settings → Sécurité offers an opt-in HTTPS-only mode, persisted globally and applied immediately to the interceptors of all open ordinary/private profiles and to future profiles. It blocks HTTP and unencrypted WebSocket (`ws:`) requests, including subresources, local hosts and LAN addresses. There are no automatic upgrades, fallback or hidden host exceptions. Existing connections and already rendered/cached content are not terminated or erased; reload open tabs after enabling. Sites requiring HTTP will stop working while this mode is enabled. A blocked foreground navigation shows an explanation; subresource failures are handled by the page.
+Settings → Sécurité offers two complementary transport protection modes:
+1. **HTTPS-First (Enabled by default)**: All web navigations typed in the address bar or clicked as links are automatically upgraded from `http://` to `https://`. Local development hosts (`localhost`, `127.0.0.1`, `::1`, `.local`) are preserved so local development works without TLS barriers. If an upgraded public HTTPS connection fails (due to certificate errors or connection refusal), CYBOU shows a clear, informative security dialog allowing the user to either return to safety or opt-in to HTTP for that session.
+2. **HTTPS-Only mode (Strict opt-in)**: Persisted globally and applied immediately to the interceptors of all open ordinary/private profiles. It unconditionally blocks all HTTP and unencrypted WebSocket (`ws:`) requests, including subresources and LAN addresses, with zero fallback.
 
-HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. In 0.7.1, Control Bar controls are integrated directly into the navigation bar (Adaptive Omnibox).
+HTTP(S) URLs containing credentials are always rejected by the interceptor, independently of strict mode. Page-triggered external protocol launches are disabled through Qt's unknown-scheme policy. WebRTC is restricted to public interfaces; this is not an anonymity guarantee. TLS errors and mixed active content remain rejected. In 0.7.1+, Control Bar controls are integrated directly into the navigation bar (Adaptive Omnibox).
+
+### Architecture and modularity
+
+The UI layer is modularized into discrete, reusable QML components:
+- `AdaptiveAddress.qml`: Context-aware omnibox supporting BROWSE and EDIT modes.
+- `ControlBarInline.qml` & `ControlBarOverflow.qml`: Responsive permission and privacy indicators.
+- `CapabilityPopover.qml`: 1-click permission and tracker blocking popover.
+- `PolicyBanner.qml`: Slide-down notification banner for 1-click policy application with instant undo and reload actions.
+- `FindBar.qml`: Dedicated in-page search bar with match count and cycling.
+- `GlassButton.qml` & `GlassDialogBackground.qml`: Shared frosted glass design tokens and interactive components.
 
 Run `./build/Release/cybou.exe --security-test` for URL-policy cases and actual WebEngine network checks: strict HTTP denial, successful load after explicit opt-out, denial of a new same-origin fetch from an already loaded HTTP page after enabling strict mode, credential-URL denial, exact host formatting, IPv6, ACE/IDN punycode and safe display tests. The fixture listens only on loopback and no security preferences are changed by this test.
 

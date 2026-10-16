@@ -59,50 +59,6 @@ ApplicationWindow {
         }
     }
 
-    component GlassButton: Button {
-        id: gbtn
-        scale: down ? 0.95 : hovered ? 1.03 : 1.0
-        Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
-        contentItem: Text {
-            text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
-            font.pixelSize: 13; font.bold: gbtn.highlighted || gbtn.hovered
-            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-        }
-        background: Rectangle {
-            radius: 8
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: gbtn.highlighted ? "#E0183A68" : gbtn.down ? "#DD0D2038" : gbtn.hovered ? "#DD224572" : "#80142F52" }
-                GradientStop { position: 1.0; color: gbtn.highlighted ? "#E80E2444" : gbtn.down ? "#EE071222" : gbtn.hovered ? "#EE163052" : "#900B1D35" }
-            }
-            border.color: gbtn.highlighted ? CybouTheme.borderActive : gbtn.hovered ? "#7DA5CC" : CybouTheme.borderHighlight
-            border.width: 1
-            Rectangle {
-                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
-                height: 1; color: gbtn.highlighted ? "#50FFFFFF" : CybouTheme.glassSheenSubtle; radius: parent.radius
-            }
-        }
-    }
-
-    component GlassDialogBackground: Rectangle {
-        radius: CybouTheme.dialogRadius
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#E80E2648" }
-            GradientStop { position: 1.0; color: "#F4061224" }
-        }
-        border.color: CybouTheme.borderHighlight
-        border.width: 1.5
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: "#A0000000"
-            shadowBlur: 1.0
-            shadowVerticalOffset: 12
-        }
-        Rectangle {
-            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
-            height: 1; color: CybouTheme.glassSheen; radius: parent.radius
-        }
-    }
     property int activeTab: 0
     readonly property int chromeRowHeight: CybouTheme.chromeRowHeight
     readonly property int chromeControlHeight: CybouTheme.chromeControlHeight
@@ -621,7 +577,13 @@ ApplicationWindow {
         if (/^https?:\/\//i.test(input)) target = input
         else if (!/\s/.test(input) && (input.includes(".") || /^localhost(:\d+)?(\/|$)/.test(input))) target = "https://" + input
         else target = browserStore.searchUrl(input)
-        currentView.url = target
+        if (browserStore.shouldUpgradeToHttps(target)) {
+            currentView.upgradedFromHttpUrl = target
+            currentView.url = browserStore.upgradeToHttps(target)
+        } else {
+            currentView.upgradedFromHttpUrl = ""
+            currentView.url = target
+        }
         currentView.forceActiveFocus()
     }
     function refreshAddress() {
@@ -688,7 +650,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+D"; onActivated: bookmark() }
     Shortcut { sequence: "Ctrl+H"; onActivated: showLibrary("Historique") }
     Shortcut { sequence: "Ctrl+J"; onActivated: showLibrary("Téléchargements") }
-    Shortcut { sequence: "Ctrl+F"; onActivated: { findVisible = true; findInput.forceActiveFocus(); findInput.selectAll() } }
+    Shortcut { sequence: "Ctrl+F"; onActivated: { findVisible = true; findBar.focusInput() } }
     Shortcut { sequence: "Ctrl+Shift+N"; onActivated: browserStore.newPrivateWindow() }
     Shortcut { sequence: "Ctrl+,"; onActivated: settingsPanel.open() }
     Shortcut { sequence: "Ctrl+O"; onActivated: openFileDialog.open() }
@@ -946,7 +908,7 @@ ApplicationWindow {
                     GlassMenuItem { text: "Favoris"; onTriggered: showLibrary("Favoris") }
                     GlassMenuItem { text: "Historique                                Ctrl+H"; onTriggered: showLibrary("Historique") }
                     GlassMenuItem { text: "Téléchargements                      Ctrl+J"; onTriggered: showLibrary("Téléchargements") }
-                    GlassMenuItem { text: "Rechercher dans la page           Ctrl+F"; onTriggered: { findVisible = true; findInput.forceActiveFocus() } }
+                    GlassMenuItem { text: "Rechercher dans la page           Ctrl+F"; onTriggered: { findVisible = true; findBar.focusInput() } }
                     GlassMenuItem { text: "Ouvrir un fichier…                        Ctrl+O"; onTriggered: openFileDialog.open() }
                     GlassMenuItem { text: "Enregistrer en PDF…                   Ctrl+P"; enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
                     GlassMenuSeparator {}
@@ -963,82 +925,31 @@ ApplicationWindow {
         Rectangle { Layout.fillWidth: true; implicitHeight: 2; color: "#11243E"
             Rectangle { height: 2; width: parent.width * (currentView ? currentView.loadProgress / 100 : 0); color: "#0088FF"; visible: currentView ? currentView.loading : false }
         }
-        Rectangle {
+        PolicyBanner {
             id: policyBanner
-            Layout.fillWidth: true
-            implicitHeight: bannerVisible ? 36 : 0
-            visible: implicitHeight > 0
-            clip: true
-            color: "#E80B1F38"
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: CybouTheme.borderSubtle }
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: CybouTheme.glassSheenSubtle }
-            Behavior on implicitHeight { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 180; easing.type: Easing.OutCubic } }
-            RowLayout {
-                anchors.fill: parent; anchors.leftMargin: 16; anchors.rightMargin: 12; spacing: 10
-                Label {
-                    id: policyBannerText
-                    Layout.fillWidth: true
-                    color: CybouTheme.mainText
-                    font.pixelSize: 12
-                    elide: Text.ElideRight
-                }
-                GlassButton {
-                    text: qsTr("Recharger")
-                    implicitHeight: 24; padding: 4
-                    onClicked: {
-                        policyBanner.close()
-                        if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload() }
-                    }
-                }
-                GlassButton {
-                    text: qsTr("Annuler")
-                    implicitHeight: 24; padding: 4
-                    onClicked: policyBanner.undo()
-                }
-                NavButton {
-                    text: "×"
-                    implicitWidth: 22; implicitHeight: 22
-                    hint: qsTr("Fermer")
-                    onClicked: policyBanner.close()
+            onReloadRequested: {
+                if (currentView) {
+                    window.applyViewPolicy(currentView, currentView.url)
+                    currentView.reload()
                 }
             }
-            property bool bannerVisible: false
-            property string lastKey: ""
-            property int lastPrevMode: 0
-            property string lastOrigin: ""
-            Timer { id: bannerTimer; interval: 8000; onTriggered: policyBanner.bannerVisible = false }
-            function show(origin, key, mode, prevMode) {
-                lastOrigin = origin; lastKey = key; lastPrevMode = prevMode
-                const name = key === "javascript" ? "JavaScript" : key === "storage" ? qsTr("Stockage local") : qsTr("Fenêtres popups")
-                const state = mode === 1 ? qsTr("activé") : qsTr("bloqué")
-                policyBannerText.text = qsTr("%1 %2 pour %3. Recharger la page pour appliquer ?").arg(name).arg(state).arg(origin)
-                bannerVisible = true
-                bannerTimer.restart()
-            }
-            function undo() {
-                if (lastKey.length && currentView) {
-                    controlState.setBehavior(lastKey, lastPrevMode)
+            onUndoRequested: function(key, prevMode) {
+                if (key.length && currentView) {
+                    controlState.setBehavior(key, prevMode)
                     window.applyViewPolicy(currentView, currentView.url)
                 }
-                close()
             }
-            function close() { bannerVisible = false; bannerTimer.stop() }
         }
-        Rectangle {
-            Layout.fillWidth: true; implicitHeight: findVisible ? 48 : 0; visible: findVisible; color: "#0A182F"
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#11243E" }
-            RowLayout {
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; anchors.rightMargin: 12; spacing: 8
-                TextField {
-                    id: findInput; placeholderText: "Rechercher dans la page"; color: "white"
-                    placeholderTextColor: "#64748B"
-                    background: Rectangle { radius: 6; color: "#0B1E38"; border.color: "#1B3B66" }
-                    onTextChanged: if (currentView) currentView.findText(text); onAccepted: if (currentView) currentView.findText(text)
-                }
-                Label { text: findResult; color: "#8FA3BF" }
-                NavButton { text: "↑"; hint: "Précédent"; onClicked: currentView.findText(findInput.text, WebEngineView.FindBackward) }
-                NavButton { text: "↓"; hint: "Suivant"; onClicked: currentView.findText(findInput.text) }
-                NavButton { text: "×"; hint: "Fermer la recherche"; onClicked: { findVisible = false; currentView.findText("") } }
+        FindBar {
+            id: findBar
+            visible: window.findVisible
+            resultText: window.findResult
+            onTextChanged: if (currentView) currentView.findText(findBar.text)
+            onFindNext: function(query) { if (currentView) currentView.findText(query) }
+            onFindPrevious: function(query) { if (currentView) currentView.findText(query, WebEngineView.FindBackward) }
+            onCloseRequested: {
+                window.findVisible = false
+                if (currentView) currentView.findText("")
             }
         }
     }
@@ -1051,6 +962,7 @@ ApplicationWindow {
             required property bool isMuted
             required property string tabUid
             property bool policyNeedsReload: false
+            property string upgradedFromHttpUrl: ""
             anchors.fill: parent
             visible: activeTab === index && url.toString() !== "about:blank"
             url: initialUrl
@@ -1074,13 +986,31 @@ ApplicationWindow {
                     if (request.isMainFrame && web === currentView) { errorText.text = reason; errorNotice.open() }
                     return
                 }
-                if (request.isMainFrame) window.applyViewPolicy(web, request.url)
+                if (request.isMainFrame) {
+                    if (browserStore.shouldUpgradeToHttps(request.url)) {
+                        request.reject()
+                        web.upgradedFromHttpUrl = request.url.toString()
+                        web.url = browserStore.upgradeToHttps(request.url)
+                        return
+                    }
+                    window.applyViewPolicy(web, request.url)
+                }
             }
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
             onUrlChanged: { if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
-            onCertificateError: function(error) { error.rejectCertificate() }
+            onCertificateError: function(error) {
+                if (web.upgradedFromHttpUrl.length > 0 && !browserStore.httpsOnly && index === activeTab) {
+                    error.rejectCertificate()
+                    httpsFallbackDialog.failedUrl = web.url.toString()
+                    httpsFallbackDialog.fallbackUrl = web.upgradedFromHttpUrl
+                    httpsFallbackDialog.errorDetail = qsTr("Erreur de certificat SSL : %1").arg(error.description)
+                    httpsFallbackDialog.open()
+                    return
+                }
+                error.rejectCertificate()
+            }
             onPdfPrintingFinished: function(path, success) {
                 pdfBusy = false; pdfTarget = null
                 showStatus(success ? "PDF enregistré : " + path : "Échec de l’enregistrement PDF.")
@@ -1096,8 +1026,18 @@ ApplicationWindow {
             }
             onLoadingChanged: function(info) {
                 if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) smokeLocalLoaded = true
-                if (info.status === WebEngineView.LoadSucceededStatus && !privateMode) browserStore.recordVisit(url.toString(), title)
+                if (info.status === WebEngineView.LoadSucceededStatus) {
+                    web.upgradedFromHttpUrl = ""
+                    if (!privateMode) browserStore.recordVisit(url.toString(), title)
+                }
                 if (info.status === WebEngineView.LoadFailedStatus && index === activeTab) {
+                    if (web.upgradedFromHttpUrl.length > 0 && !browserStore.httpsOnly) {
+                        httpsFallbackDialog.failedUrl = web.url.toString()
+                        httpsFallbackDialog.fallbackUrl = web.upgradedFromHttpUrl
+                        httpsFallbackDialog.errorDetail = info.errorString
+                        httpsFallbackDialog.open()
+                        return
+                    }
                     errorText.text = "Impossible de charger cette page. Vérifiez l’adresse et votre connexion.\n\n" + info.errorString
                     errorNotice.open()
                 }
@@ -1111,6 +1051,66 @@ ApplicationWindow {
         privateMode: window.privateMode
         onNavigateRequested: function(text) { window.navigate(text) }
         onLibraryRequested: function(section) { window.showLibrary(section) }
+    }
+    Dialog {
+        id: httpsFallbackDialog
+        anchors.centerIn: parent
+        width: Math.min(500, window.width - 40)
+        modal: true
+        title: qsTr("Connexion HTTPS non disponible")
+        background: GlassDialogBackground {}
+        header: Label {
+            text: httpsFallbackDialog.title; padding: 20; bottomPadding: 8
+            color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap
+        }
+        property string failedUrl: ""
+        property string fallbackUrl: ""
+        property string errorDetail: ""
+        contentItem: ColumnLayout {
+            spacing: 12
+            Label {
+                Layout.fillWidth: true; wrapMode: Text.WordWrap
+                color: CybouTheme.mainText
+                text: qsTr("CYBOU a automatiquement tenté de se connecter en HTTPS sécurisé, mais la connexion a échoué.")
+            }
+            Label {
+                Layout.fillWidth: true; wrapMode: Text.WrapAnywhere
+                color: CybouTheme.recent
+                font.bold: true
+                text: httpsFallbackDialog.failedUrl
+            }
+            Label {
+                Layout.fillWidth: true; wrapMode: Text.WordWrap
+                color: CybouTheme.secondaryText; font.pixelSize: 11
+                text: httpsFallbackDialog.errorDetail
+            }
+            Label {
+                Layout.fillWidth: true; wrapMode: Text.WordWrap
+                color: CybouTheme.mutedText; font.pixelSize: 12
+                text: qsTr("Vous pouvez tenter de charger la version HTTP non chiffrée. Attention : les données échangées (mots de passe, cookies) ne seront pas protégées.")
+            }
+        }
+        footer: DialogButtonBox {
+            background: Rectangle { color: "transparent" }
+            Button {
+                text: qsTr("Retour en sécurité")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+                onClicked: httpsFallbackDialog.close()
+            }
+            Button {
+                text: qsTr("Continuer en HTTP")
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                onClicked: {
+                    const fallback = httpsFallbackDialog.fallbackUrl
+                    httpsFallbackDialog.close()
+                    if (fallback.length && currentView) {
+                        browserStore.allowHttpFallback(fallback)
+                        currentView.upgradedFromHttpUrl = ""
+                        currentView.url = fallback
+                    }
+                }
+            }
+        }
     }
     Dialog {
         id: behaviorDialog
