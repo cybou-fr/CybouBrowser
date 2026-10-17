@@ -10,6 +10,7 @@ Item {
     signal navigateRequested(string text)
     signal libraryRequested(string section)
     signal settingsRequested()
+    onVisibleChanged: if (!visible) cloudLauncher.closePopup()
 
     // Cloud Services Launcher (Mail button + 3x3 App Launcher) in top-right corner
     CloudAppLauncher {

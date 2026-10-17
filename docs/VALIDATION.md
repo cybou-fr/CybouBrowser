@@ -17,6 +17,9 @@ Windows / MSVC 2022 / Qt 6.12.0. Записанные runtime identifiers: Qt We
 | **HTTP temporary context** | В прежнем отчёте PASS: exact-address consent, cross-origin rejection, отдельный off-the-record профиль, смена tab/reload/revoke в ранее проверенной реализации | Отчёт этапа `feat(transport)`, visuals в [transport](design/transport/); не доказывает proxy/process isolation |
 | **Chrome and surfaces** | PASS: tab drag, title gestures, GlassToolTip, drawers под header при тестовых размерах | [surfaces.stderr.log](design/glass-surfaces/surfaces.stderr.log) и [скриншоты](design/glass-surfaces/); Windows multi-monitor manual testing отдельно |
 | **Smoke / downloads / PDF** | PASS в соответствующих записанных integrated harness run | Статус ограничен протестированными fixtures |
+| **CYBOU Cloud Hardening** | PASS: Nextcloud self-hosted, Infomaniak, Zoho, input validation, corrupted settings recovery, dynamic role filtering, keyboard nav, overflow prevention | Тестовые наборы `--security-test` (14 тестов CloudCoreTests), `--surface-test`, `--controlbar-test`, `--smoke-test` пройдены со статусом exit code 0 |
+
+**CYBOU Cloud Services (ADR 0007 & Cloud Hardening):** Полная реализация каталога (Proton, Google, Microsoft, Infomaniak, Zoho, Nextcloud, Apple iCloud), удаление demo-ссылок Nextcloud с переходом на персональный HTTPS сервер пользователя и статус «À configurer», строгая валидация входных параметров C++, динамические списки в QML, доступность с клавиатуры и адаптивный оверфлоу вкладок. Все 14 специализированных тестов `CloudCoreTests` пройдены на 100%.
 
 **Tracker-only exception (ADR 0005):** Реализовано исключение по top-level origin в общем профиле с сохранением сессионного контекста (cookies, storage); владение привязано к вкладке через потокобезопасный `TrackerExceptionRegistry`. Локальный прогон `--tracker-test` пройден со статусом PASS (exit code 0).
 

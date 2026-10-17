@@ -832,7 +832,7 @@ ApplicationWindow {
                     Layout.topMargin: 4; Layout.bottomMargin: 4
                     orientation: ListView.Horizontal
                     spacing: 3; clip: true
-                    boundsBehavior: Flickable.StopAtBounds
+                    rightMargin: 36
                     model: tabs
                     NavButton {
                         id: newTabBtn

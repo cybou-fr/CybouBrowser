@@ -9,6 +9,15 @@ ColumnLayout {
     width: parent ? parent.width : 400
 
     readonly property var cloudMgr: (typeof browserStore !== "undefined" && browserStore.cloud) ? browserStore.cloud : null
+    readonly property bool isNextcloudInUse: {
+        if (!cloudMgr || !cloudMgr.isEnabled) return false
+        if (cloudMgr.defaultProvider === "nextcloud") return true
+        const overrides = cloudMgr.roleOverrides
+        for (let r in overrides) {
+            if (overrides[r] === "nextcloud") return true
+        }
+        return false
+    }
 
     RowLayout {
         Layout.fillWidth: true
@@ -76,8 +85,53 @@ ColumnLayout {
         color: "#94A3B8"
         font.pixelSize: 12
         text: cloudMgr && !cloudMgr.isEnabled
-              ? qsTr("Les raccourcis cloud et le bouton « Почта » sont masqués sur la page d’accueil.")
-              : qsTr("Définit la suite par défaut pour le lanceur d’applications (9 points) et le raccourci « Почта » sur la page d’accueil.")
+              ? qsTr("Les raccourcis cloud et le bouton d’accès rapide sont masqués sur la page d’accueil.")
+              : qsTr("Définit la suite par défaut pour le lanceur d’applications (9 points) et le raccourci d’accès rapide sur la page d’accueil.")
+    }
+
+    // Nextcloud server URL configuration (shown if Nextcloud is used as default or override)
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 6
+        visible: cloudSection.isNextcloudInUse
+
+        Label {
+            text: qsTr("Adresse de votre serveur Nextcloud (HTTPS)")
+            color: "#E2E8F0"
+            font.bold: true
+            font.pixelSize: 12
+        }
+
+        TextField {
+            id: ncUrlField
+            Layout.fillWidth: true
+            placeholderText: "https://cloud.exemple.com"
+            color: "#FFFFFF"
+            font.pixelSize: 13
+            text: cloudMgr ? cloudMgr.nextcloudBaseUrl : ""
+            onEditingFinished: {
+                if (cloudMgr) {
+                    cloudMgr.nextcloudBaseUrl = text
+                }
+            }
+            background: Rectangle {
+                implicitHeight: 32
+                radius: 6
+                color: "#102540"
+                border.color: ncUrlField.activeFocus ? "#38BDF8" : "#244066"
+                border.width: 1
+            }
+        }
+
+        Label {
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+            color: (cloudMgr && cloudMgr.nextcloudBaseUrl.length > 0) ? "#34D399" : "#F59E0B"
+            font.pixelSize: 11
+            text: (cloudMgr && cloudMgr.nextcloudBaseUrl.length > 0)
+                  ? qsTr("Serveur configuré : ") + cloudMgr.nextcloudBaseUrl
+                  : qsTr("Veuillez renseigner l'adresse HTTPS de votre instance Nextcloud privée.")
+        }
     }
 
     // Role-specific overrides section
@@ -130,16 +184,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     textRole: "text"
                     valueRole: "value"
-
-                    model: [
-                        { text: qsTr("Comme principal (par défaut)"), value: "inherit" },
-                        { text: "Proton", value: "proton" },
-                        { text: "Google", value: "google" },
-                        { text: "Microsoft 365", value: "microsoft" },
-                        { text: "Nextcloud", value: "nextcloud" },
-                        { text: "Apple iCloud", value: "apple" },
-                        { text: qsTr("Désactivé pour ce service"), value: "disabled" }
-                    ]
+                    model: cloudMgr ? cloudMgr.providersForRole(roleRow.modelData.role) : []
 
                     currentIndex: {
                         if (!cloudMgr) return 0

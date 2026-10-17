@@ -1406,4 +1406,86 @@ Traqueurs passés par exception : %4</source>
         <translation>Нет доступных приложений.</translation>
     </message>
 </context>
+<context>
+    <name>CloudAppTile</name>
+    <message>
+        <source>À configurer</source>
+        <translation>Требуется настройка</translation>
+    </message>
+    <message>
+        <source>Cliquez pour configurer l’adresse de votre serveur dans les paramètres.</source>
+        <translation>Нажмите, чтобы настроить адрес сервера в параметрах.</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSettingsSection</name>
+    <message>
+        <source>SERVICES CLOUD &amp; ÉCOSYSTÈME</source>
+        <translation>СЕРВИСЫ CLOUD И ЭКОСИСТЕМА</translation>
+    </message>
+    <message>
+        <source>Réinitialiser tout</source>
+        <translation>Сбросить всё</translation>
+    </message>
+    <message>
+        <source>Suite cloud principale</source>
+        <translation>Основная облачная экосистема</translation>
+    </message>
+    <message>
+        <source>Les raccourcis cloud et le bouton d’accès rapide sont masqués sur la page d’accueil.</source>
+        <translation>Облачные ярлыки и кнопка быстрого доступа скрыты на главной странице.</translation>
+    </message>
+    <message>
+        <source>Définit la suite par défaut pour le lanceur d’applications (9 points) et le raccourci d’accès rapide sur la page d’accueil.</source>
+        <translation>Определяет экосистему по умолчанию для лаунчера приложений (9 точек) и быстрого доступа на главной странице.</translation>
+    </message>
+    <message>
+        <source>Adresse de votre serveur Nextcloud (HTTPS)</source>
+        <translation>Адрес вашего сервера Nextcloud (HTTPS)</translation>
+    </message>
+    <message>
+        <source>Serveur configuré : </source>
+        <translation>Сервер настроен: </translation>
+    </message>
+    <message>
+        <source>Veuillez renseigner l'adresse HTTPS de votre instance Nextcloud privée.</source>
+        <translation>Укажите адрес HTTPS вашего частного сервера Nextcloud.</translation>
+    </message>
+    <message>
+        <source>PERSONNALISATION PAR SERVICE</source>
+        <translation>НАСТРОЙКА ОТДЕЛЬНЫХ СЛУЖБ</translation>
+    </message>
+    <message>
+        <source>Courrier (Mail)</source>
+        <translation>Почта (Mail)</translation>
+    </message>
+    <message>
+        <source>Calendrier</source>
+        <translation>Календарь</translation>
+    </message>
+    <message>
+        <source>Stockage &amp; Fichiers (Drive)</source>
+        <translation>Файлы и хранилище (Drive)</translation>
+    </message>
+    <message>
+        <source>Traitement de texte (Docs)</source>
+        <translation>Текстовые документы (Docs)</translation>
+    </message>
+    <message>
+        <source>Tableur (Sheets)</source>
+        <translation>Таблицы (Sheets)</translation>
+    </message>
+    <message>
+        <source>Présentations (Slides)</source>
+        <translation>Презентации (Slides)</translation>
+    </message>
+    <message>
+        <source>Réunions vidéo (Meet / Teams)</source>
+        <translation>Видеовстречи (Meet / Teams)</translation>
+    </message>
+    <message>
+        <source>Rétablir le choix principal</source>
+        <translation>Вернуть выбор по умолчанию</translation>
+    </message>
+</context>
 </TS>

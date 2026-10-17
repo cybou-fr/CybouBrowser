@@ -19,15 +19,17 @@ Item {
     readonly property var cloudMgr: (typeof browserStore !== "undefined" && browserStore.cloud) ? browserStore.cloud : null
     readonly property bool isCloudEnabled: cloudMgr ? cloudMgr.isEnabled : false
     visible: isCloudEnabled
+    onVisibleChanged: if (!visible) closePopup()
 
     RowLayout {
         id: launcherRow
         anchors.fill: parent
         spacing: 10
 
-        // "Почта" / "Courrier" button
+        // "Courrier" (Mail) button - visible ONLY when mail role is available and configured
         Button {
             id: mailButton
+            visible: cloudMgr ? cloudMgr.isMailAvailable() : false
             implicitHeight: 34
             implicitWidth: mailRow.implicitWidth + 24
             padding: 0
@@ -83,7 +85,7 @@ Item {
                 text: {
                     if (!cloudMgr) return qsTr("Courrier")
                     const m = cloudMgr.resolveRole("mail")
-                    return m.name ? (m.name + " (" + m.roleName + ")") : qsTr("Courrier")
+                    return m.name ? (m.name + " (" + (m.providerName || "") + ")") : qsTr("Courrier")
                 }
             }
         }
@@ -246,6 +248,10 @@ Item {
                         onTriggered: function(url) {
                             launcherPopup.close()
                             launcher.navigateRequested(url)
+                        }
+                        onConfigureRequested: {
+                            launcherPopup.close()
+                            launcher.settingsRequested()
                         }
                     }
                 }
