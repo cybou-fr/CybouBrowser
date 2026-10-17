@@ -33,6 +33,9 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         src/controlbar/ControlBarController.cpp
         src/controlbar/CapabilityModel.h
         src/controlbar/RequestObserver.h
+        src/activity/ActivityEvent.h
+        src/activity/ActivityAggregator.h
+        src/activity/ActivityAggregator.cpp
     QML_FILES
         qml/CybouTheme.qml
         qml/NewTabPage.qml

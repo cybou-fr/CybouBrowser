@@ -128,8 +128,18 @@ Popup {
                 background: Rectangle { radius: 6; color: parent.hovered ? "#E11D2E" : "#142948" }
             }
         }
-        Label { Layout.fillWidth: true; text: card.capability.scope || ""; color: "#94A3B8"; font.pixelSize: 11; wrapMode: Text.WordWrap }
-        Label { Layout.fillWidth: true; text: card.capability.pending ? qsTr("Demande d’accès reçue") : card.capability.key === "network" ? qsTr("Observation du profil") : card.capability.key === "cookies" ? qsTr("Politique du profil") : card.capability.policy === 2 && !card.capability.explicitDeny && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key) ? qsTr("Sur demande (aucun accès actif)") : [qsTr("Accès bloqué sans demande"), qsTr("Autorisé"), qsTr("Bloqué pour les prochaines demandes"), qsTr("Fonction indisponible"), qsTr("Recharger pour appliquer")][card.capability.policy || 0]; color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true }
+        Label {
+            Layout.fillWidth: true
+            text: card.capability.pending ? qsTr("Demande d’accès reçue")
+                : card.capability.key === "network" ? qsTr("Observation du profil")
+                : card.capability.key === "cookies" ? qsTr("Politique du profil")
+                : card.capability.policy === 1 ? qsTr("Autorisé")
+                : (card.capability.policy === 2 && card.capability.explicitDeny) ? qsTr("Bloqué pour les prochaines demandes")
+                : card.capability.policy === 4 ? qsTr("Recharger pour appliquer")
+                : card.capability.policy === 3 ? qsTr("Fonction indisponible")
+                : qsTr("Sur demande (aucun accès actif)")
+            color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true
+        }
         Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
         Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
@@ -233,7 +243,9 @@ Popup {
             delegate: Label {
                 required property var modelData
                 Layout.fillWidth: true
-                text: new Date(modelData.time).toLocaleTimeString(Qt.locale(), "HH:mm:ss") + "  " + modelData.origin
+                text: new Date(modelData.time).toLocaleTimeString(Qt.locale(), "HH:mm:ss")
+                    + (modelData.scope ? "  [" + (modelData.scope === "tab" ? qsTr("Onglet") : qsTr("Profil")) + "]  " : "  ")
+                    + modelData.origin
                     + (modelData.resourceLabel ? " · " + modelData.resourceLabel : "")
                     + (modelData.blocked ? " · " + qsTr("Bloqué") : modelData.resourceType !== undefined ? " · " + qsTr("Passé par le filtre") : "")
                     + (modelData.explanation ? "\n" + modelData.explanation : "")

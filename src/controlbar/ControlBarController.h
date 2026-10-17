@@ -7,6 +7,7 @@
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEnginePermission>
 #include "CapabilityModel.h"
+#include "../activity/ActivityAggregator.h"
 
 class BrowserStore;
 class ControlBarController : public QObject {
@@ -72,7 +73,6 @@ signals:
     void contextChanged();
     void policyChanged(const QString &origin, const QString &key);
 private:
-    struct Observation { QString key, tab, top, requester; qint64 time; bool pending = false, blocked = false; quint64 requestId = 0; };
     QVariant policyValue(const QUrl &url, const QString &key, const QVariant &fallback, const QString &tab = {}) const;
     bool writePolicy(const QUrl &url, const QString &key, const QVariant &value);
     static QStringList keysFor(QWebEnginePermission::PermissionType type);
@@ -84,7 +84,7 @@ private:
     CapabilityModel m_model;
     QSettings m_settings;
     QHash<QString, QVariant> m_privatePolicies;
-    QList<Observation> m_observations;
+    ActivityAggregator m_aggregator;
     QTimer m_timer;
     int m_revision = 0;
 };

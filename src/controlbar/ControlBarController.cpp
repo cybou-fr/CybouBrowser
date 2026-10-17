@@ -98,44 +98,27 @@ bool ControlBarController::shouldDeny(const QWebEnginePermission &permission, co
 }
 void ControlBarController::notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked, quint64 requestId) {
     for (const auto &key : keysFor(permission.permissionType())) {
-        m_observations.append({key, tab, origin(top), origin(permission.origin()), QDateTime::currentMSecsSinceEpoch(), !blocked, blocked, requestId});
-        if (m_observations.size() > 256) m_observations.removeFirst();
+        m_aggregator.recordPermission(key, tab, origin(top), origin(permission.origin()), !blocked, blocked, requestId);
     }
     refresh();
 }
 void ControlBarController::finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed, quint64 requestId) {
-    bool matched = false;
-    if (requestId != 0) {
-        for (auto &event : m_observations) {
-            if (event.pending && event.requestId == requestId) {
-                event.pending = false; event.blocked = !allowed; event.time = QDateTime::currentMSecsSinceEpoch();
-                matched = true;
-            }
-        }
-    }
-    if (!matched) {
-        for (auto &event : m_observations) {
-            if (event.pending && event.tab == tab && event.requester == origin(permission.origin()) && keysFor(permission.permissionType()).contains(event.key)) {
-                event.pending = false; event.blocked = !allowed; event.time = QDateTime::currentMSecsSinceEpoch();
-                break;
-            }
-        }
+    for (const auto &key : keysFor(permission.permissionType())) {
+        m_aggregator.finishPermission(key, tab, origin(permission.origin()), allowed, requestId);
     }
     refresh();
 }
 void ControlBarController::notePopup(const QString &tab, const QUrl &url, bool blocked) {
-    m_observations.append({"popups", tab, origin(url), origin(url), QDateTime::currentMSecsSinceEpoch(), false, blocked});
-    if (m_observations.size() > 256) m_observations.removeFirst();
+    m_aggregator.recordPopup(tab, origin(url), blocked);
     refresh();
 }
 void ControlBarController::abandonPending(const QString &tab) {
-    for (auto &event : m_observations) if (event.tab == tab) event.pending = false;
-
+    m_aggregator.abandonPending(tab);
     refresh();
 }
 void ControlBarController::expireContext(const QString &tab) {
     for (const auto &key : m_privatePolicies.keys()) if (key.startsWith(tab + "/")) m_privatePolicies.remove(key);
-    m_observations.removeIf([&](const Observation &event) { return event.tab == tab; });
+    m_aggregator.expireTab(tab);
     refresh();
 }
 void ControlBarController::clearPermissionPolicies() {
@@ -153,8 +136,7 @@ void ControlBarController::refresh() {
     QVariantList rows;
     const auto subject = origin(m_url);
     const bool valid = m_profile && !subject.isEmpty();
-    const auto now = QDateTime::currentMSecsSinceEpoch();
-    m_observations.removeIf([now](const Observation &event) { return !event.pending && now - event.time > 60000; });
+    m_aggregator.pruneExpired(60000);
     const auto sample = networkSample();
     QVariantMap networkCounts{{"transport",0}, {"trackers",0}, {"exceptions",0}, {"other",0}};
     for (const auto &item : sample) {
@@ -195,15 +177,12 @@ void ControlBarController::refresh() {
             scope = tr("Tous les profils ouverts");
             reason = m_store && m_store->blockThirdPartyCookies() ? tr("Cookies tiers bloqués par le filtre du profil. Cookies internes autorisés. Pas de comptage exhaustif.") : tr("Cookies tiers autorisés dans ce profil. Pas de comptage exhaustif.");
         }
-        QVariantList eventRows;
-        bool pending = false, recent = false, blocked = false;
-        QString requester;
-        for (auto it = m_observations.crbegin(); it != m_observations.crend() && eventRows.size() < 8; ++it) {
-            if (it->key != key || it->tab != m_tabId || it->top != subject || (!it->pending && now - it->time > 60000)) continue;
-            eventRows.append(QVariantMap{{"origin", it->requester}, {"time", it->time}, {"blocked", it->blocked}});
-            pending |= it->pending; recent = true; blocked |= it->blocked;
-            if (requester.isEmpty()) requester = it->requester;
-        }
+        const auto summary = m_aggregator.summarize(key, m_tabId, subject, 60000);
+        bool pending = summary.pending;
+        bool recent = summary.recent;
+        bool blocked = summary.blocked;
+        QString requester = summary.requester;
+        QVariantList eventRows = summary.events;
         if (key == "network") {
             state = m_profile ? PolicyState::Ask : PolicyState::Unavailable; canAct = false;
             scope = tr("Profil entier · observation seulement");
@@ -223,6 +202,6 @@ void ControlBarController::refresh() {
                                 {"persistent", persistent}, {"canAct", canAct}, {"pending", pending}, {"recent", recent}, {"blocked", blocked}, {"requester", requester}, {"events", eventRows},
                                 {"sampleCount", key == "network" ? sample.size() : eventRows.size()}, {"networkCounts", key == "network" ? networkCounts : QVariantMap()}});
     }
-    if ((!m_observations.isEmpty() || !sample.isEmpty()) && !m_timer.isActive()) m_timer.start();
+    if ((!m_aggregator.isEmpty() || !sample.isEmpty()) && !m_timer.isActive()) m_timer.start();
     if (m_model.update(rows)) { ++m_revision; emit changed(); }
 }
