@@ -25,6 +25,7 @@
 #include "controlbar/RequestObserver.h"
 #include "security/NavigationGuard.h"
 #include "security/DownloadPolicy.h"
+#include "cloud/CloudServiceManager.h"
 #include "ui/AddressDisplay.h"
 
 class BrowserStore : public QObject {
@@ -48,8 +49,9 @@ class BrowserStore : public QObject {
     Q_PROPERTY(QString customWallpaperPath READ customWallpaperPath WRITE setCustomWallpaperPath NOTIFY preferencesChanged)
     Q_PROPERTY(int glassBlurLevel READ glassBlurLevel WRITE setGlassBlurLevel NOTIFY preferencesChanged)
     Q_PROPERTY(bool blockTrackers READ blockTrackers WRITE setBlockTrackers NOTIFY preferencesChanged)
+    Q_PROPERTY(QObject* cloud READ cloud CONSTANT)
 public:
-    explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {
+    explicit BrowserStore(QObject *parent = nullptr) : QObject(parent), m_cloud(this) {
         settings.remove("preferences/httpsOnly"); // Retire the old persistent global HTTP opt-out.
         m_historySaveTimer.setInterval(1000);
         m_historySaveTimer.setSingleShot(true);
@@ -423,6 +425,7 @@ public:
     Q_INVOKABLE QVariantList session() const { return settings.value("session").toList(); }
     Q_INVOKABLE void saveSession(const QVariantList &urls) { settings.setValue("session", urls); settings.sync(); }
     Q_INVOKABLE void openDownloads() { QDesktopServices::openUrl(QUrl::fromLocalFile(downloadsPath())); }
+    Q_INVOKABLE CloudServiceManager *cloud() { return &m_cloud; }
 signals:
     void temporaryTransportExpired(QObject *profile);
     void changed();
@@ -438,6 +441,7 @@ private:
             return !block || !request.thirdParty;
         });
     }
+    CloudServiceManager m_cloud;
     QList<QPointer<QQuickWebEngineProfile>> profiles;
     QHash<QQuickWebEngineProfile *, RequestObserver *> observers;
     bool m_cacheBusy = false;

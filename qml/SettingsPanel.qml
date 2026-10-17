@@ -105,6 +105,8 @@ Drawer {
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; text: qsTr("Les fenêtres privées démarrent toujours sur un nouvel onglet."); font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
+                CloudSettingsSection { Layout.fillWidth: true }
+                Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: qsTr("APPARENCE & FOND D’ÉCRAN"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Label { text: qsTr("Fond de la page d’accueil"); color: "#E2E8F0"; font.bold: true }
                 ComboBox {
