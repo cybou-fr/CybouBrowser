@@ -48,6 +48,7 @@ ApplicationWindow {
     property string initialLibrarySection: ""
     property bool initialSettingsOpen: false
     property bool initialMenuOpen: false
+    property bool initialCloudLauncherOpen: false
     property var closedTabs: []
     property var downloadItems: []
     property var downloadQueue: []
@@ -808,6 +809,7 @@ ApplicationWindow {
         if (initialLibrarySection.length > 0) showLibrary(initialLibrarySection)
         if (initialSettingsOpen) settingsPanel.open()
         if (initialMenuOpen) menu.popup(menuButton, 0, menuButton.height)
+        if (initialCloudLauncherOpen) Qt.callLater(function() { showCloudLauncherPreview() })
     }
     Shortcut { sequence: "Ctrl+L"; onActivated: { address.forceActiveFocus(); Qt.callLater(function() { address.selectAll() }) } }
     Shortcut { sequence: "Ctrl+T"; onActivated: addTab("") }

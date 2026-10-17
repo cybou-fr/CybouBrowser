@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
     if (app.arguments().contains("--open-library")) initialProps["initialLibrarySection"] = "downloads";
     if (app.arguments().contains("--open-settings")) initialProps["initialSettingsOpen"] = true;
     if (app.arguments().contains("--open-menu")) initialProps["initialMenuOpen"] = true;
+    if (app.arguments().contains("--open-cloud")) initialProps["initialCloudLauncherOpen"] = true;
     if (!initialUrl.isEmpty()) initialProps["initialUrlArgument"] = initialUrl;
     if (!initialProps.isEmpty()) engine.setInitialProperties(initialProps);
 

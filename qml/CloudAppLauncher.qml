@@ -173,8 +173,6 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
         background: FrostedGlassSurface {
-            sourceItem: launcher.wallpaperItem
-            blurFactor: launcher.blurFactor
             radius: 16
         }
 
