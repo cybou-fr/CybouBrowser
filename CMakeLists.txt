@@ -50,6 +50,11 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         qml/TrackerHarness.qml
         qml/GlassButton.qml
         qml/GlassDialogBackground.qml
+        qml/GlassMenuItem.qml
+        qml/GlassMenuSeparator.qml
+        qml/LibraryDrawer.qml
+        qml/BrowserTab.qml
+        qml/DownloadOpenDialog.qml
         qml/PolicyBanner.qml
         qml/FindBar.qml
 )

@@ -38,41 +38,6 @@ ApplicationWindow {
         onDoubleClicked: window.maximizeToggle()
     }
 
-    component GlassMenuItem: MenuItem {
-        id: gitem
-        implicitHeight: 32
-        scale: down ? 0.98 : 1.0
-        contentItem: Text {
-            leftPadding: 8; rightPadding: 8
-            text: gitem.text
-            color: gitem.enabled ? (gitem.highlighted ? "#FFFFFF" : CybouTheme.mainText) : CybouTheme.mutedText
-            font.pixelSize: 13
-            verticalAlignment: Text.AlignVCenter
-        }
-        background: Rectangle {
-            radius: 6
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: gitem.highlighted ? "#50285285" : "transparent" }
-                GradientStop { position: 1.0; color: gitem.highlighted ? "#40183864" : "transparent" }
-            }
-            border.color: gitem.highlighted ? CybouTheme.borderHighlight : "transparent"
-            border.width: 1
-            Rectangle {
-                visible: gitem.highlighted
-                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
-                height: 1; color: "#35FFFFFF"; radius: parent.radius
-            }
-        }
-    }
-
-    component GlassMenuSeparator: MenuSeparator {
-        padding: 4
-        contentItem: Rectangle {
-            implicitHeight: 1
-            color: CybouTheme.borderSubtle
-        }
-    }
-
     property int activeTab: 0
     readonly property int chromeRowHeight: CybouTheme.chromeRowHeight
     readonly property int chromeControlHeight: CybouTheme.chromeControlHeight
@@ -1142,155 +1107,7 @@ ApplicationWindow {
     }
     Repeater {
         id: views; model: tabs
-        delegate: WebEngineView {
-            id: web
-            required property int index
-            required property string initialUrl
-            required property bool isMuted
-            required property string tabUid
-            property string blockedHttpUrl: ""
-            property int blockedHttpEpoch: -1
-            readonly property bool temporaryContext: !!window.temporaryProfiles[tabUid]
-            readonly property bool temporaryTransport: browserStore.isTemporaryHttpProfile(window.temporaryProfiles[tabUid] || null)
-            property string policyOrigin: initialUrl !== "about:blank" ? browserStore.origin(initialUrl) : ""
-            property int navigationEpoch: 0
-            readonly property var grantedKeys: {
-                permissionCoordinator.revision
-                return permissionCoordinator.grantedKeys(web, navigationEpoch)
-            }
-            readonly property bool hasPermissionLease: grantedKeys.length > 0
-            Component.onDestruction: {
-                if (permissionCoordinator) permissionCoordinator.forgetView(web)
-                if (controlState) controlState.expireContext(tabUid)
-                browserStore.releaseTrackerOwner(web.profile, web)
-                window.releaseTemporaryView(tabUid)
-            }
-            property bool policyNeedsReload: false
-            property string upgradedFromHttpUrl: ""
-            property string upgradeExpectedUrl: ""
-            property int upgradeEpoch: -1
-            anchors.fill: parent
-            visible: activeTab === index && url.toString() !== "about:blank"
-            url: initialUrl
-            profile: window.temporaryProfiles[tabUid] || window.activeProfile
-            Connections {
-                target: web.temporaryContext ? web.profile : null
-                function onDownloadRequested(download) { window.handleDownload(download) }
-            }
-            audioMuted: isMuted
-            onRecentlyAudibleChanged: function(value) { if (index < tabs.count) tabs.setProperty(index, "audible", value) }
-            settings.javascriptEnabled: controlState.settingFor(initialUrl, "javascript", tabUid)
-            settings.localStorageEnabled: controlState.settingFor(initialUrl, "storage", tabUid)
-            settings.javascriptCanOpenWindows: controlState.popupMode(initialUrl, tabUid) !== 2
-            settings.localContentCanAccessRemoteUrls: false
-            settings.localContentCanAccessFileUrls: false
-            settings.allowRunningInsecureContent: false
-            settings.unknownUrlSchemePolicy: WebEngineSettings.DisallowUnknownUrlSchemes
-            settings.webRTCPublicInterfacesOnly: true
-            settings.fullScreenSupportEnabled: true
-            onNavigationRequested: function(request) {
-                if (request.isMainFrame) {
-                    web.navigationEpoch++
-                    browserStore.retainTrackersForOwner(web.profile, web, request.url)
-                    if (request.url.toString() !== web.upgradeExpectedUrl) {
-                        web.upgradedFromHttpUrl = ""
-                        web.upgradeExpectedUrl = ""
-                        web.upgradeEpoch = -1
-                    } else web.upgradeEpoch = web.navigationEpoch
-                    web.blockedHttpUrl = ""
-                    web.blockedHttpEpoch = -1
-                    if (web === currentView) { policyBanner.close(); controlBar.dismiss() }
-                    if (pendingPermissionView === web) window.cancelPermission()
-                    if (web.temporaryTransport && !browserStore.canStartTemporaryHttp(web.profile, request.url)) {
-                        request.reject()
-                        window.endTemporaryNavigation(web, request.url.toString())
-                        return
-                    }
-                    if (!web.temporaryTransport && browserStore.shouldUpgradeToHttps(request.url)) {
-                        request.reject()
-                        web.upgradedFromHttpUrl = request.url.toString()
-                        web.upgradeExpectedUrl = browserStore.upgradeToHttps(request.url).toString()
-                        web.url = web.upgradeExpectedUrl
-                        return
-                    }
-                }
-                const reason = browserStore.navigationBlockReason(request.url, web.profile, request.isMainFrame)
-                if (reason.length > 0) {
-                    request.reject()
-                    if (request.isMainFrame && web === currentView) {
-                        if (browserStore.canRequestTemporaryHttp(request.url)) window.offerHttp(web, request.url)
-                        else { errorText.text = reason; errorNotice.open() }
-                    }
-                    return
-                }
-                if (request.isMainFrame) {
-                    const nextOrigin = browserStore.origin(request.url.toString())
-                    if (web.policyOrigin !== nextOrigin) controlState.expireContext(web.tabUid)
-                    web.policyOrigin = nextOrigin
-                    window.applyViewPolicy(web, request.url)
-                }
-            }
-            onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
-            onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
-            onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
-            onUrlChanged: {
-                browserStore.retainTrackersForOwner(web.profile, web, web.url)
-                if (browserStore.origin(web.url.toString()).length === 0) { permissionCoordinator.forgetView(web); controlState.expireContext(web.tabUid); web.policyOrigin = "" };
-                if (web === currentView) policyBanner.close();
-                if (pendingPermissionView === web) cancelPermission();
-                if (index === activeTab) refreshAddress();
-                saveTimer.restart()
-            }
-            onCertificateError: function(error) {
-                error.rejectCertificate()
-                if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && web.url.toString() === web.upgradeExpectedUrl && web === currentView) window.offerHttp(web, web.upgradedFromHttpUrl)
-            }
-            onPdfPrintingFinished: function(path, success) {
-                pdfBusy = false; pdfTarget = null
-                showStatus(success ? "PDF enregistré : " + path : "Échec de l’enregistrement PDF.")
-                if (smokeMode) smokePdfResult = success ? 1 : -1
-            }
-            onPermissionRequested: function(permission) { window.askPermission(permission, web) }
-            onFindTextFinished: function(result) { if (index === activeTab) findResult = result.activeMatch + " / " + result.numberOfMatches }
-            onNewWindowRequested: function(request) {
-                const mode = controlState.popupMode(url, tabUid)
-                const permitted = mode !== 2 && (request.userInitiated || mode === 1) && /^https?:\/\//i.test(request.requestedUrl.toString())
-                controlState.notePopup(tabUid, url, !permitted)
-                if (permitted) addTab(request.requestedUrl.toString())
-            }
-            onLoadingChanged: function(info) {
-                if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) smokeLocalLoaded = true
-                if (info.status === WebEngineView.LoadSucceededStatus) {
-                    permissionCoordinator.documentLoaded(web, web.navigationEpoch)
-                    web.upgradedFromHttpUrl = ""
-                    web.upgradeExpectedUrl = ""
-                    if (!privateMode) browserStore.recordVisit(url.toString(), title)
-                }
-                if (info.status === WebEngineView.LoadFailedStatus && index === activeTab) {
-                    if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && info.url.toString() === web.upgradeExpectedUrl) {
-                        window.offerHttp(web, web.upgradedFromHttpUrl)
-                        return
-                    }
-                    errorText.text = qsTr("Impossible de charger cette page. Vérifiez l’adresse et votre connexion.\n\n") + info.errorString
-                    errorNotice.open()
-                }
-            }
-            WheelHandler {
-                acceptedModifiers: Qt.ControlModifier
-                onWheel: function(event) {
-                    const step = event.angleDelta.y > 0 ? 0.1 : -0.1
-                    web.zoomFactor = Math.max(0.3, Math.min(3, Math.round((web.zoomFactor + step) * 10) / 10))
-                    event.accepted = true
-                }
-            }
-            onContextMenuRequested: function(request) {
-                request.accepted = true
-                pageContextMenu.linkUrl = request.linkUrl.toString()
-                pageContextMenu.selectedText = request.selectedText || ""
-                pageContextMenu.isEditable = !!request.isContentEditable
-                pageContextMenu.popup(web, request.position.x, request.position.y)
-            }
-        }
+        delegate: BrowserTab {}
     }
     Menu {
         id: pageContextMenu
@@ -1390,103 +1207,16 @@ ApplicationWindow {
             if (!controlState.setBehavior(policyKey, policyMode)) window.showStatus(qsTr("La modification n’a pas pu être confirmée."))
         }
     }
-    Drawer {
+    LibraryDrawer {
         id: library
-        parent: Overlay.overlay
-        edge: Qt.RightEdge; width: Math.min(460, window.width - 60)
-        y: window.contentItem.y
-        height: window.contentItem.height
-        modal: false; dim: false
-        onAboutToShow: settingsPanel.close()
-        background: Rectangle {
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#D80A1F38" }
-                GradientStop { position: 1.0; color: "#E8061224" }
-            }
-            border.color: CybouTheme.borderHighlight
-            border.width: 1
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: "#90000000"
-                shadowBlur: 1.0
-                shadowHorizontalOffset: -12
-            }
-            Rectangle {
-                anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom
-                width: 1; color: CybouTheme.glassSheen
-            }
-        }
-        ColumnLayout {
-            anchors.fill: parent; anchors.margins: 20; spacing: 14
-            RowLayout {
-                Label { text: librarySection === "bookmarks" ? qsTr("Favoris") : librarySection === "history" ? qsTr("Historique") : qsTr("Téléchargements"); font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true }
-                NavButton { text: "×"; hint: qsTr("Fermer"); onClicked: library.close() }
-            }
-            RowLayout {
-                spacing: 8
-                GlassButton { text: qsTr("Favoris"); highlighted: librarySection === "bookmarks"; onClicked: librarySection = "bookmarks" }
-                GlassButton { text: qsTr("Historique"); highlighted: librarySection === "history"; onClicked: librarySection = "history" }
-                GlassButton { text: qsTr("Fichiers"); highlighted: librarySection === "downloads"; onClicked: librarySection = "downloads" }
-            }
-            TextField {
-                id: librarySearch; Layout.fillWidth: true; placeholderText: qsTr("Filtrer…")
-                visible: librarySection !== "downloads"
-                color: CybouTheme.mainText; placeholderTextColor: CybouTheme.mutedText
-                background: Rectangle {
-                    radius: 8
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: librarySearch.activeFocus ? "#E0143258" : "#C0102644" }
-                        GradientStop { position: 1.0; color: librarySearch.activeFocus ? "#F00A1A30" : "#D008172A" }
-                    }
-                    border.color: librarySearch.activeFocus ? CybouTheme.borderActive : CybouTheme.borderHighlight
-                    border.width: 1
-                }
-            }
-            GlassButton { text: qsTr("Effacer l’historique"); visible: librarySection === "history"; onClicked: clearHistoryDialog.open() }
-            GlassButton { text: qsTr("Ouvrir le dossier Téléchargements"); visible: librarySection === "downloads"; onClicked: browserStore.openDownloads() }
-            ListView {
-                Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 8
-                model: librarySection === "bookmarks" ? browserStore.bookmarks : librarySection === "history" ? browserStore.history : downloadItems
-                delegate: Rectangle {
-                    id: entry
-                    required property var modelData
-                    property bool download: librarySection === "downloads"
-                    property bool matches: download || (modelData.title + " " + modelData.url).toLowerCase().includes(librarySearch.text.toLowerCase())
-                    width: ListView.view.width; height: matches ? (download ? 152 : 82) : 0; visible: matches
-                    radius: 10
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#60142F52" }
-                        GradientStop { position: 1.0; color: "#700A182E" }
-                    }
-                    border.color: CybouTheme.borderSubtle
-                    border.width: 1
-                    Rectangle {
-                        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
-                        height: 1; color: "#25FFFFFF"; radius: parent.radius
-                    }
-                    ColumnLayout {
-                        anchors.fill: parent; anchors.margins: 12; spacing: 4
-                        Label { Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: CybouTheme.mainText; elide: Text.ElideRight; font.bold: true }
-                        Label { Layout.fillWidth: true; text: entry.download ? window.downloadStatus(entry.modelData) : entry.modelData.url; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
-                        ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
-                        RowLayout {
-                            spacing: 8
-                            GlassButton { text: qsTr("Ouvrir"); visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
-                            GlassButton { text: qsTr("Dossier"); visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
-                            GlassButton { text: qsTr("Retirer"); visible: librarySection === "bookmarks"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
-                        }
-                        RowLayout {
-                            spacing: 8
-                            visible: entry.download && !entry.modelData.isFinished
-                            GlassButton { text: entry.download && entry.modelData.isPaused ? qsTr("Reprendre") : qsTr("Pause"); enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
-                            GlassButton { text: qsTr("Annuler"); onClicked: entry.modelData.cancel() }
-                        }
-                    }
-                }
-                Label { anchors.centerIn: parent; visible: parent.count === 0; text: qsTr("Rien ici pour le moment"); color: "#8491A5" }
-            }
-        }
+        browserWindow: window
+        settingsPanelRef: settingsPanel
+        librarySection: window.librarySection
+        downloadItems: window.downloadItems
+        onLibrarySectionChanged: window.librarySection = librarySection
+        onOpenUrlRequested: function(url) { addTab(url) }
+        onReviewDownloadRequested: function(download) { reviewDownloadedFile(download) }
+        onClearHistoryRequested: clearHistoryDialog.open()
     }
     Popup {
         id: suggestionsPopup
@@ -1541,26 +1271,11 @@ ApplicationWindow {
             }
         }
     }
-    Dialog {
+    DownloadOpenDialog {
         id: downloadOpenDialog
-        anchors.centerIn: parent; width: Math.min(500, window.width - 40); modal: true
-        title: qsTr("Ouvrir un fichier téléchargé")
-        padding: 20
-        background: GlassDialogBackground {}
-        header: Label { text: downloadOpenDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
-        property bool allowed: visible && browserStore.canOpenDownloadedFile(window.pendingOpenPath)
-        contentItem: ColumnLayout {
-            spacing: 14
-            Label { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; textFormat: Text.PlainText; font.bold: true; color: CybouTheme.mainText; text: browserStore.fileName(browserStore.fileUrl(window.pendingOpenPath)) }
-            Label { Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; textFormat: Text.PlainText; color: CybouTheme.secondaryText; text: qsTr("Source : %1").arg(window.pendingOpenOrigin || qsTr("Source inconnue")) }
-            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: downloadOpenDialog.allowed ? qsTr("Ce fichier sera ouvert par une application externe. Continuez uniquement si vous faites confiance à sa source. CYBOU ne réalise pas d’analyse antivirus.") : qsTr("L’ouverture de ce type de fichier est bloquée dans CYBOU. Les programmes, scripts, raccourcis et types inconnus doivent être examinés depuis leur dossier.") }
-            Button { text: qsTr("Afficher le dossier"); onClicked: { browserStore.showFileFolder(window.pendingOpenPath); downloadOpenDialog.reject() } }
-        }
-        footer: DialogButtonBox {
-            background: Rectangle { color: "transparent"; radius: CybouTheme.dialogRadius }
-            Button { text: qsTr("Annuler"); DialogButtonBox.buttonRole: DialogButtonBox.RejectRole; focus: true; onClicked: downloadOpenDialog.reject() }
-            Button { text: qsTr("Ouvrir dans une application"); enabled: downloadOpenDialog.allowed; onClicked: { const path = window.pendingOpenPath; downloadOpenDialog.accept(); if (!browserStore.openDownloadedFile(path)) window.showStatus(qsTr("Impossible d’ouvrir ce fichier en toute sécurité.")) } }
-        }
+        pendingOpenPath: window.pendingOpenPath
+        pendingOpenOrigin: window.pendingOpenOrigin
+        onStatusMessage: function(msg) { window.showStatus(msg) }
         onClosed: { window.pendingOpenPath = ""; window.pendingOpenOrigin = "" }
     }
     NativeDialogs.FileDialog {
