@@ -324,8 +324,8 @@ public:
     }
 
     static bool hasSuspiciousIdn(const QUrl &url) {
-        const QString host = url.host().toLower();
-        if (!host.contains(QStringLiteral("xn--"))) return false;
+        // Inspect decoded IDNs independently of Qt's display whitelist.
+        const QString host = QUrl::fromAce(QUrl::toAce(url.host()), QUrl::IgnoreIDNWhitelist).toLower();
 
         const QStringList labels = host.split(QLatin1Char('.'));
         if (labels.isEmpty()) return false;
@@ -341,9 +341,7 @@ public:
 
         for (int i = 0; i < labels.size(); ++i) {
             const QString &label = labels[i];
-            const QString unicodeLabel = label.startsWith(QStringLiteral("xn--"), Qt::CaseInsensitive)
-                ? QUrl::fromAce(label.toLatin1())
-                : label;
+            const QString &unicodeLabel = label;
 
             bool hasLatin = false;
             bool hasNonLatinConfusable = false;
@@ -362,7 +360,7 @@ public:
                     hasNonLatinConfusable = true;
                     // Check if char is an exact lookalike to Latin letter
                     if (u == 0x0430 || u == 0x0441 || u == 0x0435 || u == 0x043E || u == 0x0440 ||
-                        u == 0x0445 || u == 0x0443 || u == 0x0456 || u == 0x0458 || u == 0x0455 ||
+                        u == 0x0445 || u == 0x0443 || u == 0x0456 || u == 0x0458 || u == 0x0455 || u == 0x04CF ||
                         u == 0x0410 || u == 0x0412 || u == 0x0421 || u == 0x0415 || u == 0x041D ||
                         u == 0x0406 || u == 0x0408 || u == 0x041A || u == 0x041C || u == 0x041E ||
                         u == 0x0420 || u == 0x0422 || u == 0x0425 ||

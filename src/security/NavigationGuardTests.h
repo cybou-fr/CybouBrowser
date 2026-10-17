@@ -151,6 +151,20 @@ inline bool runNavigationGuardTests() {
     if (NavigationGuard::hasSuspiciousIdn(QUrl("https://xn--e1afmkfd.xn--p1ai/"))) { qCritical() << "IDN FAIL: пример.рф"; return false; }
     if (!NavigationGuard::hasSuspiciousIdn(QUrl("https://xn--pple-43d.example/"))) { qCritical() << "IDN FAIL: аpple.example"; return false; }
 
+    // Unicode and ACE spellings must receive the same decision, irrespective of TLD display policy.
+    for (const auto &host : {QString::fromUtf8("аpple.com"), QString::fromUtf8("аpple.example"),
+                             QStringLiteral("xn--pple-43d.com"), QStringLiteral("xn--pple-43d.example")}) {
+        if (!NavigationGuard::hasSuspiciousIdn(QUrl("https://" + host + "/"))) {
+            qCritical() << "IDN FAIL: mixed-script variant" << host; return false;
+        }
+    }
+    for (const auto &host : {QString::fromUtf8("bücher.de"), QString::fromUtf8("пример.рф"),
+                             QStringLiteral("xn--bcher-kva.de")}) {
+        if (NavigationGuard::hasSuspiciousIdn(QUrl("https://" + host + "/"))) {
+            qCritical() << "IDN FAIL: legitimate variant" << host; return false;
+        }
+    }
+
     // 10. Restricted ports (IANA / Chromium dangerous ports blocked for general web browsing)
     const int dangerousPorts[] = { 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 77, 79, 87, 95,
                                    101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179,

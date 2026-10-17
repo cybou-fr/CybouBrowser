@@ -6,9 +6,9 @@ This is a status ledger, **not** a test-results archive. A test is PASS only wit
 
 | Verification target | Current status | Next required evidence |
 | --- | --- | --- |
-| Build (Windows x64) | Source and CMake targets present; no fresh build log attached here | Successful Release build tied to a current full commit |
-| Gate self-tests | `tools/security/test_owasp_gate.py` exists; result not independently recorded here | Execute and save output |
-| Native baseline | Six `cybou_tests` suites exist; current SHA-specific report not included | Run `owasp_gate.py --mode baseline` and preserve logs |
+| Build (Windows x64) | Release build succeeded locally on 2026-10-18 (Windows x64 / Qt 6.12 / MSVC); development working tree | Successful Release build tied to a current full commit |
+| Gate self-tests | 6 self-tests passed locally on 2026-10-18, including empty-log rejection and diagnostic hash preservation | Execute and save output |
+| Native baseline | 6/6 suites PASS locally on 2026-10-18; nonempty per-suite logs, binary hash and tested patch preserved below | Run `owasp_gate.py --mode baseline` and preserve logs |
 | OWASP ASVS/WSTG | Official inventory SHA pins and full requirement mappings incomplete | Pin canonical datasets, triage each item and verify applicable cases |
 | Browser-specific security | Cases in `tests/security/cases.json` are plans, not proof | Deterministic fixtures, stress/fuzz, real devices and attack-driven negative testing |
 | Chromium/Qt sandbox | Packaged binary runtime boundary not proved | Inspect renderer sandbox/processes and security patch level |
@@ -17,3 +17,27 @@ This is a status ledger, **not** a test-results archive. A test is PASS only wit
 | Independent security review | Not performed/evidenced for a release candidate | External pentest, risk review and retest |
 
 Do not record a result by copying a previous note. Add verified machine-readable cases under `tests/security/` and generated logs under a dedicated build/test-artifact location. Use [TEST_PLAN](TEST_PLAN.md), [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md), [RELEASE_CRITERIA](RELEASE_CRITERIA.md).
+
+## Development audit — 2026-10-18
+
+Baseline qualification is the first active item in [ROADMAP](ROADMAP.md). The source audit found a real IDN regression, an early hover assertion and missing per-suite diagnostics. Current changes decode IDNs independently of display whitelist, cover Unicode/ACE and benign IDNs, wait up to two seconds for hover opening, emit Qt diagnostics to stderr and reject empty successful suite logs. Reports also identify dirty working trees and tracked diff hashes; release mode refuses a dirty or unknown tree.
+
+Fresh native results: **6/6 PASS** on the development working tree. The gate reported no baseline errors; all six logs are nonempty and fingerprinted. The earlier report with empty logs is superseded. These are local engineering results, not a signed or independently reviewed release result.
+
+| Suite | Result |
+| --- | --- |
+| security | PASS; 2757 diagnostic bytes |
+| controlbar | PASS; 3995 diagnostic bytes |
+| transport | PASS; 1401 diagnostic bytes |
+| tracker | PASS; 827 diagnostic bytes |
+| surface | PASS; 289 diagnostic bytes |
+| smoke | PASS; 435 diagnostic bytes |
+
+Artifact directory: `build/release-audit-2026-10-18/` (ignored, local only). Preserve `baseline.json`, `security-logs/` and `tested-working-tree.patch` together.
+
+- Source base commit: `3cfcf578c9c725cb3f5237384970624404f5d617`.
+- Tested working tree: dirty; patch SHA-256 `835effc2533bc68e0a89b046eeb96d4b23017f8173c2df8cd0ed06ac128c450b`. The saved patch hash was checked against the report.
+- Test executable SHA-256: `bb853260ff90a5ccce855bc88de49955d7f703f3a3cd8038885ea974e9278a43`.
+- Environment: `Windows-11-10.0.26300-SP0`, Python `3.14.7`; Qt/Chromium engine versions appear in suite diagnostics.
+
+This document and the roadmap were updated after the run; those documentation-only edits are not in the tested patch. No application/test code changed after the successful run. Artifact availability on this machine does not imply the files are published in Git. All official inventory, hardware, cloud, packaging and independent-review release gates remain open.

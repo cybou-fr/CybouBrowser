@@ -10,6 +10,7 @@ Item {
     property var input: null
     property int sizeIndex: 0
     property var sizes: [[820,560],[1024,768],[1360,900],[1920,1080]]
+    property real hoverStarted: 0
     property real started: 0
     property real grantObservedAt: 0
     property real firstRemainingMs: 0
@@ -72,8 +73,10 @@ Item {
                 expect(m.visibleKeys.length === 11, "mouse edit preserves capabilities")
                 input = {kind:"key",key:Qt.Key_Escape}; phase = 18
             } else if (phase === 18) {
+                hoverStarted = Date.now()
                 input = bar.testInputPoint("location","move"); phase = 6
             } else if (phase === 6) {
+                if (!bar.testCard().visible && Date.now() - hoverStarted < 2000) return 0
                 expect(bar.testCard().visible && bar.testCard().key === "location", "hover opens the current glass control panel")
                 const c = bar.testCard()
                 expect(c.x >= 0 && c.x+c.width <= browserWindow.width, "glass panel stays inside window")

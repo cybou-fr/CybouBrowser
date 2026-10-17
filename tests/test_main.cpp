@@ -16,6 +16,7 @@
 #include <QTranslator>
 #include <QtTest/QTest>
 #include <memory>
+#include <cstdio>
 #include "browserstore.h"
 #include "security/SecurityTests.h"
 #include "controlbar/ControlBarController.h"
@@ -24,6 +25,9 @@
 int main(int argc, char *argv[])
 {
     qInstallMessageHandler([](QtMsgType, const QMessageLogContext &, const QString &msg) {
+        const auto diagnostic = (msg + QLatin1Char('\n')).toUtf8();
+        std::fwrite(diagnostic.constData(), 1, size_t(diagnostic.size()), stderr);
+        std::fflush(stderr);
         static QFile logFile("build/test_log.txt");
         if (!logFile.isOpen()) {
             QDir().mkpath(QStringLiteral("build"));

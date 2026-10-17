@@ -159,8 +159,9 @@ def run_suites(executable, output_dir, timeout):
             with log.open("w",encoding="utf-8") as f:
                 proc=subprocess.run([str(Path(executable).resolve()),"--"+suite+"-test"],
                                     cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,timeout=timeout)
-            results.append({"suite":suite,"status":"PASS" if proc.returncode==0 else "FAIL",
-                            "exitCode":proc.returncode,"log":str(log),"sha256":sha(log)})
+            results.append({"suite":suite,"status":"PASS" if proc.returncode==0 and log.stat().st_size > 0 else "FAIL",
+                            "exitCode":proc.returncode,"log":str(log),"sha256":sha(log),
+                            "logBytes":log.stat().st_size})
         except subprocess.TimeoutExpired:
             results.append({"suite":suite,"status":"FAIL","reason":"timeout","log":str(log)})
         except OSError as ex:
@@ -190,6 +191,17 @@ def main():
             "errors":list(case_errors)}
     binarysha=sha(a.exe) if a.exe and Path(a.exe).is_file() else ""
     report["binarySha256"]=binarysha
+    try:
+        diff=subprocess.run(["git","diff","HEAD","--binary"],cwd=ROOT,
+                            capture_output=True,timeout=10,check=True).stdout
+        status=subprocess.run(["git","status","--porcelain"],cwd=ROOT,
+                              capture_output=True,timeout=10,check=True).stdout
+        report["workingTreeDirty"]=bool(status.strip())
+        report["sourceDiffSha256"]=hashlib.sha256(diff).hexdigest()
+    except (OSError,subprocess.SubprocessError):
+        report["workingTreeDirty"]=None
+    if a.mode=="release" and report["workingTreeDirty"] is not False:
+        report["errors"].append("Release requires a verified clean working tree")
     if a.mode in ("baseline","release"):
         report["suites"]=run_suites(a.exe,out.parent/"security-logs",a.timeout)
         if any(x["status"]!="PASS" for x in report["suites"]):

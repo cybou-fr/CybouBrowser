@@ -72,3 +72,18 @@ Daily development may run narrow suites, but before milestone promotion run full
 - **1.0:** same candidate passes all checks and support process. No blanket certification language.
 
 This tool **does not itself generate all OWASP tests**. Maintaining the official inventory, mapping and real fixtures is a substantial engineering obligation. **Unknown remains BLOCKED, never automatically PASS.**
+
+## Local baseline diagnostics (2026-10-18)
+
+`cybou_tests` emits Qt diagnostics to stderr as well as the local aggregate `build/test_log.txt`. The gate captures stderr/stdout separately for each suite under the report directory's `security-logs/`. A zero process exit with an empty log is a failure. Keep the JSON report and these logs together; the report includes each log's SHA-256 and byte count, binary SHA-256, source commit, working-tree state and tracked diff SHA-256.
+
+A dirty-tree baseline is diagnostic evidence for a development build. Its commit field alone does not identify the tested source; preserve the patch as well. Release mode requires a verified clean tree. Untracked source must be committed before qualifying a candidate. The source-diff hash is an identifier, not a saved copy of the patch or proof of reproducible compilation.
+
+Run from the repository root after a successful Release build:
+
+```powershell
+python tools/security/test_owasp_gate.py
+python tools/security/owasp_gate.py --mode baseline --exe build/Release/cybou_tests.exe --out build/security-baseline.json
+```
+
+All six suites passing proves only this local baseline. It does not disposition official requirements or qualify hardware, cloud services, signing, sandbox isolation or independent review.

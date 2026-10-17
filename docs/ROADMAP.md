@@ -16,6 +16,32 @@
 
 No third-party extension platform or partner-granted browser privileges are permitted.
 
+## Source audit — 2026-10-18
+
+This review covers the local Windows implementation and test infrastructure. Implemented behavior is distinct from release qualification. Current milestone remains **0.3.0-alpha.1**; there is no stable release candidate.
+
+| Work item | Code evidence | State / remaining work |
+| --- | --- | --- |
+| New-tab, tabs and cloud controls | `qml/Main.qml`, `NewTabPage.qml`, `CloudAppLauncher.qml` | Implemented, including 12 px new-tab gap and shared 36 px cloud-button sizing; complete keyboard/DPI/many-tab checks still required |
+| Profiles, history, bookmarks, downloads and PDF | `src/browserstore.h`, `qml/BrowserTab.qml`, `tests/test_main.cpp` | Implemented; smoke fixtures exercise normal paths; crash recovery and data-deletion matrix still required |
+| Temporary permissions and document context | `src/security/PermissionCoordinator.cpp`, `SiteContext.h`, `PermissionLease.h` | Native request queue, expiry, document/profile checks and revoke paths exist; hardware capture-stop and hostile iframe proof remain open |
+| Restricted browsing | `NavigationGuard.h`, `BrowserTab.qml`, `Main.qml` | IDN/port detection, restricted settings, muted audio, permission/download deny and user override exist; IDN decoding regression addressed in this iteration; full navigation/override regression remains open |
+| HTTPS and tracker exceptions | `NetworkPolicy.h`, `HttpNavigationLease.h`, `TrackerExceptionRegistry.h`, `TrackerBlocker.h` | Scoped temporary exceptions and local fixtures exist; TLS/DNS/PNA/redirect adversarial coverage remains incomplete |
+| Filtering | `src/security/RuleEngine.h` | Small built-in categorized suffix list with protected endpoints; no qualified list-update pipeline or broad effectiveness claim |
+| Cloud apps | `src/cloud/`, `qml/CloudSettingsSection.qml` | Local catalog, role resolver, Nextcloud configuration and launcher implemented; real vendor login/2FA and document/media workflows unverified |
+| Test evidence | `tests/test_main.cpp`, `tools/security/owasp_gate.py` | Six suites exist; previous report had empty suite logs and two failures. Diagnostics capture, empty-log rejection and source-diff identification added; fresh results tracked in VALIDATION |
+| Release infrastructure | `CMakeLists.txt`, `tests/security/standards.lock.json` | Windows build exists; official dataset hashes are null. No installer/signing/updater/SBOM pipeline found in reviewed tracked source |
+
+### Immediate delivery queue
+
+- [x] **R1 — repeatable baseline (local development, 2026-10-18):** fix IDN failure, wait for the real hover delay, capture nonempty suite logs, record current source/binary identity, obtain six green suites.
+- [ ] **R2 — inventory:** vendor the pinned official ASVS/WSTG inputs, validate parsers and control counts, assign applicability/owners. No automatic N/A or fabricated PASS.
+- [ ] **R3 — browser-specific negative fixtures:** restricted-mode origin/redirect/override lifecycle, cross-frame permissions, real capture revoke, downloads and local-network boundaries.
+- [ ] **R4 — Windows product qualification:** cloud login/2FA, keyboard/FR/RU/DPI, many tabs, crash/session recovery and cleanup.
+- [ ] **R5 — distributable candidate:** reproducible installer, licenses/SBOM, signing, safe update/rollback, independent review and matching candidate evidence.
+
+R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is next; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
+
 ## Gates
 
 | Version | Work to complete | Exit condition |
