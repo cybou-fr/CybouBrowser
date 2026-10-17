@@ -1,25 +1,25 @@
-# CYBOU documentation index and authority
+# CYBOU — active documentation
 
-**Current declared product version: `0.3.0-alpha.1` (engineering alpha, not qualified).** The previously used "0.8" is a historical design/prototype identifier only. Existing dated local test logs do not qualify the new version. See [VERSIONING](VERSIONING.md).
+**Current source: 0.3.0-alpha.1. No public release.** All pages below describe the existing code, accepted product requirements, open verification work or explicit future release gates. Git provides the change history.
 
-## Normative product and security sources
+| Document | Purpose |
+| --- | --- |
+| [Product Vision](PRODUCT_VISION.md) | Fixed product behavior and priorities |
+| [Architecture](ARCHITECTURE.md) | Current C++ / QML / WebEngine modules and boundaries |
+| [Capability Contract](CAPABILITY_CONTRACT.md) | Observable and controllable site capabilities |
+| [Control Bar UX](CONTROL_BAR_UX.md) | Permanent single-row controls and glass panels |
+| [Security Model](SECURITY_MODEL.md) | Implemented defenses, limitations, privilege boundaries |
+| [Threat Model](THREAT_MODEL.md) | Threats and negative verification work |
+| [Cloud Services](ADR/0007-selectable-cloud-services.md) | Provider-neutral C++/QML web-app chooser and next verification |
+| [Cloud Compatibility](CLOUD_COMPATIBILITY_MATRIX.md) | Catalog and real-account qualification checklist |
+| [No Extensions](ADR/0006-no-third-party-extensions.md) | Mandatory zero-third-party-extensions policy |
+| [Versioning](VERSIONING.md) | Source version and promotion gates |
+| [Roadmap](ROADMAP.md) | Required engineering work before 1.0.0 |
+| [Test Plan](TEST_PLAN.md) | Executable suites and additional required campaigns |
+| [Security Verification Framework](SECURITY_VERIFICATION_FRAMEWORK.md) | OWASP imports, case coverage, execution evidence |
+| [Validation](VALIDATION.md) | Current verification status, without unsupported PASS claims |
+| [Release Criteria](RELEASE_CRITERIA.md) | Formal GO/NO-GO |
+| [ADR 0005](ADR/0005-origin-scoped-tracker-exceptions.md) | Current origin/profile tracker-exception policy |
+| [ADR 0008](ADR/0008-evidence-driven-versioning.md) | Mandatory evidence-driven release decision |
 
-- [VERSIONING](VERSIONING.md) · [ADR 0008](ADR/0008-evidence-driven-versioning.md): status, naming and release evidence.
-- [ROADMAP](ROADMAP.md): gated stages through 1.0.0.
-- [RELEASE_CRITERIA](RELEASE_CRITERIA.md): strict release GO/NO-GO.
-- [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md): OWASP applicability inventory, test orchestration and evidence requirements.
-- [THREAT_MODEL](THREAT_MODEL.md): trust boundaries and threats.
-- [TEST_PLAN](TEST_PLAN.md): concrete test suites and execution.
-- [VALIDATION](VALIDATION.md): historic evidence, not current release proof.
-- [PRODUCT_VISION](PRODUCT_VISION.md), [CONTROL_BAR_UX](CONTROL_BAR_UX.md), [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md): feature and UX contracts.
-- [ADR 0006](ADR/0006-no-third-party-extensions.md), [ADR 0007](ADR/0007-selectable-cloud-services.md): trusted execution / selectable cloud ecosystem.
-
-## Other active supporting docs
-
-[ARCHITECTURE](ARCHITECTURE.md), [SECURITY_MODEL](SECURITY_MODEL.md), [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), [API_CAPABILITY_MATRIX](API_CAPABILITY_MATRIX.md), [CLOUD_COMPATIBILITY_MATRIX](CLOUD_COMPATIBILITY_MATRIX.md).
-
-## Historical design and implementation snapshots
-
-Documents in `docs/*-source/` and original reports named `OMNIBOX_071_INTEGRATION`, `CONTROL_BAR_INTEGRATION` and `OBSERVABLE_BROWSING_PROPOSAL_RU` are **historical**. Their internal version names and historical PASS claims are not current engineering or release evidence. Design images are likewise reference captures, not screenshots from a verified 1.0.0 release.
-
-**Precedence on conflict:** owner decisions / ADRs → current Versioning, Release Criteria, Roadmap and Test Framework → feature contracts → dated implementation/validation reports → historical snapshots. Code remains the source for what actually exists; evidence remains the source for what was verified.
+**Source code is authoritative for what exists. Executed, accessible test artifacts are authoritative for what passed.** Unimplemented or unverified functionality must be explicitly labelled.

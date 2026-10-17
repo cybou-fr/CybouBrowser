@@ -52,6 +52,6 @@ Pin SHA-256 in `tests/security/standards.lock.json`, populate `coverage.json` fo
 
 For each test: case ID, precise ASVS/WSTG ID where applicable, preconditions/fixture, expected and observed behavior, positive and negative assertions, exact code SHA, tested binary SHA-256, platform/Qt/Chromium/security patch, logs and failure reason. Keep test-only users and directories; redact secrets and never use customers' accounts. Use PASS/FAIL/BLOCKED/NOT_RUN/NOT_APPLICABLE with reviewed rationale. The complete release report must distinguish *coverage* from actual *passing verification*.
 
-## Prior local results
+## Current verification status
 
-Some tests were reported PASS during earlier snapshots, indexed in [VALIDATION](VALIDATION.md). **They do not constitute today's OWASP coverage or a 1.0.0 security certification.** Re-execute on the exact candidate, implement missing harnesses, commission separate adversarial review, then update the evidence registry only after obtaining results.
+The test suites and risk inventory exist, but **the current source/binary has not passed the complete OWASP and browser-specific release gate**. Run the executable suites, implement missing harnesses, attach candidate-specific logs, and obtain independent adversarial review. Do not record PASS without accessible test results. See [VALIDATION](VALIDATION.md).

@@ -1,33 +1,23 @@
-# CYBOU — контракт возможностей панели
+# CYBOU — 11 возможностей Control Bar
 
-> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+**0.3.0-alpha.1. Код присутствует; полный security gate не пройден.**
 
-Этот документ описывает **то, что реально поддерживается**, а не план релиза. Расположение и взаимодействия определяет [CONTROL_BAR_UX](CONTROL_BAR_UX.md); новая безопасность и UX — [ROADMAP](ROADMAP.md).
+Каждый контроль постоянно виден в одной навигационной строке ([CONTROL_BAR_UX](CONTROL_BAR_UX.md)). Effective policy ≠ pending request ≠ grant ≠ confirmed block ≠ hardware use.
 
-**Запрещённая поверхность:** CYBOU не предоставляет сторонним пакетам extension API, установку/загрузку/side-loading браузерных расширений или privileged userscript execution. Функции из успешных расширений допускаются только как собственные возможности браузера. См. [ADR 0006](ADR/0006-no-third-party-extensions.md).
-
-**Состояния:** effective policy, pending request, granted permission, confirmed blocked event, recent event и unknown — независимые факты. `Allow` не доказывает работу камеры/микрофона. Событие перехватчика на профиле не подтверждает конкретную вкладку. Если нет достоверного API, UI говорит об ограничении.
-
-| Кнопка | Источник и текущее действие | Область / честные ограничения |
+| Иконка | Существующий механизм | Ограничение |
 | --- | --- | --- |
-| **Camera** | Native `MediaVideoCapture` request; клик отвечает на конкретный pending request или сбрасывает контекст | Grant связан с документом; неизвестно, ведётся ли реальная запись |
-| **Mic** | `MediaAudioCapture` / combined audio-video; действующий запрос, сброс | Combined request может относиться к двум кнопкам; нет датчика активности потока |
-| **Screen** | Тип permission распознаётся; capture chooser не интегрирован | Unsupported request отклоняется; fake Allow не показывать |
-| **Location** | `Geolocation` permission request, явное решение, сброс | Реальный location provider и точность не подтверждены |
-| **Notifications** | Native permission request, явное решение | Desktop delivery не интегрирована |
-| **Clipboard** | `ClipboardReadWrite`, pending/решение | Не каждый clipboard access наблюдаем |
-| **JavaScript** | `settings.javascriptEnabled`, direct toggle, reload/Undo | Текущий view, политика по tab+origin; нет inventory DOM/JS |
-| **Popups** | `onNewWindowRequested`, user gesture по умолчанию, allow/deny для новых окон | Скрытые внутренние попытки Chromium не подсчитываются |
-| **Cookies** | Third-party cookie filter | Глобальная настройка профилей, **не per-site** |
-| **Storage** | `settings.localStorageEnabled`, direct toggle, reload/Undo | Только localStorage, не полный IndexedDB/Cache/Service Workers control |
-| **Network** | Interceptor, HTTPS strict, event categories; HTTP consent/revoke и tracker-only exception/revoke в интерактивной карточке | События и counts profile-scoped; отдельный tracker профиль без обычных cookies; ни полного adblock, ни независимых Ads/Trackers policies пока нет |
+| Camera | Native video permission и действие на живой request | Grant ≠ запись или подтверждённая остановка всех streams |
+| Microphone | Native audio/combined permission | Combined audio/video требует согласования |
+| Screen | Request распознаётся | Capture chooser не интегрирован; не выдавать fake Allow |
+| Location | Native geolocation permission | Physical location provider не проверен |
+| Notifications | Native permission | Desktop delivery не интегрирована |
+| Clipboard | WebEngine permission | Не все операции наблюдаемы |
+| JavaScript | WebEngineSettings toggle, reload/Undo | Не наблюдает весь JS |
+| Popups | newWindowRequested, user-gesture policy | Не все подавленные попытки видимы |
+| Cookies | Third-party cookie policy | Профильный, не per-site scope |
+| Storage | localStorageEnabled toggle | Не управляет полностью IndexedDB/Cache/SW |
+| Network | HTTPS, interceptor, categorized rules, HTTP consent, tracker origin exception | Profile-level события, неполный filter coverage |
 
-## Правила действий
+Grant возможен только при совпадении request ID/контекста, top/requester origins, epoch и profile. Temporary HTTP использует отдельный профиль, tracker exception — **текущий профиль на origin**. UI не выдаёт неподтверждённое действие за реальную блокировку.
 
-- Permission выдаётся только в ответ на живой запрос для той же вкладки, профиля, requesting/top origins и navigation epoch; произвольного site allow нет. `AskEveryTime` остаётся внутренним механизмом Qt. Отсутствие ответа на pending request приводит к отказу.
-- Сброс чувствительной capability без pending request может пересоздать текущий URL в новой `WebEngineView` без добавления вкладки.
-- JS/storage/popups меняют поведение, а не переписывают уже исполненные скрипты; Reload/Undo требуют исходный tab+URL+epoch. Нельзя запускать Undo на другой вкладке.
-- Сетевые temporary opt-ins действуют в отдельном контексте и могут пересоздать/закрыть документ; это UX-ограничение следует честно показывать в карточке, не утверждая безусловный бесшовный возврат.
-- Настройку защиты всех профилей нельзя представлять как site-scoped действие. Недоступные Screen или полноценные Ads/Trackers controls не изображать активными.
-
-Следующие изменения (iframe inheritance, verified media revoke, ad/tracker RuleEngine, ActivityAggregator) отмечены как **planned** в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md). Реальные локальные проверки: [VALIDATION](VALIDATION.md).
+[SECURITY_MODEL](SECURITY_MODEL.md) · [TEST_PLAN](TEST_PLAN.md).

@@ -2,7 +2,7 @@
 
 **Scope:** Windows desktop C++20 / Qt Quick / Qt WebEngine browser, including native C++ controls, Chromium subprocesses, OS integration, QML, profiles, permissions, media, downloads, network interception, cloud launcher and distribution.
 
-**Current state:** `0.3.0-alpha.1`. The framework has a working **Python standard-library baseline runner**, a machine-readable scenario inventory and a strict **release coverage gate**, but **does not yet supply full OWASP data, mappings, evidence or passing release qualification**. A written plan is not a passed test.
+**Current state:** `0.3.0-alpha.1`. The repository includes an **unqualified Python standard-library baseline runner**, a machine-readable scenario inventory and a strict **release coverage gate**, but **does not yet supply full OWASP data, mappings, evidence or passing release qualification**. A written plan is not a passed test.
 
 ## Reference baselines, pinned per release
 
