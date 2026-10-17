@@ -319,7 +319,11 @@ int main(int argc, char *argv[])
                         QTimer::singleShot(500, &app, [root, &app, success] {
                             if (auto window = qobject_cast<QQuickWindow *>(root))
                                 window->grabWindow().save("build/cybou-08-alpine-dawn.png");
-                            QMetaObject::invokeMethod(root, "showSuggestionsPreview");
+                            QMetaObject::invokeMethod(root, "showCloudLauncherPreview");
+                            QTimer::singleShot(400, &app, [root, &app, success] {
+                                if (auto window = qobject_cast<QQuickWindow *>(root))
+                                    window->grabWindow().save("build/cybou-08-cloud-launcher.png");
+                                QMetaObject::invokeMethod(root, "showSuggestionsPreview");
                             QTimer::singleShot(500, &app, [root, &app, success] {
                                 QFile pdf("build/test-downloads/cybou-smoke.pdf");
                                 const bool validPdf = pdf.open(QIODevice::ReadOnly) && pdf.size() > 1000 && pdf.read(5) == "%PDF-";
@@ -329,7 +333,8 @@ int main(int argc, char *argv[])
                                 app.exit(success && validPdf ? 0 : 2);
                             });
                         });
-                    } else {
+                    });
+                } else {
                         app.exit(2);
                     }
                 }

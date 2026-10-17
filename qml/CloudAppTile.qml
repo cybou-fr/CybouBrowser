@@ -5,14 +5,14 @@ import Cybou
 
 Rectangle {
     id: tile
-    required property var modelData
+    property var tileData: (typeof modelData !== "undefined") ? modelData : null
     signal triggered(string url)
 
-    implicitWidth: 84
-    implicitHeight: 88
+    implicitWidth: 92
+    implicitHeight: 96
     radius: 12
-    color: tileMouse.containsMouse ? "#2A3B5C88" : "#10254060"
-    border.color: tileMouse.containsMouse ? "#608BB8" : "transparent"
+    color: tileMouse.pressed ? "#3538BDF8" : tileMouse.containsMouse ? "#2038BDF8" : "#0D1E36"
+    border.color: tileMouse.containsMouse ? "#608BB8" : "#204060"
     border.width: 1
 
     Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
@@ -27,8 +27,8 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: {
-            if (tile.modelData && tile.modelData.url) {
-                tile.triggered(tile.modelData.url)
+            if (tile.tileData && tile.tileData.url) {
+                tile.triggered(tile.tileData.url)
             }
         }
     }
@@ -40,20 +40,20 @@ Rectangle {
         // Icon badge
         Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            implicitWidth: 42
-            implicitHeight: 42
-            radius: 10
+            implicitWidth: 44
+            implicitHeight: 44
+            radius: 12
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#4038BDF8" }
-                GradientStop { position: 1.0; color: "#201D4ED8" }
+                GradientStop { position: 0.0; color: tileMouse.containsMouse ? "#5038BDF8" : "#3038BDF8" }
+                GradientStop { position: 1.0; color: tileMouse.containsMouse ? "#301D4ED8" : "#181D4ED8" }
             }
-            border.color: "#3038BDF8"
+            border.color: tileMouse.containsMouse ? "#8038BDF8" : "#4038BDF8"
             border.width: 1
 
             Text {
                 anchors.centerIn: parent
                 text: {
-                    const r = tile.modelData ? tile.modelData.role : ""
+                    const r = tile.tileData ? tile.tileData.role : ""
                     if (r === "mail") return "✉"
                     if (r === "calendar") return "📅"
                     if (r === "files") return "📁"
@@ -63,7 +63,7 @@ Rectangle {
                     if (r === "meetings") return "📹"
                     return "☁"
                 }
-                font.pixelSize: 20
+                font.pixelSize: 22
                 color: "#FFFFFF"
             }
         }
@@ -71,11 +71,14 @@ Rectangle {
         // App name
         Text {
             Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: 76
-            text: tile.modelData ? tile.modelData.name : ""
-            color: "#E2E8F0"
+            Layout.fillWidth: true
+            Layout.maximumWidth: 86
+            text: tile.tileData ? tile.tileData.name : ""
+            color: tileMouse.containsMouse ? "#FFFFFF" : "#E2E8F0"
             font.pixelSize: 11
             font.bold: true
+            wrapMode: Text.WordWrap
+            maximumLineCount: 2
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
         }
@@ -85,6 +88,6 @@ Rectangle {
         parent: tile
         visible: tileMouse.containsMouse && !tileMouse.pressed
         delay: 500
-        text: tile.modelData ? (tile.modelData.roleName + " — " + tile.modelData.name) : ""
+        text: tile.tileData ? (tile.tileData.roleName + " — " + tile.tileData.name) : ""
     }
 }

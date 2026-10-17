@@ -418,6 +418,9 @@ ApplicationWindow {
     function showSuggestionsPreview() {
         address.forceActiveFocus(); address.text = "CYBOU"; updateSuggestions()
     }
+    function showCloudLauncherPreview() {
+        if (newTabPage) newTabPage.openCloudLauncher()
+    }
     function cleanFeaturePreview() {
         const url = smokeBaseUrl + "/preview"
         if (browserStore.isBookmarked(url)) browserStore.toggleBookmark(url, "")
@@ -1286,6 +1289,7 @@ ApplicationWindow {
     }
     Connections { target: currentView; function onUrlChanged() { window.refreshAddress() } }
     NewTabPage {
+        id: newTabPage
         anchors.fill: parent
         visible: currentView ? (currentView.url.toString() === "about:blank" || currentView.url.toString() === "") : true
         privateMode: window.privateMode

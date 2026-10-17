@@ -1376,4 +1376,34 @@ Traqueurs passés par exception : %4</source>
         <translation>БЕЗОПАСНОСТЬ</translation>
     </message>
 </context>
+<context>
+    <name>CloudAppLauncher</name>
+    <message>
+        <location filename="../qml/CloudAppLauncher.qml" line="53"/>
+        <location filename="../qml/CloudAppLauncher.qml" line="78"/>
+        <location filename="../qml/CloudAppLauncher.qml" line="80"/>
+        <source>Courrier</source>
+        <translation>Почта</translation>
+    </message>
+    <message>
+        <location filename="../qml/CloudAppLauncher.qml" line="144"/>
+        <source>Applications cloud (CYBOU Cloud)</source>
+        <translation>Облачные сервисы (CYBOU Cloud)</translation>
+    </message>
+    <message>
+        <location filename="../qml/CloudAppLauncher.qml" line="192"/>
+        <source>Applications cloud</source>
+        <translation>Облачные приложения</translation>
+    </message>
+    <message>
+        <location filename="../qml/CloudAppLauncher.qml" line="202"/>
+        <source>Configurer les services cloud</source>
+        <translation>Настроить облачные сервисы</translation>
+    </message>
+    <message>
+        <location filename="../qml/CloudAppLauncher.qml" line="249"/>
+        <source>Aucune application disponible.</source>
+        <translation>Нет доступных приложений.</translation>
+    </message>
+</context>
 </TS>

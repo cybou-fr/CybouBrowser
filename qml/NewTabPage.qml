@@ -23,6 +23,10 @@ Item {
         onSettingsRequested: root.settingsRequested()
     }
 
+    function openCloudLauncher() {
+        cloudLauncher.openPopup()
+    }
+
     // Wallpaper source resolution
     readonly property string wallpaperSource: {
         if (typeof browserStore !== "undefined") {

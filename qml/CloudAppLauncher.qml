@@ -12,6 +12,10 @@ Item {
     signal navigateRequested(string url)
     signal settingsRequested()
 
+    function openPopup() { launcherPopup.open() }
+    function closePopup() { launcherPopup.close() }
+    readonly property bool popupVisible: launcherPopup.visible
+
     readonly property var cloudMgr: (typeof browserStore !== "undefined" && browserStore.cloud) ? browserStore.cloud : null
     readonly property bool isCloudEnabled: cloudMgr ? cloudMgr.isEnabled : false
     visible: isCloudEnabled
@@ -21,11 +25,12 @@ Item {
         anchors.fill: parent
         spacing: 10
 
-        // "Почта" button
+        // "Почта" / "Courrier" button
         Button {
             id: mailButton
             implicitHeight: 34
             implicitWidth: mailRow.implicitWidth + 24
+            padding: 0
             hoverEnabled: true
             scale: down ? 0.95 : hovered ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
@@ -41,6 +46,7 @@ Item {
 
             contentItem: RowLayout {
                 id: mailRow
+                anchors.centerIn: parent
                 spacing: 6
                 Text {
                     text: "✉"
@@ -48,7 +54,7 @@ Item {
                     font.pixelSize: 13
                 }
                 Text {
-                    text: qsTr("Почта")
+                    text: qsTr("Courrier")
                     color: mailButton.hovered ? "#FFFFFF" : "#E2E8F0"
                     font.pixelSize: 13
                     font.bold: true
@@ -87,6 +93,7 @@ Item {
             id: gridButton
             implicitWidth: 34
             implicitHeight: 34
+            padding: 0
             hoverEnabled: true
             scale: down ? 0.95 : hovered ? 1.05 : 1.0
             Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
@@ -99,19 +106,23 @@ Item {
                 }
             }
 
-            contentItem: Grid {
-                anchors.centerIn: parent
-                columns: 3
-                rows: 3
-                spacing: 3
+            contentItem: Item {
+                implicitWidth: 18
+                implicitHeight: 18
+                Grid {
+                    anchors.centerIn: parent
+                    columns: 3
+                    rows: 3
+                    spacing: 3
 
-                Repeater {
-                    model: 9
-                    Rectangle {
-                        width: 3.5
-                        height: 3.5
-                        radius: 1.75
-                        color: gridButton.hovered ? "#38BDF8" : "#CBD5E1"
+                    Repeater {
+                        model: 9
+                        Rectangle {
+                            width: 3.5
+                            height: 3.5
+                            radius: 1.75
+                            color: gridButton.hovered ? "#38BDF8" : "#CBD5E1"
+                        }
                     }
                 }
             }
@@ -143,14 +154,14 @@ Item {
     // Floating Glass Popup for the 3x3 App Launcher
     Popup {
         id: launcherPopup
-        parent: Overlay.overlay
-        x: Math.min(Overlay.overlay.width - width - 18, Math.max(10, gridButton.mapToItem(Overlay.overlay, 0, 0).x - width + gridButton.width))
-        y: gridButton.mapToItem(Overlay.overlay, 0, 0).y + gridButton.height + 8
-        width: 300
-        padding: 12
+        parent: gridButton
+        x: gridButton.width - width
+        y: gridButton.height + 8
+        width: 326
+        padding: 14
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
         background: Rectangle {
             radius: 16
@@ -189,20 +200,21 @@ Item {
                     Layout.fillWidth: true
                 }
                 Button {
-                    text: "⚙"
+                    id: cfgBtn
                     implicitWidth: 26
                     implicitHeight: 26
                     padding: 0
+                    hoverEnabled: true
                     Accessible.name: qsTr("Configurer les services cloud")
                     contentItem: Text {
                         text: "⚙"
-                        color: parent.hovered ? "#38BDF8" : "#94A3B8"
+                        color: cfgBtn.hovered ? "#38BDF8" : "#94A3B8"
                         font.pixelSize: 14
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
-                        color: parent.hovered ? "#2038BDF8" : "transparent"
+                        color: cfgBtn.hovered ? "#2038BDF8" : "transparent"
                         radius: 6
                     }
                     onClicked: {
@@ -225,11 +237,12 @@ Item {
                 rowSpacing: 10
                 columnSpacing: 10
                 Layout.alignment: Qt.AlignHCenter
+                visible: cloudMgr && cloudMgr.resolvedServices.length > 0
 
                 Repeater {
                     model: cloudMgr ? cloudMgr.resolvedServices : []
                     delegate: CloudAppTile {
-                        modelData: modelData
+                        tileData: modelData
                         onTriggered: function(url) {
                             launcherPopup.close()
                             launcher.navigateRequested(url)
@@ -239,7 +252,7 @@ Item {
             }
 
             Label {
-                visible: appsGrid.children.length <= 1
+                visible: !cloudMgr || cloudMgr.resolvedServices.length === 0
                 text: qsTr("Aucune application disponible.")
                 color: "#64748B"
                 font.pixelSize: 12
