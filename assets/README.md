@@ -1,3 +1,5 @@
+> **Version notice:** Current CYBOU source declares **0.3.0-alpha.1** (unqualified alpha); any older capture/version refers to historic design only. [Current roadmap](../docs/ROADMAP.md).
+
 # Brand asset provenance
 
 Source: user-supplied CYBOU visual identity sheet.

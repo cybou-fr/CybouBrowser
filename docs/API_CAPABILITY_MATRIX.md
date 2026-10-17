@@ -1,5 +1,7 @@
 # CYBOU — матрица текущих возможностей
 
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+
 **Единый нормативный источник:** [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md). Этот файл — краткий обзор для аудита, а не историческая спецификация с прежними UX-решениями.
 
 | Группа | Фактический механизм | Предел наблюдения и контроля |

@@ -1,5 +1,7 @@
 # CYBOU — развитие безопасности и UX
 
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+
 **Статус: инженерное предложение, не отчёт об уже выполненных функциях.** Рабочий статус конкретных возможностей — в [ROADMAP](ROADMAP.md); проверенные ранее результаты — в [VALIDATION](VALIDATION.md). Актуальные UI и API-контракты — [CONTROL_BAR_UX](CONTROL_BAR_UX.md), [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md).
 
 ## Цель и инварианты

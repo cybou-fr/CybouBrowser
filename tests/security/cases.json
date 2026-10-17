@@ -1,0 +1,582 @@
+{
+  "schemaVersion": 1,
+  "policy": "Cases are an inventory of required scenarios, not claims of passing tests. Missing evidence blocks release.",
+  "cases": [
+    {
+      "id": "CYB-PERM-001",
+      "domain": "permissions",
+      "objective": "native request bound to top/requester origin, view, epoch and profile",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PERM-002",
+      "domain": "permissions",
+      "objective": "explicit top-level deny inherited by iframe; requester deny independent",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PERM-003",
+      "domain": "permissions",
+      "objective": "stale ID / pending queue cancellation / revoke all fail closed",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PERM-004",
+      "domain": "permissions",
+      "objective": "combined camera mic screen revoke without page bypass",
+      "method": "hardware",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PERM-005",
+      "domain": "permissions",
+      "objective": "system denial, background tab, sleep/resume, long calls",
+      "method": "hardware",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PERM-006",
+      "domain": "permissions",
+      "objective": "permission grant does not mean actual hardware recording",
+      "method": "ui",
+      "tier": "P0",
+      "candidateSuite": "surface",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-HTTP-001",
+      "domain": "transport",
+      "objective": "strict HTTPS, downgrade and SSL errors",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-HTTP-002",
+      "domain": "transport",
+      "objective": "HTTP consent exact address, redirects, first party resources and ws",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-HTTP-003",
+      "domain": "transport",
+      "objective": "temporary context isolation, revoke and stale state",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PNA-001",
+      "domain": "network",
+      "objective": "IPv4 IPv6 localhost private ranges, redirects and CNAME",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-PNA-002",
+      "domain": "network",
+      "objective": "DNS rebinding and local network restriction across redirects",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-NET-001",
+      "domain": "network",
+      "objective": "ad versus tracker rule classification and fail-closed filters",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-NET-002",
+      "domain": "network",
+      "objective": "payment authentication CDN CAPTCHA breakage regression",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-NET-003",
+      "domain": "network",
+      "objective": "origin-scoped exceptions cross-tab owner lifetime and concurrency",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-NET-004",
+      "domain": "network",
+      "objective": "rejected navigation cannot silently change tracker exception ownership",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-NET-005",
+      "domain": "network",
+      "objective": "no false tab-specific attribution for profile wide observations",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SBX-001",
+      "domain": "sandbox",
+      "objective": "Chromium sandbox flags renderer isolation process tree",
+      "method": "runtime",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SBX-002",
+      "domain": "sandbox",
+      "objective": "cookies storage private/profile boundaries and crash recovery",
+      "method": "integration",
+      "tier": "P0",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SBX-003",
+      "domain": "sandbox",
+      "objective": "clipboard filesystem download and OS process boundaries",
+      "method": "integration",
+      "tier": "P0",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-INPUT-001",
+      "domain": "input",
+      "objective": "URL parsing scheme credentials IDN malformed unicode and long input",
+      "method": "fuzz",
+      "tier": "P1",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-INPUT-002",
+      "domain": "input",
+      "objective": "navigation guard spoofed origin, redirect chain and homographs",
+      "method": "fuzz",
+      "tier": "P1",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-INPUT-003",
+      "domain": "input",
+      "objective": "safe PDF/download path traversal execution and filename sanitization",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-RULE-001",
+      "domain": "rules",
+      "objective": "rule list non-executable data integrity update rollback",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-CLOUD-001",
+      "domain": "cloud",
+      "objective": "provider override inherits and unknown identifiers fail closed",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-CLOUD-002",
+      "domain": "cloud",
+      "objective": "no background requests from new tab before explicit click",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-CLOUD-003",
+      "domain": "cloud",
+      "objective": "Nextcloud URL sanitation custom path and no elevated privilege",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-CLOUD-004",
+      "domain": "cloud",
+      "objective": "real login 2FA and file workflows on each vendor WebEngine",
+      "method": "manual",
+      "tier": "P1",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-CLOUD-005",
+      "domain": "cloud",
+      "objective": "prohibit extensions third-party CLI and privileged plugin execution",
+      "method": "static",
+      "tier": "P1",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-UI-001",
+      "domain": "ui",
+      "objective": "eleven visible capability controls responsive FR RU keyboard focus",
+      "method": "ui",
+      "tier": "P1",
+      "candidateSuite": "surface",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-UI-002",
+      "domain": "ui",
+      "objective": "hover card event and effective policy not misleading",
+      "method": "ui",
+      "tier": "P1",
+      "candidateSuite": "surface",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-UI-003",
+      "domain": "ui",
+      "objective": "Cloud Glass popup dismissal and keyboard accessibility",
+      "method": "ui",
+      "tier": "P1",
+      "candidateSuite": "surface",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-UPD-001",
+      "domain": "supply-chain",
+      "objective": "version pinned Qt Chromium patch cadence and CVE triage",
+      "method": "manual",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-UPD-002",
+      "domain": "supply-chain",
+      "objective": "SBOM signed releases provenance dependencies licenses",
+      "method": "manual",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-UPD-003",
+      "domain": "supply-chain",
+      "objective": "update integrity rollback and installer verification",
+      "method": "manual",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-LOG-001",
+      "domain": "telemetry",
+      "objective": "no credentials cookies tokens or document content in logs",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-LOG-002",
+      "domain": "telemetry",
+      "objective": "diagnostics cannot leak browsing history without opt in",
+      "method": "manual",
+      "tier": "P1",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-FAIL-001",
+      "domain": "resilience",
+      "objective": "unexpected shutdown disk full interrupted download and low memory",
+      "method": "integration",
+      "tier": "P1",
+      "candidateSuite": "smoke",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-FAIL-002",
+      "domain": "resilience",
+      "objective": "randomized stress 100 tabs and high rate permission requests",
+      "method": "stress",
+      "tier": "P1",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-FUZZ-001",
+      "domain": "fuzz",
+      "objective": "fuzz policy URL and origin normalization parsers",
+      "method": "fuzz",
+      "tier": "P1",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-FUZZ-002",
+      "domain": "fuzz",
+      "objective": "fuzz cloud QSettings JSON and provider catalog input",
+      "method": "fuzz",
+      "tier": "P1",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-OWASP-001",
+      "domain": "standard",
+      "objective": "triage every pinned ASVS requirement with evidence or reviewed N/A",
+      "method": "inventory",
+      "tier": "P0",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-OWASP-002",
+      "domain": "standard",
+      "objective": "triage every pinned WSTG scenario with evidence or reviewed N/A",
+      "method": "inventory",
+      "tier": "P0",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-OWASP-003",
+      "domain": "standard",
+      "objective": "review OWASP Top Ten 2025 all 10 risk categories and exceptions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-OWASP-004",
+      "domain": "standard",
+      "objective": "review OWASP SCVS supply chain controls and SAMM maturity",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A01",
+      "domain": "owasp-top10",
+      "objective": "Review Broken Access Control against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A02",
+      "domain": "owasp-top10",
+      "objective": "Review Security Misconfiguration against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A03",
+      "domain": "owasp-top10",
+      "objective": "Review Software Supply Chain Failures against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A04",
+      "domain": "owasp-top10",
+      "objective": "Review Cryptographic Failures against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A05",
+      "domain": "owasp-top10",
+      "objective": "Review Injection against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A06",
+      "domain": "owasp-top10",
+      "objective": "Review Insecure Design against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A07",
+      "domain": "owasp-top10",
+      "objective": "Review Authentication Failures against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A08",
+      "domain": "owasp-top10",
+      "objective": "Review Software or Data Integrity Failures against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A09",
+      "domain": "owasp-top10",
+      "objective": "Review Security Logging & Alerting Failures against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-TOP10-2025-A10",
+      "domain": "owasp-top10",
+      "objective": "Review Mishandling of Exceptional Conditions against desktop browser trust boundaries, negative tests and corrective actions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SCVS-001",
+      "domain": "owasp-scvs",
+      "objective": "SCVS-aligned manual and automated review: SBOM and dependencies",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SCVS-002",
+      "domain": "owasp-scvs",
+      "objective": "SCVS-aligned manual and automated review: licenses and vulnerable Qt/Chromium",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SCVS-003",
+      "domain": "owasp-scvs",
+      "objective": "SCVS-aligned manual and automated review: build provenance and artifact authenticity",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SCVS-004",
+      "domain": "owasp-scvs",
+      "objective": "SCVS-aligned manual and automated review: third-party executable restrictions",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SCVS-005",
+      "domain": "owasp-scvs",
+      "objective": "SCVS-aligned manual and automated review: signing, update chain and rollback",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SAMM-GOV",
+      "domain": "owasp-samm",
+      "objective": "SAMM-aligned process maturity evidence for Governance",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SAMM-DSN",
+      "domain": "owasp-samm",
+      "objective": "SAMM-aligned process maturity evidence for Design",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SAMM-IMP",
+      "domain": "owasp-samm",
+      "objective": "SAMM-aligned process maturity evidence for Implementation",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SAMM-VER",
+      "domain": "owasp-samm",
+      "objective": "SAMM-aligned process maturity evidence for Verification",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-SAMM-OPS",
+      "domain": "owasp-samm",
+      "objective": "SAMM-aligned process maturity evidence for Operations",
+      "method": "review",
+      "tier": "P0",
+      "candidateSuite": "manual",
+      "status": "planned"
+    }
+  ]
+}

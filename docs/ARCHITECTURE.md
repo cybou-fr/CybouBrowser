@@ -1,5 +1,7 @@
 # CYBOU — архитектура Observable Browsing
 
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+
 Текущий код C++20 / Qt 6 WebEngine / Qt Quick QML. **Расположение Control Bar описано только в [CONTROL_BAR_UX](CONTROL_BAR_UX.md);** здесь — потоки данных и границы возможностей.
 
 ## Permission pipeline
@@ -24,11 +26,11 @@ Pending request принадлежит coordinator; `QWebEnginePermission` не 
 
 Новый сторонний executable, background helper или динамическая библиотека не добавляется ради удобства без прямого продуктового решения и review происхождения, версии, лицензии, sandbox, patch cadence и альтернатив в имеющемся стеке. Сам Qt WebEngine/Chromium остаётся необходимой отдельно контролируемой внешней зависимостью. JavaScript сайтов не переносить в привилегированный browser-owned контекст. Детальный нормативный контракт: [ADR 0006](ADR/0006-no-third-party-extensions.md).
 
-## Будущий каталог облачных сервисов (решение принято; кода пока нет)
+## Каталог облачных сервисов (реализован первоначальный C++/QML; release-совместимость не проверена)
 
 Cloud services — **provider-neutral catalogue**, устроенный как независимая от `searchEngine` пользовательская настройка. Значение по умолчанию `proton`, равноправные `google`, `microsoft`, `infomaniak`, `zoho`, `nextcloud`, отключение `none`; Apple iCloud и file-only сервисы — следующий этап. **Уже в V1** требуются `CloudProviderPreferences.defaultProvider` и `roleOverrides[role]` со значениями inherit/provider/disabled, версионирование настройки и resolver итоговых ролей. Explicit overrides сохраняются при смене default; сбрасываются только явной командой. Проектируемые `CloudProviderCatalog` и `CloudProviderPreferences` — **часть нашего C++/QML** со статическими неисполняемыми descriptors официальных HTTPS-веб-приложений. `NewTabPage.qml` показывает справа сверху Mail (effective provider) и 3×3 launcher; интерактивная стеклянная панель раскрывается вниз и показывает реальный набор. Существующая центральная Alpine Dawn card и Control Bar неизменны.
 
-Нет browser extensions, injected scripts, companion CLI, облачного proxy и доступа к токенам пользователя. Выбор не меняет поисковик, сеть/permissions, cookies или существующие вкладки. Для собственного Nextcloud — явно указанный пользователем HTTPS origin и проверка схемы. Это **план реализации, не описание существующего API**. Полный контракт: [ADR 0007](ADR/0007-selectable-cloud-services.md), запрет стороннего кода: [ADR 0006](ADR/0006-no-third-party-extensions.md).
+Нет browser extensions, injected scripts, companion CLI, облачного proxy и доступа к токенам пользователя. Выбор не меняет поисковик, сеть/permissions, cookies или существующие вкладки. Для собственного Nextcloud — явно указанный пользователем HTTPS origin и проверка схемы. Это **продуктовый контракт**: реализация cloud catalog/settings/launcher уже существует в исходниках, но поставщики, авторизация и границы безопасности ещё требуют систематической проверки перед релизом. Полный контракт: [ADR 0007](ADR/0007-selectable-cloud-services.md), запрет стороннего кода: [ADR 0006](ADR/0006-no-third-party-extensions.md).
 
 ## Будущие компоненты — ещё не implemented
 

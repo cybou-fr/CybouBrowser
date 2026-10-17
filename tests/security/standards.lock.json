@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "asvs": {
+    "version": "5.0.0",
+    "source": "https://github.com/OWASP/ASVS/releases/tag/v5.0.0",
+    "format": "official CSV",
+    "sha256": null
+  },
+  "wstg": {
+    "version": "4.2",
+    "source": "https://wstg.owasp.org/v4.2/",
+    "format": "canonical WSTG-v42 test ID index, one per line",
+    "sha256": null
+  },
+  "top10": {
+    "version": "2025",
+    "source": "https://top10.owasp.org/2025/"
+  },
+  "scvs": {
+    "version": "1.0",
+    "source": "https://scvs.owasp.org/"
+  },
+  "samm": {
+    "version": "2",
+    "source": "https://owasp.org/www-project-samm/"
+  }
+}

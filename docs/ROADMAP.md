@@ -1,57 +1,55 @@
-# CYBOU Browser — roadmap и проверяемый статус
+# CYBOU Browser — roadmap to 1.0.0 (gated)
 
-**Срез кода:** `main`, изменения `51559ca` (Control Bar и surfaces) и `9f7b698` (tracker exception), 17.10.2026. Позднейшие изменения документации не равны изменениям кода.
+**Declared current source:** `0.3.0-alpha.1` · **stage: engineering alpha / architecture and product contour**. It is **not** 0.8/0.9 and not a security-qualified beta. The old "0.8" was an informal UI-design milestone; it did not pass a full browser-security release gate. See [VERSIONING](VERSIONING.md) and accepted [ADR 0008](ADR/0008-evidence-driven-versioning.md).
 
-**Статусы:** **implemented** — существует код; **tested (recorded)** — ранее сохранён результат локального теста; **unverified** — не подтверждено на реальных сценариях; **planned** — ещё нет реализации. Детали и журналы — в [VALIDATION](VALIDATION.md).
+**Rule:** version is a *gate outcome*, not feature-completion percentage. `implemented` = code exists; `historically tested` = previous local log; `candidate verified` = evidence on exact SHA and binary; `blocked` = proof missing/failed. There is no current-candidate OWASP full-coverage PASS. Historical results remain in [VALIDATION](VALIDATION.md).
 
-## Реализовано в текущем коде
+## Current engineering baseline (not production assurance)
 
-| Возможность | Статус и границы |
-| --- | --- |
-| **Control Bar** | **implemented, tested (recorded):** 11 иконок в одной навигационной строке, адрес занимает остаток ширины, hover открывает интерактивные стеклянные карточки; test harness на четырёх размерах при DPR 1 |
-| **Browser surfaces** | **implemented, tested (recorded):** отдельные GlassToolTip для навигации, drawers под шапкой, управление вкладками и окном |
-| **Чувствительные permissions & Iframe матрица (S0.1)** | **implemented, tested (recorded):** C++ `PermissionCoordinator`, единый `EffectivePermissionPolicy`, request ID, `SiteContext`, fail-closed ожидание, независимые leases, `AskEveryTime`; FIFO-очередь запросов (`MaxQueuedRequests = 16`) с приоритетом активной вкладки и атомарной отменой (`revokeAll`/`forgetView`/`documentLoaded`); расширенная интеграционная матрица cross-origin iframe (каскадный top-deny, изолированный requester-deny, составные разрешения, UI-различение с кнопкой «Bloquer le cadre») |
-| **Мягкий отзыв media (S0.2)** | **implemented, tested (recorded):** отзыв прав на медиа (`PermissionCoordinator::revokeLease`) прекращает захват потоков без уничтожения документа, обрыва активных звонков и перезагрузки вкладки |
-| **Transport** | **implemented, tested (recorded):** production HTTPS strict; exact-address HTTP consent в отдельном off-the-record профиле, последующее завершение/отзыв без наследования обычных cookies |
-| **RuleEngine и независимые Ads / Trackers (S1.1 + S1.2)** | **implemented, tested (recorded):** типизированный версионированный `RuleEngine` с классификацией Ad vs Tracker, иммунитет к false-positive (критические CDN, платежи Stripe/PayPal, SSO-авторизация, CAPTCHA); независимые временные исключения для рекламы и трекеров на уровне origin в `TrackerExceptionRegistry` и карточке Network |
-| **ActivityAggregator и семантика цветов (S1.3)** | **implemented, tested (recorded):** строгое разделение `EffectivePolicy` и `ObservedEvent`, правдивый скоуп (tab vs profile), разграничение индикаторов активности от постоянных разрешений |
-| **Navigation Guard и PNA (S2.1)** | **implemented, tested (recorded):** блокировка обращений публичных страниц в локальную сеть/localhost (Private Network Access / RFC 1918) и детекция IDN-гомографических атак в `NavigationGuard` |
-| **Restricted Browsing (S2.2)** | **implemented, tested (recorded):** запуск подозрительных сайтов (IDN-гомографы, опасные сетевые порты) в защищённом режиме: JS-off до загрузки документа, автозапрет sensitive permissions, отключение localStorage и popups, предупреждающий баннер безопасности с кнопками безопасного выхода и явного включения JS |
-| **Cloud Services (ADR 0007 / Cloud Glass 2.0)** | **implemented, tested (recorded):** выбираемая облачная экосистема (Proton, Google, Microsoft, Infomaniak, Zoho, Nextcloud, Apple iCloud), расширенный каталог экосистемы (Proton Pass, Lumo AI, Proton Wallet, Proton VPN portal, Google Keep, OneNote, To Do), FrostedGlassSurface с динамическим размытием обоев Alpine Dawn, 13 векторных SVG-иконок без сетевых запросов, 3-колоночный скроллируемый лаунчер без вложенных рамок и мешающих тултипов, Nextcloud self-hosted с валидацией HTTPS, строгая валидация и восстановление настроек |
-| **Network events** | **implemented:** ограниченная очередь, sanitized origin, blocked reason и type, только scope профиля; нет проверенного per-tab attribution |
-| **Windows** | **tested (recorded):** C++20 Release, Qt 6.12/MSVC, security/controlbar/surface/transport suites; Linux/macOS и release qualification остаются unverified |
+| Area | Code exists | Not yet demonstrated at release level |
+| --- | --- | --- |
+| Browser UX | Alpine Dawn, tabs, history/bookmarks/downloads, QML glass, permanent 11-icon Control Bar | Accessibility and DPI complete matrix, crash/recovery, clean packaging |
+| Permissions | Native PermissionCoordinator, queue and origin/frame policies, revoke code and historical fixtures | Full OWASP mapping, real camera/mic/screen hardware and adversarial frame chains |
+| Network / transport | HTTPS policy, temporary HTTP context, request interception, ad/tracker rules and exceptions, NavigationGuard | Comprehensive redirect/DNS/WebRTC leaks, race/fuzz tests, per-platform sandbox proof |
+| Cloud | Local C++ catalog / selectable provider and role, FrostedGlassSurface and launcher, Proton default | Real login/2FA/media/SSO compatibility, cloud URL reviews, security regression and no-prefetch proof |
+| Threat-driven security | Some native and smoke tests have recorded PASS | Entire pinned ASVS 5.0.0 / WSTG 4.2 inventory, SCVS/SAMM review, fuzz corpus, external pentest |
+| Distribution | Windows MSVC local build recorded historically | Signed installer/update/rollback, SBOM, reproducibility, verified Chromium security-patch cadence |
 
-## Постоянное архитектурное ограничение — ПРИНЯТО
+No third-party extension runtime or packaged unsolicited external executables (ADR 0006). Provider branding never grants privileges (ADR 0007).
 
-**Никаких сторонних расширений.** Отсутствие Chrome/WebExtensions/CRX, магазина, side-loading и privileged third-party userscripts — принципиальная спецификация продукта, а не незавершённая функция. Сильные возможности популярных расширений можно изучать и реализовывать собственным C++/Qt/QML-кодом. Партнёрства (в том числе Proton) не дают исключений. Внешние executables, CLI и фоновые компоненты минимизируются, а обязательные Qt/Chromium зависимости учитываются и поддерживаются. Нормативное решение: [ADR 0006](ADR/0006-no-third-party-extensions.md).
+## Milestones and exit gates
 
-**Release gate (план проверки):** инвентаризация исполняемых зависимостей и подтверждение отсутствия extension loader/store/install/update, privileged userscripts и внешних executable helpers в обязательной поставке. Пока не отмечено `tested`.
+| Target | Required deliverables | Mandatory evidence before promotion |
+| --- | --- | --- |
+| **0.3.0-alpha.1 — CURRENT** | Product/UI architecture and built-in controls; basic tests, unqualified alpha | Version labels aligned; disclose gaps; do not claim secure |
+| **0.4.0-alpha.N — Security Engineering Foundation** | OWASP 5.0.0 ASVS official CSV and WSTG 4.2 IDs pinned, **every item triaged**; STRIDE-like browser threat model; repeatable offline gate; per-case ownership; fixture architecture | 100% applicability accounting, approved N/A, raw baseline logs on exact SHA, failing gates for missing evidence |
+| **0.5.0-alpha.N — Security & Function Hardening** | Fix unsafe/unsupported logic: permissions/frame navigation, real revoke, HTTPS/cert errors, DNS rebinding/PNA, network RuleEngine, origin-scoped exceptions, profile & sandbox; fuzzers; safe cloud routes | Real negative + metamorphic + fuzz tests, hardware and OS integration, no open unreviewed critical/high |
+| **0.6.0-beta.N — Product Qualification** | Freeze Windows 1.0 features, complete UX/cloud path, polish accessibility and localization, restore/history/downloads, resource usage, upgrade/downgrade and crashes | Stable multi-resolution and hardware tests; extended soak; documented cross-app compatibility; real package smoke |
+| **1.0.0-rc.N — Candidate / audit** | Security fixes only; signed Windows artifact, SBOM/provenance, updater/rollback, operational response; independent penetration test | Exact SHA/hash, **every applicable pinned ASVS/WSTG mapped to current PASS**, OWASP Top 10 / SCVS / SAMM reviews, no critical/high, go/no-go signed |
+| **1.0.0 — first supported release** | Production Windows x64 version, documented guarantees and limits, update channel | Candidate artifacts unchanged or fully revalidated; all [RELEASE_CRITERIA](RELEASE_CRITERIA.md) GO |
 
-## Cloud Services — РЕАЛИЗОВАНО И ПРОВЕРЕНО (ADR 0007 / Cloud Glass 2.0)
+No dates invented. There is **no need for `0.8` or `0.9` on this path**. There may be multiple alpha/beta/rc patches; milestone changes are earned by gates, not by merging a feature.
+
+## Cloud Services & UI Baseline (ADR 0007 / Cloud Glass 2.0)
 
 **Режим выбираемой облачной экосистемы и Cloud Glass 2.0** — выбор общего провайдера (`proton` по умолчанию, Google Workspace, Microsoft 365, Infomaniak, Zoho, Nextcloud Hub, Apple iCloud; `none` для выключения), независимая настройка для каждой из 7 ролей (Mail, Calendar, Files, Docs, Sheets, Presentations, Meetings), а также полноценная поддержка расширенных веб-сервисов экосистемы:
 - **Proton:** Proton Mail, Proton Calendar, Proton Drive, Proton Docs, Proton Sheets, Proton Meet, а также отдельные веб-приложения: Proton Pass (`pass.proton.me`), Lumo AI (`lumo.proton.me`), Proton Wallet (`wallet.proton.me`), портал Proton VPN (`account.proton.me/u/0/vpn`) и информация об Authenticator (`proton.me/pass/authenticator`).
 - **Google & Microsoft:** поддержка Google Keep, Microsoft To Do и OneNote без конфликта с ролями.
 - **Cloud Glass 2.0 & New Tab Restyle:** устранение ореола/артефакта размытия вокруг попапа `CloudAppLauncher.qml` (переход на чистый Dark Glass контейнер с аппаратной тенью), полный редизайн центрального интерфейса `NewTabPage.qml`: удаление громоздкой закрывающей горы панели-билборда, замена на парящее стеклянное поле ввода поискового запроса (`TextField` с окантовкой, бликом и лупой) и компактные стеклянные pill-кнопки («Favoris», «Historique»), 13 локальных векторных SVG-иконок (`assets/cloud/`).
 - **Self-hosted Nextcloud:** требование предварительной настройки (`requiresConfiguration`), проверка персонального HTTPS base URL и санитизация адреса.
-- **Безопасность запуска:** C++ валидация URL (`resolveAppUrl`) и верификация хостов (`isVerifiedServiceUrl`). Статус: **implemented, tested (recorded)**.
+- **Безопасность запуска:** C++ валидация URL (`resolveAppUrl`) и верификация хостов (`isVerifiedServiceUrl`). Статус: **implemented, historically tested**.
 
-## Далее — приоритетный порядок
+## Workstreams (priority order)
 
-| ID | Приоритет | Задача | Статус | Критерий приёмки |
-| --- | --- | --- | --- | --- |
-| S0.1 | P0 | Одинаковое применение explicit deny к top origin и вложенным requester iframe (`ControlBarController::shouldDenyOrigin`) | **implemented, tested** | Двухoriginные fixtures, stale ID/tab/profile/epoch тесты |
-| S0.2 | P0 | Достоверный и пригодный для звонков отзыв media без разрушения документа (`PermissionCoordinator::revokeLease`) | **implemented, tested** | Прекращение media track без reload/crash документа, сохранение остальных leases |
-| S0.3 | P0 | Поддерживаемый патченный Qt/Chromium, sandbox/release flags и безопасная доставка обновлений | **planned** | Runtime-проверка, регрессия и проверка обновлений |
-| S1.1 | P1 | Версионированный ad/tracker RuleEngine с проверкой целостности и false positives | **implemented, tested** | Разделение категорий Ad vs Tracker, иммунитет к CDN/платежам/SSO/CAPTCHA |
-| S1.2 | P1 | Независимые временные Ads / Trackers политики **в Network hover-карточке** | **implemented, tested** | Раздельные действия для Ads и Trackers, безопасный Undo, привязка к вкладке и origin |
-| S1.3 | P1 | Семантика policy/event и `ActivityAggregator` с правдивым scope | **implemented, tested** | Default != blocked event; grant != recording; profile != tab |
-| S2.1 | P2 | Локальный Navigation Guard: IDN/redirect/private-network (PNA) | **implemented, tested** | Блокировка публичных запросов в LAN, детекция гомографов |
-| S2.2 | P2 | Restricted Browsing: JS-off до документа и проверяемые ограничения | **implemented, tested** | Before-load tests, корректный отказ и выход |
-| S3 | research | Process/proxy isolation | **research** | DNS/WebRTC/route leak tests; никакого рекламного обещания заранее |
+1. **W0 / P0 — Test framework and reproducible baseline:** run `tools/security/owasp_gate.py` offline; pin ASVS/WSTG official inventories; build complete applicability map. Make status BLOCKED until test IDs, owners, logs and exact candidate hashes are present. [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+2. **W1 / P0 — Renderer/browser threat boundaries:** top/requester origin, stale and concurrent permission IDs, revoke actually stops capture; frame sandbox and process isolation, Chromium/Qt release flags, WebRTC/DNS/IPv6/PNA negative testing, TLS errors, downloads.
+3. **W2 / P0 — Supply chain:** inventory Qt/Chromium DLLs, patch policy, SBOM, component signatures, no extension loaders, safe installer/update, rollback and CVE response.
+4. **W3 / P1 — Functional completeness:** real cloud provider compatibility without privilege, camera/mic/Meet support, accurate ad/tracker rules, sessions, file handling, many-tabs stability and historical data migrations.
+5. **W4 / P1 — Consistent UX:** 11 controls always visible, Dark Glass cloud launcher, FR/RU, keyboard a11y, no misleading policy/event labels, all prescribed viewport/DPR checks.
+6. **W5 / P0 — Release audit:** external adversarial review, remediation retest and exact-candidate evidence, strict GO/NO-GO.
 
-## Правила внесения изменений
+## Process rules
 
-Все изменения прямо в `main`, **без веток**, после локальных тестов. GitHub Actions пока не является обязательным условием. Никакого редизайна Control Bar, Always Allow, глобального opt-out из карточки сайта или фальшивых событий. Старые интеграционные планы — исторический материал и не переопределяют [PRODUCT_VISION](PRODUCT_VISION.md) и [CONTROL_BAR_UX](CONTROL_BAR_UX.md).
+Everything is committed to **`main` only**, no branches (owner decision). Before editing verify current HEAD; preserve parallel agents' work. Work locally without relying on GitHub Actions until available. Never promote based solely on code review or an old local test claim. Run linked suites after any relevant change, full runner and formal OWASP coverage/release gate for stage promotions. No automatic exceptions for Proton, Google or Microsoft and no imported third-party extension code.
 
-**Детальный план реализации:** [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md). **Проверки:** [TEST_PLAN](TEST_PLAN.md).
+**Authoritative links:** [DOCUMENTATION_INDEX](DOCUMENTATION_INDEX.md), [TEST_PLAN](TEST_PLAN.md), [THREAT_MODEL](THREAT_MODEL.md), [RELEASE_CRITERIA](RELEASE_CRITERIA.md), [VALIDATION](VALIDATION.md). Prior S0/S1/S2 labels denote feature tickets and historical attempts, **not maturity percentages or proof of release safety**.

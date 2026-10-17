@@ -1,3 +1,5 @@
+> **HISTORICAL DESIGN / AGENT SOURCE — NOT CURRENT RELEASE STATUS.** CYBOU now declares **0.3.0-alpha.1** (unqualified alpha). Any "0.7", "0.8", tested or implemented statements below concern their dated snapshot and do not override [VERSIONING](../VERSIONING.md), [ROADMAP](../ROADMAP.md) or [SECURITY_VERIFICATION_FRAMEWORK](../SECURITY_VERIFICATION_FRAMEWORK.md).
+
 # START — CYBOU Browser visual UI 0.8
 
 Репозиторий: https://github.com/cybou-fr/CybouBrowser (`main`). Последний проверенный SHA: `3d3922a592124feda0c5029df70fbbf377253e01`, версия 0.7.1. До правок проверь свежий HEAD.

@@ -1,5 +1,7 @@
 # CYBOU — контракт возможностей панели
 
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+
 Этот документ описывает **то, что реально поддерживается**, а не план релиза. Расположение и взаимодействия определяет [CONTROL_BAR_UX](CONTROL_BAR_UX.md); новая безопасность и UX — [ROADMAP](ROADMAP.md).
 
 **Запрещённая поверхность:** CYBOU не предоставляет сторонним пакетам extension API, установку/загрузку/side-loading браузерных расширений или privileged userscript execution. Функции из успешных расширений допускаются только как собственные возможности браузера. См. [ADR 0006](ADR/0006-no-third-party-extensions.md).

@@ -1,3 +1,5 @@
+> **Versioning notice (2026-10-17):** CYBOU currently declares **0.3.0-alpha.1** (engineering alpha, not release-qualified). This ADR records its scoped product decision; any historical test-status claim is not current-candidate security evidence. [Version policy](../VERSIONING.md) · [OWASP verification](../SECURITY_VERIFICATION_FRAMEWORK.md).
+
 # ADR 0003 — strict HTTPS и временный HTTP-контекст
 
 **Статус:** реализованная модель исключения для конкретной навигации.

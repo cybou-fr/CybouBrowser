@@ -19,13 +19,19 @@
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-<p align="center"><sub>Development preview · v0.8.0</sub></p>
+<p align="center"><sub>Engineering alpha · v0.3.0-alpha.1 · NOT RELEASE QUALIFIED</sub></p>
 
 ---
 
 ![CYBOU Browser running its Alpine Dawn default new-tab page](docs/design/cybou-08-alpine-dawn.png)
 
-<p align="center"><sub>Actual CYBOU 0.8 start-page capture from the repository — the Alpine Dawn default page, with the inline capability controls in the browser navigation row.</sub></p>
+<p align="center"><sub>Historical Alpine Dawn UI capture, previously labelled 0.8 — a visual milestone, not evidence of a production-qualified v1.0 release.</sub></p>
+
+## Current release maturity and security evidence
+
+**Declared source: `0.3.0-alpha.1` (engineering alpha).** Earlier 0.7/0.8 labels were design/prototype milestones, not security-qualified product releases. CYBOU has implemented capabilities and historical local PASS records, but its **complete OWASP verification, browser sandbox evidence, device tests, updater/signing and independent audit are unfinished**. Do not describe the browser as externally audited or production-secure.
+
+The first supported version will be **1.0.0 on Windows x64**, only after all evidence-driven gates pass. [Version policy](docs/VERSIONING.md) · [Gated roadmap](docs/ROADMAP.md) · [Security verification framework](docs/SECURITY_VERIFICATION_FRAMEWORK.md) · [Release criteria](docs/RELEASE_CRITERIA.md) · [Documentation index](docs/DOCUMENTATION_INDEX.md).
 
 ## A browser built around what pages **do**
 
@@ -55,11 +61,11 @@ CYBOU **does not support third-party browser extensions**, including signed, par
 
 Qt/Chromium and necessary OS libraries remain external dependencies and require security updates; websites still execute untrusted JavaScript within WebEngine's web-content boundary. Nonessential third-party executable helpers or companion CLIs are not bundled by default. Partnerships cannot waive this rule. [Binding architecture decision](docs/ADR/0006-no-third-party-extensions.md).
 
-## Cloud services: provider choice (planned)
+## Cloud services: current prototype, compatibility under verification
 
-CYBOU will offer a **Cloud Services** selector similar to the existing search-provider selector, with **Proton selected by default** for new preferences, and **Google Workspace, Microsoft 365 / Office 365, Infomaniak kSuite, Zoho Workplace and Nextcloud Hub** available on equal terms. Apple iCloud and specialist file-storage services are candidates for a later catalogue release. The user can also disable cloud shortcuts.
+CYBOU now has the **first C++/QML implementation of a Cloud Services** selector similar to the existing search-provider selector, with **Proton selected by default** for new preferences, and **Google Workspace, Microsoft 365 / Office 365, Infomaniak kSuite, Zoho Workplace and Nextcloud Hub** available on equal terms. Apple iCloud and specialist file-storage services are candidates for a later catalogue release. The user can also disable cloud shortcuts.
 
-**Every Alpine Dawn new tab will have a Mail text link and a nine-dot (3×3) app launcher at its top right.** Clicking the launcher opens a downward Dark Glass popup with the user's **effective mixed set of cloud apps**. The user chooses both a default cloud suite and independently the provider for Mail, Files, Calendar, Docs, Sheets, Presentations and Meetings. Overrides persist when changing the default and can be reset explicitly. The central Alpine Dawn card and the eleven-icon navigation Control Bar remain unchanged. These are **ordinary HTTPS sites**, not browser extensions or native companion executables. Changing the cloud provider never changes the search engine, browser security policy, existing tabs, cookies or session. No site obtains extra privileges from a commercial partnership. **This selector has not yet been implemented.** See [ADR 0007](docs/ADR/0007-selectable-cloud-services.md).
+**Every Alpine Dawn new tab will have a Mail text link and a nine-dot (3×3) app launcher at its top right.** Clicking the launcher opens a downward Dark Glass popup with the user's **effective mixed set of cloud apps**. The user chooses both a default cloud suite and independently the provider for Mail, Files, Calendar, Docs, Sheets, Presentations and Meetings. Overrides persist when changing the default and can be reset explicitly. The central Alpine Dawn card and the eleven-icon navigation Control Bar remain unchanged. These are **ordinary HTTPS sites**, not browser extensions or native companion executables. Changing the cloud provider never changes the search engine, browser security policy, existing tabs, cookies or session. No site obtains extra privileges from a commercial partnership. **The selector and launcher exist in code, but complete provider compatibility and release-level security validation are still pending.** See [ADR 0007](docs/ADR/0007-selectable-cloud-services.md).
 
 ## Your page, your controls
 
@@ -95,7 +101,7 @@ A request's top-level site and actual requesting origin may differ (for example,
 | Area | Shipped in the code | Planned / unverified |
 | --- | --- | --- |
 | **Encrypted transport** | Production HTTPS strict; exact HTTP consent in a separate off-the-record profile. Legacy global opt-outs removed; certificate errors rejected. | Real-world transport compatibility and OS suspend/resume checks. |
-| **Tracker filtering** | A small in-memory list of known advertising and analytics host suffixes blocks selected third-party requests. | Comprehensive, versioned ad/tracker rules and verified category separation. |
+| **Tracker filtering** | A native versioned RuleEngine and ad/tracker controls exist in code; past fixture tests are recorded. | Broader real-world rule coverage, regression against false positives, updated rules and verified release security. |
 | **Observable traffic** | Bounded, sanitized metadata with origin, resource type, timestamp, blocked outcome, and reason. | Guaranteed per-tab attribution and visibility into all page/JavaScript activity. |
 | **Permission restrictions** | Native C++ coordinator, request identity checks, fail-closed pending timeout and document-scoped grants. | Proven hardware capture-stop behavior on real devices. |
 | **Risk-adaptive mode** | Conservative WebEngine content policies and the transport/request interceptor. | Evidence-based risk engine and JS-off applied before suspicious content loads. |
@@ -112,7 +118,7 @@ An unfamiliar website is not automatically malicious. CYBOU must base stronger r
 
 Production HTTPS strict is always enabled; legacy global opt-outs and host-wide fallback are removed. After a blocked HTTP attempt or failed known HTTPS upgrade, the Network panel offers explicit access to that exact address. Consent creates a separate off-the-record profile without normal cookies/cache for this document. One exact main-frame URL and same-origin HTTP resources with matching firstParty are allowed. Other HTTP origins and ws remain blocked. Reload, later navigation, tab closure and manual revoke end the temporary view/profile; HTTP requires fresh consent. Page-controlled navigation is never automatically replayed with normal cookies. This separates profile data, not processes or proxy routes.
 
-The static tracker suffix list is a limited network filter. Risk-adaptive restrictions and verified proxy isolation remain planned. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
+A typed local RuleEngine exists, but real-world coverage and fail-open/fail-closed edge cases still require comprehensive validation. Restricted Browsing exists in code; verified proxy/process isolation remains unproven. See [validation](docs/VALIDATION.md) for native HTTP, permission lifecycle and hover-panel evidence.
 
 The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
 
@@ -126,7 +132,7 @@ If filtering breaks a loaded HTTPS page, explicit consent grants a temporary tra
 
 The **single-row eleven-icon Control Bar and interactive glass hover panels remain unchanged**. The next priorities are iframe deny inheritance, a reliable media-permission lifecycle without silent page loss, WebEngine patch/sandbox discipline, full ad/tracker rule coverage, independent site-scoped controls, truthful activity and navigation risk checks.
 
-The existing tracker-only temporary context is implemented, but the full rule engine and independent ad/tracker category controls are **planned**. Permission grants do not prove active hardware use; profile network events are not per-tab statistics. See the [Security & UX plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
+The RuleEngine and independent ad/tracker categories are implemented in code, with historical fixture testing, but comprehensive filter and release validation remain pending. Permission grants do not prove active hardware use; profile network events are not per-tab statistics. See the [Security & UX plan](docs/SECURITY_UX_EVOLUTION.md) and [Roadmap](docs/ROADMAP.md).
 
 ## Everyday browser features
 
@@ -170,15 +176,11 @@ Linux and macOS may use their corresponding Qt kits, but builds, packaging, and 
 Use the built-in local fixtures for deterministic regression checks:
 
 ```powershell
-./build/Release/cybou.exe --tracker-test
-./build/Release/cybou.exe --transport-test
-./build/Release/cybou.exe --security-test
-./build/Release/cybou.exe --controlbar-test
-./build/Release/cybou.exe --smoke-test
-./build/Release/cybou.exe --surface-test
+python tools/security/test_owasp_gate.py
+python tools/security/owasp_gate.py --mode baseline --exe build/Release/cybou_tests.exe --out build/security-baseline.json
 ```
 
-These suites exercise policy rules, layout and interaction, and browsing workflows. The test harness also produces local screenshots. Passing a local suite is **not** equivalent to verifying permissions on real devices or auditing web-engine security. See the [Capability Audit](docs/API_CAPABILITY_MATRIX.md) and [Roadmap](docs/ROADMAP.md) for gaps.
+This local runner launches six `cybou_tests.exe` suites and records per-suite evidence. The separate OWASP release gate remains intentionally blocked until official inventories, triage, and per-case evidence are provided. These suites exercise policy rules, layout and interaction, and browsing workflows. The test harness also produces local screenshots. Passing a local suite is **not** equivalent to verifying permissions on real devices or auditing web-engine security. See the [Capability Audit](docs/API_CAPABILITY_MATRIX.md) and [Roadmap](docs/ROADMAP.md) for gaps.
 
 ## Documentation
 

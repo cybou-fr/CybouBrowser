@@ -1,69 +1,57 @@
-# CYBOU — план проверки
+# CYBOU — test plan (OWASP-indexed and browser-specific)
 
-**Правило:** статус PASS только после фактического запуска с сохранённым результатом. Этот документ описывает проверки, а не объявляет их пройденными. Ранее полученные результаты — в [VALIDATION](VALIDATION.md).
+**Current product `0.3.0-alpha.1`: NOT RELEASE QUALIFIED.** Native smoke suites exist, but full OWASP enumeration and actual independent security verification remain unfinished. This document defines **tests to implement and run**, not global PASS. Source of truth: [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md), [RELEASE_CRITERIA](RELEASE_CRITERIA.md), [VALIDATION](VALIDATION.md).
 
-## Локальные команды
+## Local deterministic runner
 
-Windows Release (Qt 6.12 / MSVC 2022, C++20):
+Build Windows/MSVC x64 Qt 6.12 Release, with the tests executable (`cybou_tests`), isolated profile and synthetic local fixtures. No CI dependency:
 
 ```powershell
 cmake --build build --config Release --parallel 4
-./build/Release/cybou_tests.exe --security-test
-./build/Release/cybou_tests.exe --controlbar-test
-./build/Release/cybou_tests.exe --transport-test
-./build/Release/cybou_tests.exe --tracker-test
-./build/Release/cybou_tests.exe --surface-test
-./build/Release/cybou_tests.exe --smoke-test
+python tools/security/test_owasp_gate.py
+python tools/security/owasp_gate.py --mode baseline --exe build/Release/cybou_tests.exe --out build/security-baseline.json
 ```
 
-Test organization и fixtures должны быть отделены от обычного профиля пользователя. Встроенные loopback HTTP fixtures разрешаются только тестовым запуском; production HTTPS strict сохраняется. После существенного изменения permission/view/profile lifecycle прогонять **все** смежные suites.
+The runner launches and records **six real suites**: `--security-test`, `--controlbar-test`, `--transport-test`, `--tracker-test`, `--surface-test`, `--smoke-test`. Nonzero result, missing binary and timeout fail the baseline. Logs, SHA and binary hash are preserved in JSON. One suite PASS does not mean all individual requirements PASS.
 
-## Release gate: запрет сторонних расширений (план проверки)
+**Release coverage gate**, intentionally failing now:
 
-Нормативный контракт — [ADR 0006](ADR/0006-no-third-party-extensions.md). После каждого изменения Qt WebEngine, CMake/deployment или партнёрской интеграции:
+```powershell
+python tools/security/owasp_gate.py --mode release --exe build/Release/cybou_tests.exe --asvs-csv path/to/official-ASVS-5.0.0.csv --wstg-ids path/to/complete-WSTG-v42-IDs.txt --out build/security-release.json
+```
 
-- проверить исходники и артефакты сборки на extension loader/install/update, `QWebEngineExtensionManager`, WebExtensions/CRX/Manifest packages, privileged userscript injection и неявные плагины;
-- проверить отсутствие extension store, интерфейса side-loading, фоновых extension-процессов и скачивания исполняемых дополнений из браузера;
-- проверить состав бинарной поставки: новые CLI/внешние исполняемые файлы, dynamic libraries, версии, лицензии, происхождение и необходимость; Qt/Chromium и системные зависимости учитываются отдельно;
-- проверять, что «позаимствованные» возможности реализованы нативно кодом CYBOU и не добавляют скрытых привилегий партнёрам.
+Pin SHA-256 in `tests/security/standards.lock.json`, populate `coverage.json` for every imported ASVS/WSTG ID, implement and review `cases.json` cases, attach fresh verified `evidence.json`. Unmapped, unknown, unreviewed N/A or SKIP means **release BLOCKED**, not a synthetic success. Vendor cloud sites must not be scanned without permission; test on owned fixtures plus consent-based manual interoperability.
 
-**Это критерии приёмки, а не заявление о уже выполненном аудите runtime.** Обычный web JavaScript не является разрешением установить привилегированное расширение.
+## OWASP applicability matrix (mandatory process)
 
-## Cloud Services acceptance (planned, not run)
+- [ASVS 5.0.0](https://github.com/OWASP/ASVS): every numbered requirement mapped to `applicable` with case IDs / evidence or reviewer-approved `not_applicable` with concrete desktop-browser rationale.
+- [WSTG v4.2](https://wstg.owasp.org/v4.2/): every official scenario ID treated identically. Backend SQL/database testing may be N/A for CYBOU's native app if not present, but must not be silently omitted; any local test service remains separately scoped.
+- [OWASP Top 10:2025](https://top10.owasp.org/2025/): review all A01–A10 risk families; require specific negative tests and accepted mitigations.
+- [SCVS 1.0](https://scvs.owasp.org/): SBOM, source/binary provenance, Qt/Chromium known-vulnerability handling, licenses, signing and update integrity.
+- [SAMM v2](https://owasp.org/www-project-samm/): secure SDLC policy, design, implementation, verification and operations; a maturity review is not an exploit test.
+- Additional browser-specific checks beyond OWASP web-app scope: renderer sandbox, browser privilege boundaries, media hardware, origin/frame policy, DNS/WebRTC, privacy/isolation, GUI accessibility, updates and OS integration.
 
-Нормативный [ADR 0007](ADR/0007-selectable-cloud-services.md). Для реализации проверить:
+## Required test campaigns
 
-- Proton является default при отсутствии сохранённого выбора; Google, Microsoft 365 (Office 365), Infomaniak, Zoho, Nextcloud и `none` можно выбрать из списка; настройка не меняет search engine.
-- После смены выбранного провайдера перестраиваются только будущие облачные ярлыки; существующие вкладки, история, cookies, авторизация, session restore и настройки permissions/HTTPS/tracker policy сохраняются.
-- До клика по веб-сервису браузер не делает фонового запроса к его сайту; нет auto-login, prefetch, токенов авторизации в настройках или незаметных коммерческих redirects.
-- Каждая роль Mail/Files/Calendar/Docs/Meet ведёт на правильный официальный HTTPS endpoint; отсутствующая в конкретном тарифе/сервере роль не выдаётся за доступную. Nextcloud endpoint задаётся пользователем, отклоняет не-HTTPS/credentials/опасные URL.
-- Нет сторонних расширений, companion CLI и privileged injected scripts. Провайдер не получает исключительных разрешений и может быть отключён полностью.
-- Регрессия Alpine Dawn/Control Bar: одна навигационная строка и **все 11 интерактивных значков неизменны**. Проверка FR/RU, клавиатуры, малой ширины и DPI; нормальный/приватный режим.
-- Проводить отдельные реальные проверки входа и базовых действий в поддерживаемой Qt WebEngine версии для каждой официальной веб-экосистемы; статус `PASS/FAIL/SKIP` по продукту, а не по факту отображения landing page.
+| Area | Positive + negative examples | Type |
+| --- | --- | --- |
+| Permissions/Control Bar | Top A / iframe B deny propagation, independent requester deny, stale IDs, epoch mismatch, queue cancellation/revokeAll, **actual hardware capture stop**, grant != actual recording | Native + WebEngine fixtures + hardware |
+| HTTPS/transport | TLS invalid/expired cert, strict HTTPS, single-use exception, malicious redirect/subresources, ws/wss, mixed content, private mode, credentials-in-URL | Native + controlled network |
+| Network/RuleEngine | Ads vs Trackers separation, integrity/rollback, same origin multiple tabs, exception owner destroyed, false positives login/payment/CDN/CAPTCHA | Native + stress/integration |
+| SSRF/PNA/DNS | IPv4/v6 localhost & private ranges, exotic syntax, DNS rebinding, CNAME changes, redirects, dangerous ports | Owned DNS/HTTP fixtures + fuzz |
+| Browser isolation | Private session cookie/cache/storage absence, renderer sandbox flags, process tree, download URI/file path abuse and system-exec boundaries | OS instrumentation + integration |
+| Input/injection | URL, IDN, homoglyphs, scheme, Unicode, QSettings corruption, cloud custom endpoints, browser-owned JS actions, MIME/download content | Fuzz + property tests |
+| Cloud apps | Chosen default plus overrides, no prefetch, no privileged injection/extension, correct verified service targets, genuine login/2FA/Docs/Meet compatibility | Unit + real test accounts (manual) |
+| Privacy/logging | No passwords, OAuth tokens, cookies or document bodies in logs; no secret telemetry from idle NewTab | Automated scan + manual |
+| System resilience | Dozens of tabs, network loss, time jumps, sleep/resume, OOM, disk full, crash/restart, long-call revoke, mouse/keyboard/accessibility | Soak + fault-injection |
+| Release and supply chain | Known CVEs, no extension loaders, real sandbox, provenance/signatures, rollback/update integrity, independent pentest | Static/runtime/manual |
 
-**Дополнение к Cloud Services V1:** проверить общий Proton + индивидуальный Mail=Google и Files=Microsoft (Mail ведёт в Gmail, launcher показывает OneDrive + оставшиеся Proton-приложения), выбор независимого провайдера для каждой роли, `inherit`/`disabled`, недоступные роли, переход общего провайдера без сброса overrides, явный «Применить основной ко всем», `none` как полное отключение. Проверить размещение в **правом верхнем углу NewTabPage**, кнопку 3×3, **выпадающую вниз стеклянную панель**, click/outside/Escape, выбор плитки, keyboard/focus/FR/RU/DPI/820px, отсутствие пересечения с Control Bar и сдвига центральной карточки. Это **план проверок, не пройденные тесты**.
+**UI invariant:** 11 always-visible icon slots in the original navigation row (820/1024/1360/1920), interactive glass hover, no reflow to extra row; FR/RU and 100/150/200% DPI. Cloud Glass opens from 3×3 on Alpine Dawn and cannot occlude browser-owned controls.
 
-## Функциональная регрессия
+## Evidence and privacy
 
-| Направление | Что проверять |
-| --- | --- |
-| **Control Bar** | Все 11 иконок в **одной** строке на 820×560, 1024×768, 1360×900, 1920×1080; Ctrl+L/Escape не скрывают иконки, URL заполняет остаток ширины; separator перед Downloads/Menu |
-| **Glass hover** | Наведение на Location → интерактивная карточка → переход курсора в неё → переключение на JavaScript без stale content; закрытие вне области; кнопки действуют, клик по странице доходит до Chromium |
-| **Keyboard и accessibility** | Tab, arrows, Space/Enter, focus, accessible name/state; FR/RU, DPI 100/150/200%, reduced motion, contrast |
-| **Native permissions** | Реальный request, отказ без pregrant, подтверждение правильного ID, stale ID/tab/profile/epoch, reset создаёт view без новой вкладки, independent grants, revoke и очистка permissions |
-| **HTTP transport** | HTTPS strict, exact URL/query, single-use main navigation, same-origin/firstParty assets, cross-origin HTTP/ws deny, credential-URL deny, stale token, peer-tab isolation, reload/revoke/profile destruction |
-| **Tracker-only exception** | Реальная blocked fixture до consent, passed tracker-rule после consent; действие по top-level origin в общем профиле с сохранением сессии и cookies (ADR 0005); владение привязано к вкладке-владельцу (TrackerExceptionRegistry); синхронное правдивое отображение во всех вкладках этого же origin; отсутствие переноса на другие origin; снятие исключения при отзыве или закрытии/навигации вкладки-владельца; факт pass не означает успешную загрузку |
-| **Other surfaces** | Tab drag, unused strip window drag/double-click, bookmarks/history/downloads/settings drawers в workspace под header, обычный GlassToolTip у chrome, download review и PDF export |
+For each test: case ID, precise ASVS/WSTG ID where applicable, preconditions/fixture, expected and observed behavior, positive and negative assertions, exact code SHA, tested binary SHA-256, platform/Qt/Chromium/security patch, logs and failure reason. Keep test-only users and directories; redact secrets and never use customers' accounts. Use PASS/FAIL/BLOCKED/NOT_RUN/NOT_APPLICABLE with reviewed rationale. The complete release report must distinguish *coverage* from actual *passing verification*.
 
-## Новые release gates — запланированы, ещё не пройдены
+## Prior local results
 
-1. **Iframe:** top origin A и requester iframe B; явный запрет родителя действует на вложенный request; отдельный requester deny; нормальный и приватный профиль; старый ID никогда не подтверждается.
-2. **Реальные media:** mic, camera, combined audio/video, продолжительный видеозвонок, системные разрешения, background tab, sleep/resume, навигация и ручной отзыв; оценить UX и реальное прекращение capture. Не считать grant доказательством записи.
-3. **Engine:** поддерживаемая версия Qt/Chromium, проверяемый sandbox runtime, небезопасные flags в release, регрессия после обновления, проверка подписанной доставки.
-4. **Ad/Tracker RuleEngine:** реальная классификация по правилам, обновление/rollback, memory/CPU burst, ложные блокировки login/payment/video/CDN/CAPTCHA.
-5. **Независимые site actions:** две вкладки одного origin и третья другого; Ads и Trackers разделены; context guard, restore defaults, Undo, no global HTTPS/permission relaxation.
-6. **ActivityAggregator:** effective policy ≠ request ≠ grant ≠ confirmed block, profile sample не выдаётся за tab counter; память и время событий ограничены.
-7. **NavigationGuard / Restricted browsing:** IDN, redirects, IPv4/IPv6 private network и DNS rebinding; JS-off *до* первого документа; негативные fixtures против ложных тревог.
-8. **UI preservation:** одна строка с 11 иконками и интерактивным hover на всех размерах/DPI/языках после каждого функционального обновления.
-
-Фактический результат каждого прогона фиксировать как PASS/FAIL/SKIP с commit SHA, платформой, Qt/Chromium runtime и ссылками на локальный лог, а ручные tests — отдельно. Не приписывать старому тестовому прогону результат новой реализации. Подробные изменения — в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), текущая карта возможностей — [CAPABILITY_CONTRACT](CAPABILITY_CONTRACT.md).
+Some tests were reported PASS during earlier snapshots, indexed in [VALIDATION](VALIDATION.md). **They do not constitute today's OWASP coverage or a 1.0.0 security certification.** Re-execute on the exact candidate, implement missing harnesses, commission separate adversarial review, then update the evidence registry only after obtaining results.

@@ -1,6 +1,8 @@
 # ADR 0007 — выбираемая экосистема облачных сервисов
 
-**Статус: РЕАЛИЗОВАНО (C++/QML Core, Settings, NewTab App Launcher, Tests).** Решение владельца CYBOU Browser, 17 октября 2026 года. Интеграция выполнена как собственный модуль `src/cloud/`, QML компоненты `CloudSettingsSection.qml`, `CloudAppLauncher.qml`, `CloudAppTile.qml`, с полным покрытием unit-тестами `CloudCoreTests.h`. Это не сообщение о партнёрских соглашениях с вендорами.
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](../VERSIONING.md) · [RELEASE_CRITERIA](../RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](../SECURITY_VERIFICATION_FRAMEWORK.md).
+
+**Статус: РЕАЛИЗОВАНО (C++/QML Core, Settings, NewTab App Launcher, Tests).** Решение владельца CYBOU Browser, 17 октября 2026 года. Интеграция выполнена как собственный модуль `src/cloud/`, QML компоненты `CloudSettingsSection.qml`, `CloudAppLauncher.qml`, `CloudAppTile.qml`, с набором текущих локальных unit-тестов `CloudCoreTests.h` (полная проверка OWASP, реальной совместимости и безопасности не проведена). Это не сообщение о партнёрских соглашениях с вендорами.
 
 ## Решение
 
@@ -68,7 +70,7 @@
 - Affiliate-ссылки/спонсорство допустимы **только отдельно и явно обозначены**; обычные переходы «Mail/Drive/Calendar» не подменяются коммерческим redirect/трекером. Сведения об аккаунте и истории просмотра не передаются партнёрам ради комиссии.
 - Не выдавать наличие ссылки в каталоге за договор, сертификат безопасности или протестированную совместимость с данным Qt WebEngine.
 
-## План и приёмка (ещё НЕ реализовано)
+## План и приёмка (часть функционала реализована; весь release-gate ещё НЕ выполнен)
 
 1. `CloudProviderCatalog` (встроенный список): стабильные provider и role IDs, перечень доступных ролей и официальные проверенные HTTPS endpoints. `CloudProviderPreferences`: `defaultProvider=proton`, `roleOverrides[role]=(inherit|provider|disabled)`; независимость от search engine и версия схемы.
 2. UI Settings: общий провайдер **и индивидуальный для каждой службы в V1**, наследование, отсутствие роли, сохранение overrides, «Применить основной ко всем». UI NewTabPage: справа сверху «Почта» (effective Mail), кнопка 3×3 и выпадающая **вниз Dark Glass панель** смешанного набора; не менять центр Alpine Dawn, существующую строку и **11 интерактивных иконок Control Bar**.
