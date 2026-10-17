@@ -1,5 +1,0 @@
-> **Versioning notice (2026-10-17):** CYBOU currently declares **0.3.0-alpha.1** (engineering alpha, not release-qualified). This ADR records its scoped product decision; any historical test-status claim is not current-candidate security evidence. [Version policy](../VERSIONING.md) · [OWASP verification](../SECURITY_VERIFICATION_FRAMEWORK.md).
-
-# ADR 0001: capability-first UI
-
-Accepted direction, 16.10.2026. Eleven visible controls share one navigation row with the compact address. Explicit user corrections forbid a separate capability row and a fixed narrow address: the address fills all remaining space, with capability controls on the right. 42px slots with 30px buttons preserve all controls at 820px, with a 120px minimum address. The latest user correction replaces plain tooltips with glass hover panels containing explanations and controls. Hover requires no click; entering the panel keeps it open. Icon click still grants a valid request or changes a supported reversible policy. Category-only menus, Always Allow and user-facing ASK are rejected because they hide control and restore persistent origin trust.

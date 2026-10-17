@@ -1,55 +1,42 @@
-# CYBOU Browser — roadmap to 1.0.0 (gated)
+# CYBOU Browser — Roadmap to 1.0.0
 
-**Declared current source:** `0.3.0-alpha.1` · **stage: engineering alpha / architecture and product contour**. It is **not** 0.8/0.9 and not a security-qualified beta. The old "0.8" was an informal UI-design milestone; it did not pass a full browser-security release gate. See [VERSIONING](VERSIONING.md) and accepted [ADR 0008](ADR/0008-evidence-driven-versioning.md).
+**Current source: 0.3.0-alpha.1 · no public release · security qualification incomplete.** Work takes place on `main`.
 
-**Rule:** version is a *gate outcome*, not feature-completion percentage. `implemented` = code exists; `historically tested` = previous local log; `candidate verified` = evidence on exact SHA and binary; `blocked` = proof missing/failed. There is no current-candidate OWASP full-coverage PASS. Historical results remain in [VALIDATION](VALIDATION.md).
+## Actual code baseline
 
-## Current engineering baseline (not production assurance)
-
-| Area | Code exists | Not yet demonstrated at release level |
+| Area | Currently implemented | Missing proof/work for 1.0 |
 | --- | --- | --- |
-| Browser UX | Alpine Dawn, tabs, history/bookmarks/downloads, QML glass, permanent 11-icon Control Bar | Accessibility and DPI complete matrix, crash/recovery, clean packaging |
-| Permissions | Native PermissionCoordinator, queue and origin/frame policies, revoke code and historical fixtures | Full OWASP mapping, real camera/mic/screen hardware and adversarial frame chains |
-| Network / transport | HTTPS policy, temporary HTTP context, request interception, ad/tracker rules and exceptions, NavigationGuard | Comprehensive redirect/DNS/WebRTC leaks, race/fuzz tests, per-platform sandbox proof |
-| Cloud | Local C++ catalog / selectable provider and role, FrostedGlassSurface and launcher, Proton default | Real login/2FA/media/SSO compatibility, cloud URL reviews, security regression and no-prefetch proof |
-| Threat-driven security | Some native and smoke tests have recorded PASS | Entire pinned ASVS 5.0.0 / WSTG 4.2 inventory, SCVS/SAMM review, fuzz corpus, external pentest |
-| Distribution | Windows MSVC local build recorded historically | Signed installer/update/rollback, SBOM, reproducibility, verified Chromium security-patch cadence |
+| UI / Alpine Dawn | C++/QML browser, tabs, compact floating new-tab content, glass search, 11 permanent navigation controls, glass popovers and Cloud Glass 2.0 | Keyboard/screen-reader, DPI/resolution, many-tab and crash/recovery matrix |
+| Browser tools | History, bookmarks, downloads, PDF export, Find, search providers, private profiles | Data cleanup, reliability and OS integration verification |
+| Permissions | Native PermissionCoordinator, per-document decisions and explicit controls | Real capture stop, combined mic/camera, iframe and stale-request adversarial tests |
+| Network | Strict HTTPS, temporary HTTP access, NavigationGuard, categorized RuleEngine, tracker exceptions | DNS/PNA/redirect/WebRTC threat tests, list updates/false positives, engine sandbox proof |
+| Cloud | Provider-neutral C++ catalog/manager, Proton default and role overrides, Nextcloud HTTPS configuration, web app launcher and local icons | Real login/2FA compatibility, redirects, no-prefetch/permission regression, clarity of product vs web-link shortcuts |
+| Test support | `cybou_tests`, six native suites, `tools/security/owasp_gate.py`, machine-readable risk cases | Pinned ASVS/WSTG inventory and mappings, evidence and independent pentest |
+| Distribution | CMake Windows executable | Reproducible package, SBOM, signing, secure update/rollback and response process |
 
-No third-party extension runtime or packaged unsolicited external executables (ADR 0006). Provider branding never grants privileges (ADR 0007).
+No third-party extension platform or partner-granted browser privileges are permitted.
 
-## Milestones and exit gates
+## Gates
 
-| Target | Required deliverables | Mandatory evidence before promotion |
+| Version | Work to complete | Exit condition |
 | --- | --- | --- |
-| **0.3.0-alpha.1 — CURRENT** | Product/UI architecture and built-in controls; basic tests, unqualified alpha | Version labels aligned; disclose gaps; do not claim secure |
-| **0.4.0-alpha.N — Security Engineering Foundation** | OWASP 5.0.0 ASVS official CSV and WSTG 4.2 IDs pinned, **every item triaged**; STRIDE-like browser threat model; repeatable offline gate; per-case ownership; fixture architecture | 100% applicability accounting, approved N/A, raw baseline logs on exact SHA, failing gates for missing evidence |
-| **0.5.0-alpha.N — Security & Function Hardening** | Fix unsafe/unsupported logic: permissions/frame navigation, real revoke, HTTPS/cert errors, DNS rebinding/PNA, network RuleEngine, origin-scoped exceptions, profile & sandbox; fuzzers; safe cloud routes | Real negative + metamorphic + fuzz tests, hardware and OS integration, no open unreviewed critical/high |
-| **0.6.0-beta.N — Product Qualification** | Freeze Windows 1.0 features, complete UX/cloud path, polish accessibility and localization, restore/history/downloads, resource usage, upgrade/downgrade and crashes | Stable multi-resolution and hardware tests; extended soak; documented cross-app compatibility; real package smoke |
-| **1.0.0-rc.N — Candidate / audit** | Security fixes only; signed Windows artifact, SBOM/provenance, updater/rollback, operational response; independent penetration test | Exact SHA/hash, **every applicable pinned ASVS/WSTG mapped to current PASS**, OWASP Top 10 / SCVS / SAMM reviews, no critical/high, go/no-go signed |
-| **1.0.0 — first supported release** | Production Windows x64 version, documented guarantees and limits, update channel | Candidate artifacts unchanged or fully revalidated; all [RELEASE_CRITERIA](RELEASE_CRITERIA.md) GO |
+| **0.3.0-alpha.1 — CURRENT** | Keep implementation and limitations aligned with source | Not a release |
+| **0.4.0-alpha.N** | Pin official ASVS 5.0.0/WSTG 4.2; inventory 100% IDs, owners, accepted applicability; automated negative fixtures, logs, coverage schema | Every standard item dispositioned, repeatable test framework, strict FAIL on missing evidence |
+| **0.5.0-alpha.N** | Fix origin/iframe/permissions lifecycle, actual media revocation, TLS/PNA/DNS/redirect issues, tracking-rule limits, sandbox process constraints; add fuzz/system/hardware tests | All P0 risk cases implemented and tested; no open unreviewed critical/high |
+| **0.6.0-beta.N** | Freeze Windows 1.0 scope; complete cloud compatibility, accessibility, localization, browser lifecycle and long-running stress | Full regression, repeated real-device tests, tested Windows build package |
+| **1.0.0-rc.N** | Independent security review, dependency/SBOM audit, signed binary/update/rollback, candidate-specific OWASP evidence | Every applicable pinned ASVS/WSTG requirement and browser-specific test verified; all formal release gates GO |
+| **1.0.0** | Public Windows x64 product and maintenance process | Exact qualified candidate signed and published |
 
-No dates invented. There is **no need for `0.8` or `0.9` on this path**. There may be multiple alpha/beta/rc patches; milestone changes are earned by gates, not by merging a feature.
+No estimated date or percentage stands in place of actual completion.
 
-## Cloud Services & UI Baseline (ADR 0007 / Cloud Glass 2.0)
+## Current execution order
 
-**Режим выбираемой облачной экосистемы и Cloud Glass 2.0** — выбор общего провайдера (`proton` по умолчанию, Google Workspace, Microsoft 365, Infomaniak, Zoho, Nextcloud Hub, Apple iCloud; `none` для выключения), независимая настройка для каждой из 7 ролей (Mail, Calendar, Files, Docs, Sheets, Presentations, Meetings), а также полноценная поддержка расширенных веб-сервисов экосистемы:
-- **Proton:** Proton Mail, Proton Calendar, Proton Drive, Proton Docs, Proton Sheets, Proton Meet, а также отдельные веб-приложения: Proton Pass (`pass.proton.me`), Lumo AI (`lumo.proton.me`), Proton Wallet (`wallet.proton.me`), портал Proton VPN (`account.proton.me/u/0/vpn`) и информация об Authenticator (`proton.me/pass/authenticator`).
-- **Google & Microsoft:** поддержка Google Keep, Microsoft To Do и OneNote без конфликта с ролями.
-- **Cloud Glass 2.0 & New Tab Restyle:** устранение ореола/артефакта размытия вокруг попапа `CloudAppLauncher.qml` (переход на чистый Dark Glass контейнер с аппаратной тенью), полный редизайн центрального интерфейса `NewTabPage.qml`: удаление громоздкой закрывающей горы панели-билборда, замена на парящее стеклянное поле ввода поискового запроса (`TextField` с окантовкой, бликом и лупой) и компактные стеклянные pill-кнопки («Favoris», «Historique»), 13 локальных векторных SVG-иконок (`assets/cloud/`).
-- **Self-hosted Nextcloud:** требование предварительной настройки (`requiresConfiguration`), проверка персонального HTTPS base URL и санитизация адреса.
-- **Безопасность запуска:** C++ валидация URL (`resolveAppUrl`) и верификация хостов (`isVerifiedServiceUrl`). Статус: **implemented, historically tested**.
+1. **Testing foundation (P0):** obtain official pinned inventories, complete control applicability, implement deterministic local fixtures and connect each applicable requirement to executed evidence.
+2. **Browser security (P0):** renderer and OS boundaries, permissions, WebRTC/media revoke, local/private network, TLS/redirects, download and process abuse, fuzzing and negative tests.
+3. **Engine/release supply chain (P0):** Qt/Chromium vulnerability management, actual sandbox, SBOM, signing, update/rollback.
+4. **Product quality (P1):** cloud account compatibility, realistic ad/tracker filtering, UX/FR/RU accessibility, keyboard navigation, device and stress regressions.
+5. **Release decision (P0):** peer review, external pentest, audit findings, signed candidate, same-SHA results and published support/incident process.
 
-## Workstreams (priority order)
+**Only actual tests on the target source/binary may be recorded as PASS.** Missing report, unknown, untested or blocked remains a release blocker.
 
-1. **W0 / P0 — Test framework and reproducible baseline:** run `tools/security/owasp_gate.py` offline; pin ASVS/WSTG official inventories; build complete applicability map. Make status BLOCKED until test IDs, owners, logs and exact candidate hashes are present. [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
-2. **W1 / P0 — Renderer/browser threat boundaries:** top/requester origin, stale and concurrent permission IDs, revoke actually stops capture; frame sandbox and process isolation, Chromium/Qt release flags, WebRTC/DNS/IPv6/PNA negative testing, TLS errors, downloads.
-3. **W2 / P0 — Supply chain:** inventory Qt/Chromium DLLs, patch policy, SBOM, component signatures, no extension loaders, safe installer/update, rollback and CVE response.
-4. **W3 / P1 — Functional completeness:** real cloud provider compatibility without privilege, camera/mic/Meet support, accurate ad/tracker rules, sessions, file handling, many-tabs stability and historical data migrations.
-5. **W4 / P1 — Consistent UX:** 11 controls always visible, Dark Glass cloud launcher, FR/RU, keyboard a11y, no misleading policy/event labels, all prescribed viewport/DPR checks.
-6. **W5 / P0 — Release audit:** external adversarial review, remediation retest and exact-candidate evidence, strict GO/NO-GO.
-
-## Process rules
-
-Everything is committed to **`main` only**, no branches (owner decision). Before editing verify current HEAD; preserve parallel agents' work. Work locally without relying on GitHub Actions until available. Never promote based solely on code review or an old local test claim. Run linked suites after any relevant change, full runner and formal OWASP coverage/release gate for stage promotions. No automatic exceptions for Proton, Google or Microsoft and no imported third-party extension code.
-
-**Authoritative links:** [DOCUMENTATION_INDEX](DOCUMENTATION_INDEX.md), [TEST_PLAN](TEST_PLAN.md), [THREAT_MODEL](THREAT_MODEL.md), [RELEASE_CRITERIA](RELEASE_CRITERIA.md), [VALIDATION](VALIDATION.md). Prior S0/S1/S2 labels denote feature tickets and historical attempts, **not maturity percentages or proof of release safety**.
+[TEST_PLAN](TEST_PLAN.md) · [THREAT_MODEL](THREAT_MODEL.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [VERSIONING](VERSIONING.md)

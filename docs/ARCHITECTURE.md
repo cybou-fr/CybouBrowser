@@ -1,47 +1,28 @@
-# CYBOU — архитектура Observable Browsing
+# CYBOU — текущая архитектура
 
-> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+**0.3.0-alpha.1 · C++20 / Qt 6 WebEngine / QML · публичного релиза нет.**
 
-Текущий код C++20 / Qt 6 WebEngine / Qt Quick QML. **Расположение Control Bar описано только в [CONTROL_BAR_UX](CONTROL_BAR_UX.md);** здесь — потоки данных и границы возможностей.
+## Исполняемые части
 
-## Permission pipeline
+- `cybou` — GUI production executable, `src/main.cpp` и QML module `Cybou`.
+- `cybou_tests` — отдельный тестовый executable с локальными fixtures.
+- `src/browserstore.h` — настройки, профили, локальное browser-state.
+- `qml/Main.qml` — вкладки, навигация, соединение C++ контроллеров и browser-owned интерфейса.
+- `qml/BrowserTab.qml` — WebEngineView и page lifecycle.
+- `qml/NewTabPage.qml` — Alpine Dawn с компактным floating title, glass search и Cloud App Launcher.
 
-`WebEngineView.onPermissionRequested` → C++ `PermissionCoordinator` → `SiteContext` (view/profile weak refs, tab UID, top origin, requester origin, navigation epoch) → checked request-ID decision → `ControlBarController` observations → `CapabilityModel` → `ControlBarInline` / `CapabilityPopover`.
+## Существующие контуры
 
-Pending request принадлежит coordinator; `QWebEnginePermission` не выдаётся автоматически и не сохраняется для будущих посещений. Coordinator реализует `PermissionLease` для выданных прав; QML осуществляет замену document/view при отзыве контекста. Это пока не доказанная возможность остановить активный hardware stream отдельно от документа. Controller хранит tab/origin JS/storage/popup exceptions и ограниченный журнал событий в памяти; `QSettings` хранит другие обычные browser preferences/data.
+**Permissions:** QWebEnginePermission → SiteContext (tab/view/profile, top/requester origins, navigation epoch) → C++ PermissionCoordinator → ControlBarController → разрешение только текущего native request. Реальная остановка hardware media пока требует проверки.
 
-**Известный gap:** explicit deny записывается относительно top origin, а проверка `shouldDeny(permission)` может обращаться к requester origin. Это задача согласования scopes, а не основание заявлять автоматический grant.
+**Network:** profile request interceptor, NavigationGuard, HTTPS, RuleEngine (Ad/Tracker), TrackerExceptionRegistry, RequestObserver и ActivityAggregator. Сетевые события на уровне профиля не доказывают конкретную вкладку.
 
-## Network pipeline
+**HTTP exception:** exact-address consent и отдельный off-the-record профиль, не переносит обычную сессию. **Tracker exception:** разрешение фильтра по origin в *текущем* профиле с cookies/session, привязанное к вкладке-владельцу; не путать эти механизмы.
 
-`RequestObserver` перехватывает запросы `QWebEngineUrlRequestInterceptor`, сначала применяя запреты небезопасного транспорта и credentials, затем ограниченный `TrackerBlocker`. Формируется mutex-protected bounded queue событий с sanitized origin/firstParty, resource type, time, block reason/decision. `activityAvailable` объединяет частые обновления, UI получает модель через `ControlBarController`; interceptor не обращается к QML и не пишет сетевые метаданные на диск.
+**Cloud:** `src/cloud/CloudProviderCatalog.*` и `CloudServiceManager.*`, `qml/CloudSettingsSection.qml`, `CloudAppLauncher.qml`, локальные SVG. Proton default и per-role overrides; запускаются обычные HTTPS-веб-приложения, без токенов и native integration с аккаунтами.
 
-Сетевая выборка **profile-scoped**. `firstParty` и resource type сами по себе не устанавливают tab ID или результат успешной загрузки.
+## Границы
 
-Для явного HTTP-исключения существует `HttpNavigationLease` в выделенном off-the-record профиле для точного адреса с ограниченным same-origin HTTP content. Для явного tracker-only исключения — `TrackerExceptionLease` в отдельном off-the-record профиле: оно ограничено документом и first-party origin и пропускает совпадающие запросы из небольшого tracker list. UI показывает информацию и revoke в **существующей Network hover-панели**. Оба режима не являются процессной или маршрутизирующей изоляцией.
+Нет сторонней системы расширений/привилегированных userscripts ([ADR 0006](ADR/0006-no-third-party-extensions.md)). Qt/Chromium и системные библиотеки — внешние зависимости, подлежащие проверке.
 
-## Неприкосновенная граница: никакой extension platform
-
-В CYBOU **не существует допускаемой архитектуры сторонних расширений**. Не строить WebExtensions/CRX runtime, `QWebEngineExtensionManager` install/load flow, plugin store/side-loading или privileged userscript execution. Нативные функции вдохновлённые лучшими расширениями пишутся и сопровождаются **в C++/Qt/QML самого CYBOU**, с теми же границами permissions/network/profile, что у остальных функций. Никакая партнёрская интеграция, включая Proton, не может расширить эти полномочия.
-
-Новый сторонний executable, background helper или динамическая библиотека не добавляется ради удобства без прямого продуктового решения и review происхождения, версии, лицензии, sandbox, patch cadence и альтернатив в имеющемся стеке. Сам Qt WebEngine/Chromium остаётся необходимой отдельно контролируемой внешней зависимостью. JavaScript сайтов не переносить в привилегированный browser-owned контекст. Детальный нормативный контракт: [ADR 0006](ADR/0006-no-third-party-extensions.md).
-
-## Каталог облачных сервисов (реализован первоначальный C++/QML; release-совместимость не проверена)
-
-Cloud services — **provider-neutral catalogue**, устроенный как независимая от `searchEngine` пользовательская настройка. Значение по умолчанию `proton`, равноправные `google`, `microsoft`, `infomaniak`, `zoho`, `nextcloud`, отключение `none`; Apple iCloud и file-only сервисы — следующий этап. **Уже в V1** требуются `CloudProviderPreferences.defaultProvider` и `roleOverrides[role]` со значениями inherit/provider/disabled, версионирование настройки и resolver итоговых ролей. Explicit overrides сохраняются при смене default; сбрасываются только явной командой. Проектируемые `CloudProviderCatalog` и `CloudProviderPreferences` — **часть нашего C++/QML** со статическими неисполняемыми descriptors официальных HTTPS-веб-приложений. `NewTabPage.qml` показывает справа сверху Mail (effective provider) и 3×3 launcher; интерактивная стеклянная панель раскрывается вниз и показывает реальный набор. Существующая центральная Alpine Dawn card и Control Bar неизменны.
-
-Нет browser extensions, injected scripts, companion CLI, облачного proxy и доступа к токенам пользователя. Выбор не меняет поисковик, сеть/permissions, cookies или существующие вкладки. Для собственного Nextcloud — явно указанный пользователем HTTPS origin и проверка схемы. Это **продуктовый контракт**: реализация cloud catalog/settings/launcher уже существует в исходниках, но поставщики, авторизация и границы безопасности ещё требуют систематической проверки перед релизом. Полный контракт: [ADR 0007](ADR/0007-selectable-cloud-services.md), запрет стороннего кода: [ADR 0006](ADR/0006-no-third-party-extensions.md).
-
-## Будущие компоненты — ещё не implemented
-
-| Компонент | Ответственность |
-| --- | --- |
-| `EffectivePermissionPolicy` | Согласование top/requesting-origin deny без ослабления request-ID контекста |
-| Media lifecycle control | Проверка реального stop/revoke и UX продолжительных сессий |
-| `RuleEngine` / `RuleSetStore` | Версионированные ads/tracker rule snapshots, atomic update/rollback, bounded lookup |
-| `SiteFilterPolicy` / `PolicyTransaction` | Независимые temporary ads/tracker policies, точный context/Undo без глобального выключения |
-| `ActivityAggregator` | Достоверные permission/popup/network события со scope `tab`, `profile` или `unknown` |
-| `NavigationGuard` | Локальные URL/IDN/redirect/private-network проверки |
-| `RestrictedContextFactory` | JS-off до первого документа и ограниченный browsing context |
-
-План и критерии: [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md), [ROADMAP](ROADMAP.md), [TEST_PLAN](TEST_PLAN.md). Наличие строк в этой таблице **не означает**, что реализации уже существуют.
+Реальный sandbox, OS/hardware behavior, DNS rebinding, WebRTC и полная cloud login compatibility не квалифицированы. [SECURITY_MODEL](SECURITY_MODEL.md) · [TEST_PLAN](TEST_PLAN.md).

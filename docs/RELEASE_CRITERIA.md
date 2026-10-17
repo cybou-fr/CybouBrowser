@@ -1,6 +1,6 @@
 # CYBOU — 1.0.0 release criteria / go-no-go
 
-**Current status: NO-GO.** CYBOU source currently declares `0.3.0-alpha.1`. This checklist is a binding **future gate**; no field is implicitly passed from previous tests or a historic development label.
+**Current status: NO-GO.** CYBOU source currently declares `0.3.0-alpha.1`. This checklist is the mandatory **future gate**; current source/binary evidence must be supplied for each condition.
 
 ## Scope
 
