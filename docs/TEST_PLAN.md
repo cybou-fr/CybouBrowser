@@ -55,3 +55,11 @@ For each test: case ID, precise ASVS/WSTG ID where applicable, preconditions/fix
 ## Current verification status
 
 The test suites and risk inventory exist, but **the current source/binary has not passed the complete OWASP and browser-specific release gate**. Run the executable suites, implement missing harnesses, attach candidate-specific logs, and obtain independent adversarial review. Do not record PASS without accessible test results. See [VALIDATION](VALIDATION.md).
+
+## CORS and WebSocket local fixtures
+
+`src/security/NetworkBoundaryTests.h` runs within `--security-test`. Two loopback TCP servers on distinct ports exercise actual WebEngine requests. Server-side request counts confirm that a permitted preflight reaches PUT and a denied preflight never does; JavaScript assertions check CORS response visibility and wildcard-plus-credentials rejection. Cookie observations distinguish `omit` from `include`. WebSocket checks include a real RFC 6455 HTTP 101 handshake, strict denial before reaching the server, and denial of a new connection after strict policy is restored. Matching interceptor deny events are required.
+
+This fixture deliberately uses test-only HTTP allowance to establish the positive control. It does not prove production temporary-profile behavior, WSS certificate validation, public/private routing, cross-site cookies or revocation of an already-open socket. The two broad release cases remain in progress.
+
+Build/run: `cmake --build build --config Release --target cybou_tests --parallel 4`, then `build/Release/cybou_tests.exe --security-test`. The fixture has a 20-second deadline and never contacts external services. Evidence from this development iteration is under `build/network-boundaries/`, including the log, report, tested source snapshots and tracked patch.

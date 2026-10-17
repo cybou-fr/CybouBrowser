@@ -584,8 +584,19 @@
       "objective": "real cross-origin fetch CORS preflight, credential isolation and rejected response access",
       "method": "integration",
       "tier": "P0",
-      "candidateSuite": "planned",
-      "status": "planned"
+      "candidateSuite": "security",
+      "status": "in_progress",
+      "testSource": "src/security/NetworkBoundaryTests.h",
+      "coveredScenarios": [
+        "distinct-port loopback origin allow/deny response read",
+        "allowed preflight performs PUT; denied preflight sends no PUT",
+        "credentials omit sends no cookie; credentials include plus wildcard denies response read"
+      ],
+      "remainingScenarios": [
+        "cross-site and third-party cookie policy",
+        "null/sandboxed frame origins and redirect preflights",
+        "packaged production profile regression"
+      ]
     },
     {
       "id": "CYB-WS-001",
@@ -593,8 +604,20 @@
       "objective": "real ws/wss handshake respects HTTPS temporary context, origin, private-network boundary and revocation",
       "method": "integration",
       "tier": "P0",
-      "candidateSuite": "planned",
-      "status": "planned"
+      "candidateSuite": "security",
+      "status": "in_progress",
+      "testSource": "src/security/NetworkBoundaryTests.h",
+      "coveredScenarios": [
+        "strict ws denied with zero server handshakes",
+        "positive real HTTP 101 handshake",
+        "new ws denied after strict policy restored; interceptor deny events checked"
+      ],
+      "remainingScenarios": [
+        "wss TLS validity and certificate failures",
+        "production temporary HTTP context behavior",
+        "public-to-private routing and DNS changes",
+        "revocation of already-open sockets"
+      ]
     }
   ]
 }

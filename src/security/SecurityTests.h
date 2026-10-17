@@ -6,6 +6,7 @@
 #include <QtWebEngineCore/QWebEngineProfile>
 #include "../controlbar/RequestObserver.h"
 #include "DownloadPolicy.h"
+#include "NetworkBoundaryTests.h"
 #include "PermissionTests.h"
 #include "HttpLeaseTests.h"
 #include "TrackerLeaseTests.h"
@@ -134,6 +135,8 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         if (store.navigationBlockReason(publicHttp).isEmpty()) return 2;
         qInfo() << "HTTPS_FIRST_TEST PASS: upgrade retained, public HTTP denied, no host fallback";
     }
+
+    if (!runNetworkBoundaryTests()) return 2;
 
     QWebEngineProfile profile;
     RequestObserver interceptor(&profile);

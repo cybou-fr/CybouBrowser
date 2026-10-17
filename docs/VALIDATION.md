@@ -55,3 +55,9 @@ The importer now reads ASVS's actual `req_id` column (`V1.1.1` form), rejects ma
 20 controls are classified applicable with code references, browser-specific rationale, planned case mappings and explicit remaining work; 422 remain untriaged. No N/A waiver or verified control was added. See [OWASP_TRIAGE](OWASP_TRIAGE.md). Two additional P0 planned cases cover actual CORS and WebSocket behavior (66 total browser-specific cases).
 
 Twelve gate self-tests passed. Both evidence paths now reject empty/tampered logs and stale source/binary identities; duplicate or unknown case records block qualification. Local inventory diagnostic `build/owasp-triage/report.json` confirms 442 imported controls, 20 applicable, 422 untriaged, zero N/A and zero unknown coverage IDs. The overall result remains BLOCKED. Native code was unchanged and was not rebuilt for this metadata/gate iteration.
+
+## CORS / ws engine fixtures — 2026-10-18
+
+The Release test executable rebuilt successfully and `--security-test` exited 0 with both `CORS_BOUNDARY_TEST PASS` and `WEBSOCKET_BOUNDARY_TEST PASS`. Local artifacts: `build/network-boundaries/report.json`, `security.log`, tested source snapshots and patch. The report identifies the base commit, source-file hashes, executable hash and log hash. Diagnostics include engine versions and expected CORS rejection messages.
+
+Verified subset: loopback distinct-port CORS reads, actual preflight allow/deny, cookie omission and wildcard credential rejection; actual ws handshake positive control and strict deny before handshake, including a new connection after strict policy restoration. Cases `CYB-ORIGIN-001` and `CYB-WS-001` remain **in_progress** with explicit remaining scenarios. No broad OWASP control or release-case PASS is asserted. No production browser code changed; only the affected security suite was rerun.

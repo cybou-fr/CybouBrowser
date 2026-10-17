@@ -3910,10 +3910,12 @@
       "rationale": "Client cross-origin fetches must preserve browser origin and local-network isolation.",
       "sourceRefs": [
         "src/security/TrackerBlocker.h",
-        "src/security/NavigationGuard.h"
+        "src/security/NavigationGuard.h",
+        "src/security/NetworkBoundaryTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "PNA and CORS are distinct: add dedicated CORS/preflight/credential tests as well as DNS/redirect fixtures."
+      "remainingWork": "Loopback distinct-origin CORS/preflight and cookie controls now pass; cross-site cookies, null/frame origins, redirects, packaged profiles and public-to-private DNS/PNA qualification remain open.",
+      "partialVerification": "Local security suite PASS on 2026-10-18; subset only; see docs/VALIDATION.md and build/network-boundaries/report.json."
     },
     {
       "id": "WSTG:v4.2-CLNT-08",
@@ -3942,10 +3944,12 @@
       "rationale": "WebSocket connections must obey transport and private-network policy.",
       "sourceRefs": [
         "src/security/NetworkPolicy.h",
-        "src/security/TrackerBlocker.h"
+        "src/security/TrackerBlocker.h",
+        "src/security/NetworkBoundaryTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Add actual ws/wss handshake and local-network/redirect tests; URL classification alone is insufficient."
+      "remainingWork": "Real ws positive handshake and strict-policy denial now pass. Add WSS certificate matrix, production temporary-profile, public-to-private/DNS and active-socket revocation fixtures.",
+      "partialVerification": "Local security suite PASS on 2026-10-18; subset only; see docs/VALIDATION.md and build/network-boundaries/report.json."
     },
     {
       "id": "WSTG:v4.2-CLNT-11",

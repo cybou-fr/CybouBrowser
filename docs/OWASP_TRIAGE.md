@@ -42,3 +42,7 @@ The machine-readable source of truth is `tests/security/coverage.json`. It recor
 Both browser-case evidence and applicable-control evidence now use the same validation: a nonempty readable log, matching SHA-256, PASS result, known source commit and nonempty matching candidate binary hash. Duplicate or unknown evidence case IDs block the gate. This closes the prior inconsistent paths where a correct hash of an empty log or a duplicate record could be accepted. Twelve self-tests passed, including valid evidence, tampering, empty/missing logs, stale source/binary identities and duplicates.
 
 `build/owasp-triage/report.json` is a local diagnostic report. Import and mapping counts are correct, but the gate intentionally reports BLOCKED because reviewed applicability and candidate-specific verification are incomplete. No browser source changed in this batch; the earlier native baseline remains historical evidence for its recorded source/binary, not a new candidate qualification.
+
+## Follow-up: first real network fixture (2026-10-18)
+
+The initial CORS and ws subset is now implemented in `src/security/NetworkBoundaryTests.h` and passed in the Release security suite. The two cases moved from planned to in_progress with covered and remaining scenario lists; control verification status remains not_verified. See [VALIDATION](VALIDATION.md) for scope and evidence. WSS, production temporary-profile behavior, public-to-private DNS routing, cross-site cookies and already-open socket revocation are still open.
