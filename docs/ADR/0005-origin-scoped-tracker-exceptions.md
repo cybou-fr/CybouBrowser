@@ -1,3 +1,5 @@
+> **Versioning notice (2026-10-17):** CYBOU currently declares **0.3.0-alpha.1** (engineering alpha, not release-qualified). This ADR records its scoped product decision; any historical test-status claim is not current-candidate security evidence. [Version policy](../VERSIONING.md) · [OWASP verification](../SECURITY_VERIFICATION_FRAMEWORK.md).
+
 # ADR 0005 — Временные исключения для трекеров по origin в профиле с правдивым UI
 
 **Статус:** принято (заменяет ADR 0004).

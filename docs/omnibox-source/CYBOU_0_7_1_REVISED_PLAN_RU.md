@@ -1,3 +1,5 @@
+> **HISTORICAL DESIGN / AGENT SOURCE — NOT CURRENT RELEASE STATUS.** CYBOU now declares **0.3.0-alpha.1** (unqualified alpha). Any "0.7", "0.8", tested or implemented statements below concern their dated snapshot and do not override [VERSIONING](../VERSIONING.md), [ROADMAP](../ROADMAP.md) or [SECURITY_VERIFICATION_FRAMEWORK](../SECURITY_VERIFICATION_FRAMEWORK.md).
+
 # CYBOU Browser 0.7.1 — revised implementation specification
 
 **Дата аудита:** 2026-10-16  

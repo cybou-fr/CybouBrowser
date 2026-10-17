@@ -297,7 +297,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "CYBOU  /  ÉDITION 0.8"
+            text: "CYBOU  /  " + Qt.application.version
             color: CybouTheme.mutedText
             font { pixelSize: 10; letterSpacing: 2 }
         }

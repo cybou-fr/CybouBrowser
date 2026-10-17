@@ -1,3 +1,5 @@
+> **HISTORICAL DESIGN / AGENT SOURCE — NOT CURRENT RELEASE STATUS.** CYBOU now declares **0.3.0-alpha.1** (unqualified alpha). Any "0.7", "0.8", tested or implemented statements below concern their dated snapshot and do not override [VERSIONING](../VERSIONING.md), [ROADMAP](../ROADMAP.md) or [SECURITY_VERIFICATION_FRAMEWORK](../SECURITY_VERIFICATION_FRAMEWORK.md).
+
 # START — CYBOU Browser 0.7.1 Adaptive Omnibox
 
 Репозиторий: https://github.com/cybou-fr/CybouBrowser, работать только маленькими проверяемыми коммитами в `main`; не создавать branches и не делать force push. Последний проверенный GitHub HEAD на момент аудита: `9a809aaacad28ed587aadcd0d8d8d3e48b6fc4a8`. **Обязательно обновить/проверить HEAD перед работой.**

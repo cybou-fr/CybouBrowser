@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "description": "Example schema only. Not PASS evidence. Release gate requires per-case verified current-revision logs.",
+  "evidence": [
+    {
+      "caseId": "CYB-PERM-001",
+      "result": "NOT_RUN",
+      "commit": "<full git SHA>",
+      "binarySha256": "<64 hex SHA256>",
+      "log": "<local test log path>",
+      "logSha256": "<64 hex SHA256 of actual local logfile>"
+    }
+  ]
+}

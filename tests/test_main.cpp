@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
     app.setOrganizationName("CYBOU-Tests");
-    app.setApplicationVersion("0.8.0");
+    app.setApplicationVersion(QStringLiteral(CYBOU_PRODUCT_VERSION));
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
 

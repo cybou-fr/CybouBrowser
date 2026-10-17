@@ -1,5 +1,7 @@
 # CYBOU — Control Bar UX
 
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+
 **Нормативное решение владельца продукта:** Control Bar постоянно находится **в одной существующей строке навигации**. Не выносить её в отдельную строку и не группировать её возможности в несколько значков.
 
 ## Геометрия

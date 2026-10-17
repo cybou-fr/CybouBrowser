@@ -1,8 +1,12 @@
 # CYBOU Cloud Services — Compatibility Matrix & Operational Guide
 
-*Репозиторий: cybou-fr/CybouBrowser · Редакция: 17 октября 2026 · CYBOU Browser v0.8*
+> **Версия продукта:** `0.3.0-alpha.1` — engineering alpha, не квалифицированный релиз. Старые тесты и названия `0.8` не доказывают безопасность текущей сборки. [VERSIONING](VERSIONING.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md) · [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md).
+
+*Репозиторий: cybou-fr/CybouBrowser · Редакция: 17 октября 2026 · CYBOU Browser 0.3.0-alpha.1 (code prototype; compatibility NOT release-verified)*
 
 ---
+
+**Status notice:** отдельные локальные прогоны и наличие API в Qt WebEngine не доказывают вход/2FA/видеозвонки на реальных аккаунтах всех поставщиков. Таблицы ниже описывают *заявленные точки входа и сценарии проверки*, не сертификацию совместимости или безопасности. Release GO/NO-GO определяется [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md) и [RELEASE_CRITERIA](RELEASE_CRITERIA.md).
 
 ## 1. Обзор архитектуры
 
