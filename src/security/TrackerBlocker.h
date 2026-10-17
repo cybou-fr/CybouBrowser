@@ -16,7 +16,7 @@ inline bool isSameOrSubdomain(QStringView host, QStringView base) {
 }
 
 inline bool isTrackerHost(QStringView host) {
-    static constexpr std::array<QStringView, 35> trackerSuffixes = {
+    static constexpr std::array<QStringView, 64> trackerSuffixes = {
         u"doubleclick.net",
         u"google-analytics.com",
         u"googletagmanager.com",
@@ -39,6 +39,10 @@ inline bool isTrackerHost(QStringView host) {
         u"segment.io",
         u"segment.com",
         u"mixpanel.com",
+        u"amplitude.com",
+        u"heapanalytics.com",
+        u"mouseflow.com",
+        u"fullstory.com",
         u"connect.facebook.net",
         u"pixel.facebook.com",
         u"an.facebook.com",
@@ -51,7 +55,32 @@ inline bool isTrackerHost(QStringView host) {
         u"quantserve.com",
         u"chartbeat.com",
         u"moatads.com",
-        u"smartadserver.com"
+        u"smartadserver.com",
+        u"indexexchange.com",
+        u"sovrn.com",
+        u"triplelift.com",
+        u"sharethrough.com",
+        u"media.net",
+        u"bidswitch.net",
+        u"smartclip.net",
+        u"teads.tv",
+        u"mgid.com",
+        u"revcontent.com",
+        u"branch.io",
+        u"appsflyer.com",
+        u"adjust.com",
+        u"braze.com",
+        u"onesignal.com",
+        u"analytics.twitter.com",
+        u"static.ads-twitter.com",
+        u"ads.linkedin.com",
+        u"snap.licdn.com",
+        u"sc-static.net",
+        u"tr.snapchat.com",
+        u"analytics.tiktok.com",
+        u"ads.pinterest.com",
+        u"ct.pinterest.com",
+        u"pixel.quora.com"
     };
     for (const auto &suffix : trackerSuffixes) {
         if (isSameOrSubdomain(host, suffix))

@@ -43,6 +43,7 @@ ApplicationWindow {
     readonly property int chromeControlHeight: CybouTheme.chromeControlHeight
     property var currentView: views.count > activeTab ? views.itemAt(activeTab) : null
     property bool privateMode: false
+    readonly property bool smokeActive: typeof smokeMode !== "undefined" && smokeMode
     property string initialUrlArgument: ""
     property string initialLibrarySection: ""
     property bool initialSettingsOpen: false
@@ -1109,7 +1110,47 @@ ApplicationWindow {
     }
     Repeater {
         id: views; model: tabs
-        delegate: BrowserTab {}
+        delegate: BrowserTab {
+            temporaryProfile: window.temporaryProfiles[tabUid] || null
+            defaultProfile: window.activeProfile
+            isCurrentTab: window.activeTab === index
+            isPrivate: window.privateMode
+            smokeMode: window.smokeActive
+            store: browserStore
+            coordinator: permissionCoordinator
+            controller: controlState
+            pendingPermissionView: window.pendingPermissionView
+
+            onAskPermissionRequested: function(permission, view) { window.askPermission(permission, view) }
+            onOfferHttpRequested: function(view, url) { window.offerHttp(view, url) }
+            onEndTemporaryRequested: function(view, url) { window.endTemporaryNavigation(view, url) }
+            onReleaseRequested: function(uid) { window.releaseTemporaryView(uid) }
+            onDownloadRequested: function(download) { window.handleDownload(download) }
+            onApplyPolicyRequested: function(view, url) { window.applyViewPolicy(view, url) }
+            onNewTabRequested: function(url) { window.addTab(url) }
+            onFullScreenToggled: function(on) { on ? window.showFullScreen() : window.showNormal() }
+            onTabPropertyUpdate: function(idx, prop, val) { if (idx < tabs.count) tabs.setProperty(idx, prop, val) }
+            onAddressRefresh: window.refreshAddress()
+            onStatusNotice: function(msg) { window.showStatus(msg) }
+            onErrorNotice: function(msg) { errorText.text = msg; errorNotice.open() }
+            onDismissControlBar: if (controlBar) controlBar.dismiss()
+            onClosePolicyBanner: if (policyBanner) policyBanner.close()
+            onRestartSaveTimer: saveTimer.restart()
+            onCancelPermissionRequested: window.cancelPermission()
+            onFindResultUpdated: function(res) { window.findResult = res }
+            onLocalLoaded: window.smokeLocalLoaded = true
+            onPdfFinished: function(filePath, success) {
+                window.pdfBusy = false; window.pdfTarget = null
+                window.showStatus(success ? "PDF enregistré : " + filePath : "Échec de l’enregistrement PDF.")
+                window.smokePdfResult = success ? 1 : -1
+            }
+            onContextMenuOpen: function(targetView, link, text, editable, x, y) {
+                pageContextMenu.linkUrl = link
+                pageContextMenu.selectedText = text
+                pageContextMenu.isEditable = editable
+                pageContextMenu.popup(targetView, x, y)
+            }
+        }
     }
     Menu {
         id: pageContextMenu
