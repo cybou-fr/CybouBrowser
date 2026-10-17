@@ -195,7 +195,7 @@ ApplicationWindow {
             }
         }
     }
-    property string librarySection: "Favoris"
+    property string librarySection: "bookmarks"
     property bool findVisible: false
     property string findResult: ""
     property bool bookmarked: false
@@ -726,12 +726,18 @@ ApplicationWindow {
     function bookmark() {
         if (currentView) browserStore.toggleBookmark(currentView.url.toString(), currentView.title)
     }
-    function showLibrary(section) { librarySection = section; library.open() }
+    function showLibrary(section) {
+        if (section === "Favoris" || section === "bookmarks") librarySection = "bookmarks"
+        else if (section === "Historique" || section === "history") librarySection = "history"
+        else if (section === "Téléchargements" || section === "downloads") librarySection = "downloads"
+        else librarySection = section || "bookmarks"
+        library.open()
+    }
     function maximizeToggle() { visibility === Window.Maximized ? showNormal() : showMaximized() }
     function handleDownload(download) {
         download.downloadDirectory = smokeMode ? smokeDownloadPath : browserStore.downloadsPath
         downloadItems = [download].concat(downloadItems)
-        showLibrary("Téléchargements")
+        showLibrary("downloads")
         if (browserStore.askDownloadLocation && !smokeMode) {
             downloadQueue = downloadQueue.concat([download]); presentNextDownload()
         } else download.accept()
@@ -781,8 +787,8 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+Tab"; onActivated: activeTab = (activeTab + tabs.count - 1) % tabs.count }
     Shortcut { sequence: "Ctrl+R"; onActivated: if (currentView) currentView.reload() }
     Shortcut { sequence: "Ctrl+D"; onActivated: bookmark() }
-    Shortcut { sequence: "Ctrl+H"; onActivated: showLibrary("Historique") }
-    Shortcut { sequence: "Ctrl+J"; onActivated: showLibrary("Téléchargements") }
+    Shortcut { sequence: "Ctrl+H"; onActivated: showLibrary("history") }
+    Shortcut { sequence: "Ctrl+J"; onActivated: showLibrary("downloads") }
     Shortcut { sequence: "Ctrl+F"; onActivated: { findVisible = true; findBar.focusInput() } }
     Shortcut { sequence: "Ctrl+Shift+N"; onActivated: browserStore.newPrivateWindow() }
     Shortcut { sequence: "Ctrl+,"; onActivated: settingsPanel.open() }
@@ -1056,7 +1062,7 @@ ApplicationWindow {
                     Layout.rightMargin: 8
                     Rectangle { anchors.centerIn: parent; width: 1; height: parent.height; color: "#456080" }
                 }
-                NavButton { id: downloadsButton; text: "↓"; hint: qsTr("Téléchargements · Ctrl+J"); onClicked: showLibrary("Téléchargements") }
+                NavButton { id: downloadsButton; text: "↓"; hint: qsTr("Téléchargements · Ctrl+J"); onClicked: showLibrary("downloads") }
                 NavButton { id: menuButton; text: "☰"; hint: qsTr("Menu"); onClicked: menu.popup(menuButton, 0, menuButton.height) }
                 Menu {
                     id: menu
@@ -1086,9 +1092,9 @@ ApplicationWindow {
                     GlassMenuItem { text: qsTr("Rouvrir l’onglet fermé          Ctrl+Shift+T"); enabled: closedTabs.length > 0; onTriggered: reopenTab() }
                     GlassMenuItem { text: qsTr("Nouvelle fenêtre privée     Ctrl+Shift+N"); onTriggered: browserStore.newPrivateWindow() }
                     GlassMenuSeparator {}
-                    GlassMenuItem { text: qsTr("Favoris"); onTriggered: showLibrary("Favoris") }
-                    GlassMenuItem { text: qsTr("Historique                                Ctrl+H"); onTriggered: showLibrary("Historique") }
-                    GlassMenuItem { text: qsTr("Téléchargements                      Ctrl+J"); onTriggered: showLibrary("Téléchargements") }
+                    GlassMenuItem { text: qsTr("Favoris"); onTriggered: showLibrary("bookmarks") }
+                    GlassMenuItem { text: qsTr("Historique                                Ctrl+H"); onTriggered: showLibrary("history") }
+                    GlassMenuItem { text: qsTr("Téléchargements                      Ctrl+J"); onTriggered: showLibrary("downloads") }
                     GlassMenuItem { text: qsTr("Rechercher dans la page           Ctrl+F"); onTriggered: { findVisible = true; findBar.focusInput() } }
                     GlassMenuItem { text: qsTr("Ouvrir un fichier…                        Ctrl+O"); onTriggered: openFileDialog.open() }
                     GlassMenuItem { text: qsTr("Enregistrer en PDF…                   Ctrl+P"); enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
@@ -1414,18 +1420,18 @@ ApplicationWindow {
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 20; spacing: 14
             RowLayout {
-                Label { text: librarySection === "Favoris" ? qsTr("Favoris") : librarySection === "Historique" ? qsTr("Historique") : qsTr("Téléchargements"); font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true }
+                Label { text: librarySection === "bookmarks" ? qsTr("Favoris") : librarySection === "history" ? qsTr("Historique") : qsTr("Téléchargements"); font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true }
                 NavButton { text: "×"; hint: qsTr("Fermer"); onClicked: library.close() }
             }
             RowLayout {
                 spacing: 8
-                GlassButton { text: qsTr("Favoris"); highlighted: librarySection === "Favoris"; onClicked: librarySection = "Favoris" }
-                GlassButton { text: qsTr("Historique"); highlighted: librarySection === "Historique"; onClicked: librarySection = "Historique" }
-                GlassButton { text: qsTr("Fichiers"); highlighted: librarySection === "Téléchargements"; onClicked: librarySection = "Téléchargements" }
+                GlassButton { text: qsTr("Favoris"); highlighted: librarySection === "bookmarks"; onClicked: librarySection = "bookmarks" }
+                GlassButton { text: qsTr("Historique"); highlighted: librarySection === "history"; onClicked: librarySection = "history" }
+                GlassButton { text: qsTr("Fichiers"); highlighted: librarySection === "downloads"; onClicked: librarySection = "downloads" }
             }
             TextField {
                 id: librarySearch; Layout.fillWidth: true; placeholderText: qsTr("Filtrer…")
-                visible: librarySection !== "Téléchargements"
+                visible: librarySection !== "downloads"
                 color: CybouTheme.mainText; placeholderTextColor: CybouTheme.mutedText
                 background: Rectangle {
                     radius: 8
@@ -1437,15 +1443,15 @@ ApplicationWindow {
                     border.width: 1
                 }
             }
-            GlassButton { text: qsTr("Effacer l’historique"); visible: librarySection === "Historique"; onClicked: clearHistoryDialog.open() }
-            GlassButton { text: qsTr("Ouvrir le dossier Téléchargements"); visible: librarySection === "Téléchargements"; onClicked: browserStore.openDownloads() }
+            GlassButton { text: qsTr("Effacer l’historique"); visible: librarySection === "history"; onClicked: clearHistoryDialog.open() }
+            GlassButton { text: qsTr("Ouvrir le dossier Téléchargements"); visible: librarySection === "downloads"; onClicked: browserStore.openDownloads() }
             ListView {
                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 8
-                model: librarySection === "Favoris" ? browserStore.bookmarks : librarySection === "Historique" ? browserStore.history : downloadItems
+                model: librarySection === "bookmarks" ? browserStore.bookmarks : librarySection === "history" ? browserStore.history : downloadItems
                 delegate: Rectangle {
                     id: entry
                     required property var modelData
-                    property bool download: librarySection === "Téléchargements"
+                    property bool download: librarySection === "downloads"
                     property bool matches: download || (modelData.title + " " + modelData.url).toLowerCase().includes(librarySearch.text.toLowerCase())
                     width: ListView.view.width; height: matches ? (download ? 152 : 82) : 0; visible: matches
                     radius: 10
@@ -1468,7 +1474,7 @@ ApplicationWindow {
                             spacing: 8
                             GlassButton { text: qsTr("Ouvrir"); visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
                             GlassButton { text: qsTr("Dossier"); visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
-                            GlassButton { text: qsTr("Retirer"); visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
+                            GlassButton { text: qsTr("Retirer"); visible: librarySection === "bookmarks"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
                         }
                         RowLayout {
                             spacing: 8

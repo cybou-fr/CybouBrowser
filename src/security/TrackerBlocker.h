@@ -3,50 +3,58 @@
 #include <QString>
 #include <QStringList>
 
+#include <array>
+
 namespace TrackerBlocker {
 
 using namespace Qt::StringLiterals;
 
+inline bool isSameOrSubdomain(QStringView host, QStringView base) {
+    if (base.isEmpty() || host.isEmpty()) return false;
+    if (host == base) return true;
+    return host.endsWith(base) && host.size() > base.size() && host[host.size() - base.size() - 1] == u'.';
+}
+
 inline bool isTrackerHost(QStringView host) {
-    static const QStringList trackerSuffixes = {
-        u"doubleclick.net"_s,
-        u"google-analytics.com"_s,
-        u"googletagmanager.com"_s,
-        u"googlesyndication.com"_s,
-        u"adservice.google.com"_s,
-        u"pagead2.googlesyndication.com"_s,
-        u"adnxs.com"_s,
-        u"appnexus.com"_s,
-        u"criteo.com"_s,
-        u"criteo.net"_s,
-        u"outbrain.com"_s,
-        u"taboola.com"_s,
-        u"rubiconproject.com"_s,
-        u"pubmatic.com"_s,
-        u"openx.net"_s,
-        u"casalemedia.com"_s,
-        u"scorecardresearch.com"_s,
-        u"hotjar.com"_s,
-        u"clarity.ms"_s,
-        u"segment.io"_s,
-        u"segment.com"_s,
-        u"mixpanel.com"_s,
-        u"connect.facebook.net"_s,
-        u"pixel.facebook.com"_s,
-        u"an.facebook.com"_s,
-        u"bat.bing.com"_s,
-        u"aax.amazon-adsystem.com"_s,
-        u"amazon-adsystem.com"_s,
-        u"mc.yandex.ru"_s,
-        u"advertising.com"_s,
-        u"adroll.com"_s,
-        u"quantserve.com"_s,
-        u"chartbeat.com"_s,
-        u"moatads.com"_s,
-        u"smartadserver.com"_s
+    static constexpr std::array<QStringView, 35> trackerSuffixes = {
+        u"doubleclick.net",
+        u"google-analytics.com",
+        u"googletagmanager.com",
+        u"googlesyndication.com",
+        u"adservice.google.com",
+        u"pagead2.googlesyndication.com",
+        u"adnxs.com",
+        u"appnexus.com",
+        u"criteo.com",
+        u"criteo.net",
+        u"outbrain.com",
+        u"taboola.com",
+        u"rubiconproject.com",
+        u"pubmatic.com",
+        u"openx.net",
+        u"casalemedia.com",
+        u"scorecardresearch.com",
+        u"hotjar.com",
+        u"clarity.ms",
+        u"segment.io",
+        u"segment.com",
+        u"mixpanel.com",
+        u"connect.facebook.net",
+        u"pixel.facebook.com",
+        u"an.facebook.com",
+        u"bat.bing.com",
+        u"aax.amazon-adsystem.com",
+        u"amazon-adsystem.com",
+        u"mc.yandex.ru",
+        u"advertising.com",
+        u"adroll.com",
+        u"quantserve.com",
+        u"chartbeat.com",
+        u"moatads.com",
+        u"smartadserver.com"
     };
     for (const auto &suffix : trackerSuffixes) {
-        if (host == suffix || host.endsWith(u"." + suffix))
+        if (isSameOrSubdomain(host, suffix))
             return true;
     }
     return false;
@@ -59,7 +67,7 @@ inline bool isTracker(const QUrl &requestUrl, const QUrl &firstPartyUrl) {
     // Allow same-origin / first-party requests
     if (firstPartyUrl.isValid()) {
         const QString firstPartyHost = firstPartyUrl.host().toLower();
-        if (host == firstPartyHost || (firstPartyHost.length() > 0 && host.endsWith(u"." + firstPartyHost)))
+        if (isSameOrSubdomain(host, firstPartyHost) || isSameOrSubdomain(firstPartyHost, host))
             return false;
     }
         

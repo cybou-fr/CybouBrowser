@@ -17,6 +17,8 @@
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
 #include <QAccessibilityHints>
 #endif
+#include <QHostAddress>
+#include <optional>
 #include <memory>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
@@ -48,6 +50,9 @@ class BrowserStore : public QObject {
 public:
     explicit BrowserStore(QObject *parent = nullptr) : QObject(parent) {
         settings.remove("preferences/httpsOnly"); // Retire the old persistent global HTTP opt-out.
+        m_historySaveTimer.setInterval(1000);
+        m_historySaveTimer.setSingleShot(true);
+        connect(&m_historySaveTimer, &QTimer::timeout, this, &BrowserStore::flushHistory);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
         connect(QGuiApplication::styleHints()->accessibility(), &QAccessibilityHints::contrastPreferenceChanged, this, &BrowserStore::preferencesChanged);
 #endif
@@ -55,8 +60,23 @@ public:
         connect(QGuiApplication::styleHints()->accessibility(), &QAccessibilityHints::motionPreferenceChanged, this, &BrowserStore::preferencesChanged);
 #endif
     }
+    ~BrowserStore() override {
+        flushHistory();
+    }
     QVariantList bookmarks() const { return settings.value("bookmarks").toList(); }
-    QVariantList history() const { return settings.value("history").toList(); }
+    QVariantList history() const {
+        if (!m_historyCache.has_value()) {
+            m_historyCache = settings.value("history").toList();
+        }
+        return *m_historyCache;
+    }
+    Q_INVOKABLE void flushHistory() {
+        if (m_historyDirty && m_historyCache.has_value()) {
+            settings.setValue("history", *m_historyCache);
+            settings.sync();
+            m_historyDirty = false;
+        }
+    }
     QString downloadsPath() const { return settings.value("preferences/downloadsPath", QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)).toString(); }
     bool askDownloadLocation() const { return settings.value("preferences/askDownloadLocation", false).toBool(); }
     void setAskDownloadLocation(bool value) { settings.setValue("preferences/askDownloadLocation", value); emit preferencesChanged(); }
@@ -122,7 +142,12 @@ public:
     }
     Q_INVOKABLE bool isLocalHost(const QUrl &url) const {
         const auto host = url.host().toLower();
-        return host == "localhost" || host == "127.0.0.1" || host == "::1" || host.endsWith(".local") || host.isEmpty();
+        if (host.isEmpty() || host == "localhost" || host.endsWith(".local") || host.endsWith(".localhost"))
+            return true;
+        const QHostAddress addr(host);
+        if (!addr.isNull() && addr.isLoopback())
+            return true;
+        return false;
     }
     Q_INVOKABLE bool shouldUpgradeToHttps(const QUrl &url) const {
         if (!httpsFirst()) return false;
@@ -385,9 +410,18 @@ public:
         list.prepend(QVariantMap{{"url", url}, {"title", title.isEmpty() ? url : title},
                                  {"time", QDateTime::currentDateTime().toString(Qt::ISODate)}});
         while (list.size() > 1000) list.removeLast();
-        settings.setValue("history", list); emit changed();
+        m_historyCache = list;
+        m_historyDirty = true;
+        if (!m_historySaveTimer.isActive()) m_historySaveTimer.start();
+        emit changed();
     }
-    Q_INVOKABLE void clearHistory() { settings.remove("history"); emit changed(); }
+    Q_INVOKABLE void clearHistory() {
+        m_historySaveTimer.stop();
+        m_historyDirty = false;
+        m_historyCache = QVariantList();
+        settings.remove("history");
+        emit changed();
+    }
     Q_INVOKABLE QVariantList session() const { return settings.value("session").toList(); }
     Q_INVOKABLE void saveSession(const QVariantList &urls) { settings.setValue("session", urls); settings.sync(); }
     Q_INVOKABLE void openDownloads() { QDesktopServices::openUrl(QUrl::fromLocalFile(downloadsPath())); }
@@ -416,4 +450,7 @@ private:
     bool m_testHttp = false;
     QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
     mutable QSettings settings;
+    mutable std::optional<QVariantList> m_historyCache;
+    mutable bool m_historyDirty = false;
+    QTimer m_historySaveTimer;
 };

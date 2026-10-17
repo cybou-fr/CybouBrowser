@@ -216,7 +216,7 @@ Item {
                 spacing: 12
                 Button {
                     text: qsTr("Favoris")
-                    onClicked: root.libraryRequested("Favoris")
+                    onClicked: root.libraryRequested("bookmarks")
                     scale: down ? 0.95 : hovered ? 1.03 : 1.0
                     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
                     contentItem: Text {
@@ -241,7 +241,7 @@ Item {
                 Button {
                     text: qsTr("Historique")
                     visible: !root.privateMode
-                    onClicked: root.libraryRequested("Historique")
+                    onClicked: root.libraryRequested("history")
                     scale: down ? 0.95 : hovered ? 1.03 : 1.0
                     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
                     contentItem: Text {

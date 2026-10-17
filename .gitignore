@@ -2,3 +2,4 @@
 /build-*/
 /.qt/
 *.user
+*.log

@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     }
     QVariantMap initialProps;
     if (app.arguments().contains("--private")) initialProps["privateMode"] = true;
-    if (app.arguments().contains("--open-library")) initialProps["initialLibrarySection"] = "Téléchargements";
+    if (app.arguments().contains("--open-library")) initialProps["initialLibrarySection"] = "downloads";
     if (app.arguments().contains("--open-settings")) initialProps["initialSettingsOpen"] = true;
     if (app.arguments().contains("--open-menu")) initialProps["initialMenuOpen"] = true;
     if (!initialUrl.isEmpty()) initialProps["initialUrlArgument"] = initialUrl;
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
                 QTest::mouseMove(dragWindow, QPoint(80, 300));
                 for (const QSize size : {QSize(1360,900), QSize(820,560)}) {
                     dragWindow->resize(size); QTest::qWait(100);
-                    for (const QString &section : {QString("Téléchargements"), QString("Favoris"), QString("Historique"), QString("settings")}) {
+                    for (const QString &section : {QString("downloads"), QString("bookmarks"), QString("history"), QString("settings")}) {
                         QMetaObject::invokeMethod(root, "prepareSurfaceTest", Q_ARG(QVariant, section));
                         QTest::qWait(300);
                         QVariant state;
