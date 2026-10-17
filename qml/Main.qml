@@ -1301,7 +1301,7 @@ ApplicationWindow {
                     background: Rectangle { radius: 7; color: suggestionIndex === suggestionButton.index || suggestionButton.hovered ? CybouTheme.glassHover : "transparent" }
                     contentItem: RowLayout {
                         spacing: 12
-                        Label { text: suggestionButton.modelData.kind === "Favori" ? "☆" : "↶"; color: CybouTheme.secondaryText; font.pixelSize: 20 }
+                        Label { text: suggestionButton.modelData.kindId === "bookmark" || suggestionButton.modelData.kind === "Favori" ? "☆" : "↶"; color: CybouTheme.secondaryText; font.pixelSize: 20 }
                         ColumnLayout {
                             Layout.fillWidth: true; spacing: 2
                             Label { Layout.fillWidth: true; text: suggestionButton.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: CybouTheme.mainText; font.pixelSize: 12 }

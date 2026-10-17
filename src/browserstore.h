@@ -147,6 +147,18 @@ public:
             return true;
         return false;
     }
+    Q_INVOKABLE bool isPrivateNetwork(const QUrl &url) const {
+        if (isLocalHost(url)) return true;
+        const auto host = url.host().toLower();
+        const QHostAddress addr(host);
+        if (addr.isNull()) return false;
+        return addr.isInSubnet(QHostAddress(QStringLiteral("10.0.0.0")), 8)
+            || addr.isInSubnet(QHostAddress(QStringLiteral("172.16.0.0")), 12)
+            || addr.isInSubnet(QHostAddress(QStringLiteral("192.168.0.0")), 16)
+            || addr.isInSubnet(QHostAddress(QStringLiteral("169.254.0.0")), 16)
+            || addr.isInSubnet(QHostAddress(QStringLiteral("fc00::")), 7)
+            || addr.isInSubnet(QHostAddress(QStringLiteral("fe80::")), 10);
+    }
     Q_INVOKABLE bool shouldUpgradeToHttps(const QUrl &url) const {
         if (!httpsFirst()) return false;
         if (url.scheme().compare("http", Qt::CaseInsensitive) != 0) return false;
@@ -372,18 +384,20 @@ public:
         if (needle.isEmpty()) return {};
         QVariantList result;
         QSet<QString> seen;
-        auto appendMatches = [&](const QVariantList &items, const QString &kind) {
+        auto appendMatches = [&](const QVariantList &items, const QString &kind, const QString &kindId) {
             for (const auto &item : items) {
                 auto row = item.toMap();
                 const auto url = row.value("url").toString();
                 const auto title = row.value("title").toString();
                 if (!isWebUrl(url) || seen.contains(url) || (!url.contains(needle, Qt::CaseInsensitive) && !title.contains(needle, Qt::CaseInsensitive))) continue;
-                row["kind"] = kind; result.append(row); seen.insert(url);
+                row["kind"] = kind;
+                row["kindId"] = kindId;
+                result.append(row); seen.insert(url);
                 if (result.size() >= 8) break;
             }
         };
-        appendMatches(bookmarks(), "Favori");
-        if (includeHistory && result.size() < 8) appendMatches(history(), "Historique");
+        appendMatches(bookmarks(), "Favori", "bookmark");
+        if (includeHistory && result.size() < 8) appendMatches(history(), "Historique", "history");
         return result;
     }
     Q_INVOKABLE bool isBookmarked(const QString &url) const {

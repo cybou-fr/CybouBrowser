@@ -57,6 +57,16 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
             || !store.canOpenDownloadedFile(documentPath)
             || store.canOpenDownloadedFile(files.filePath("missing.pdf"))) return 2;
         qInfo() << "DOWNLOAD_LAUNCH_GUARD_TEST PASS: executable and missing file denied, document eligible for review";
+        if (!store.isPrivateNetwork(QUrl("http://127.0.0.1:8080/"))
+            || !store.isPrivateNetwork(QUrl("http://127.0.0.5:80/"))
+            || !store.isPrivateNetwork(QUrl("http://localhost:3000/"))
+            || !store.isPrivateNetwork(QUrl("http://10.1.2.3/"))
+            || !store.isPrivateNetwork(QUrl("http://172.16.5.6/"))
+            || !store.isPrivateNetwork(QUrl("http://192.168.1.1/"))
+            || !store.isPrivateNetwork(QUrl("http://169.254.10.20/"))
+            || store.isPrivateNetwork(QUrl("https://8.8.8.8/"))
+            || store.isPrivateNetwork(QUrl("https://example.com/"))) return 2;
+        qInfo() << "PRIVATE_NETWORK_GUARD_TEST PASS: loopback, RFC 1918 and link-local classified as private";
     }
     const struct { const char *url; bool blocked; } cases[] = {
         {"http://example.org/", true}, {"HTTP://example.org/", true},
