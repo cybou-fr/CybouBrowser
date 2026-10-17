@@ -1,13 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Effects
 import Cybou
 
 Item {
     id: launcher
     implicitWidth: launcherRow.implicitWidth
     implicitHeight: 36
+
+    property Item wallpaperItem: null
+    property real blurFactor: 0.85
 
     signal navigateRequested(string url)
     signal settingsRequested()
@@ -49,11 +51,15 @@ Item {
             contentItem: RowLayout {
                 id: mailRow
                 anchors.centerIn: parent
-                spacing: 6
-                Text {
-                    text: "✉"
-                    color: mailButton.hovered ? "#38BDF8" : "#94A3B8"
-                    font.pixelSize: 13
+                spacing: 7
+                Image {
+                    source: "qrc:/assets/cloud/mail.svg"
+                    width: 16
+                    height: 16
+                    sourceSize.width: 16
+                    sourceSize.height: 16
+                    fillMode: Image.PreserveAspectFit
+                    opacity: mailButton.hovered ? 1.0 : 0.8
                 }
                 Text {
                     text: qsTr("Courrier")
@@ -153,45 +159,30 @@ Item {
         }
     }
 
-    // Floating Glass Popup for the 3x3 App Launcher
+    // Floating Frosted Glass Popup for the App Launcher
     Popup {
         id: launcherPopup
         parent: gridButton
         x: gridButton.width - width
         y: gridButton.height + 8
-        width: 326
+        width: 336
+        implicitHeight: Math.min(500, popupCol.implicitHeight + 28)
         padding: 14
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
-        background: Rectangle {
+        background: FrostedGlassSurface {
+            sourceItem: launcher.wallpaperItem
+            blurFactor: launcher.blurFactor
             radius: 16
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#E80E2444" }
-                GradientStop { position: 1.0; color: "#F4061326" }
-            }
-            border.color: CybouTheme.borderHighlight
-            border.width: 1.5
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: "#B0000000"
-                shadowBlur: 1.0
-                shadowVerticalOffset: 12
-            }
-
-            Rectangle {
-                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
-                height: 1; color: CybouTheme.glassSheen; radius: parent.radius
-            }
         }
 
         contentItem: ColumnLayout {
+            id: popupCol
             spacing: 12
 
-            // Header with provider info
+            // Header with title and settings cog
             RowLayout {
                 Layout.fillWidth: true
                 Label {
@@ -232,37 +223,124 @@ Item {
                 color: "#205080"
             }
 
-            // Grid of cloud app tiles (3 columns)
-            GridLayout {
-                id: appsGrid
-                columns: 3
-                rowSpacing: 10
-                columnSpacing: 10
-                Layout.alignment: Qt.AlignHCenter
-                visible: cloudMgr && cloudMgr.resolvedServices.length > 0
+            // Scrollable grid area
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.maximumHeight: 400
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-                Repeater {
-                    model: cloudMgr ? cloudMgr.resolvedServices : []
-                    delegate: CloudAppTile {
-                        tileData: modelData
-                        onTriggered: function(url) {
-                            launcherPopup.close()
-                            launcher.navigateRequested(url)
-                        }
-                        onConfigureRequested: {
-                            launcherPopup.close()
-                            launcher.settingsRequested()
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 12
+
+                    // Primary apps section
+                    GridLayout {
+                        id: appsGrid
+                        columns: 3
+                        rowSpacing: 10
+                        columnSpacing: 8
+                        Layout.alignment: Qt.AlignHCenter
+                        visible: cloudMgr && cloudMgr.resolvedApps.length > 0
+
+                        Repeater {
+                            model: {
+                                if (!cloudMgr) return []
+                                return cloudMgr.resolvedApps.filter(function(item) {
+                                    return item.section !== "other"
+                                })
+                            }
+                            delegate: CloudAppTile {
+                                tileData: modelData
+                                onTriggered: function(appId, url) {
+                                    launcherPopup.close()
+                                    let targetUrl = url
+                                    if (cloudMgr && appId.length > 0) {
+                                        const resolved = cloudMgr.resolveAppUrl(appId)
+                                        if (resolved.toString().length > 0) {
+                                            targetUrl = resolved.toString()
+                                        }
+                                    }
+                                    if (targetUrl && targetUrl.length > 0) {
+                                        launcher.navigateRequested(targetUrl)
+                                    }
+                                }
+                                onConfigureRequested: {
+                                    launcherPopup.close()
+                                    launcher.settingsRequested()
+                                }
+                            }
                         }
                     }
-                }
-            }
 
-            Label {
-                visible: !cloudMgr || cloudMgr.resolvedServices.length === 0
-                text: qsTr("Aucune application disponible.")
-                color: "#64748B"
-                font.pixelSize: 12
-                Layout.alignment: Qt.AlignHCenter
+                    // Secondary section ("Autres services") for portals or info items
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        visible: otherRepeater.count > 0
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 1
+                            color: "#183858"
+                        }
+
+                        Label {
+                            text: qsTr("Autres services")
+                            color: "#94A3B8"
+                            font.pixelSize: 11
+                            font.bold: true
+                            Layout.leftMargin: 4
+                        }
+
+                        GridLayout {
+                            columns: 3
+                            rowSpacing: 10
+                            columnSpacing: 8
+                            Layout.alignment: Qt.AlignHCenter
+
+                            Repeater {
+                                id: otherRepeater
+                                model: {
+                                    if (!cloudMgr) return []
+                                    return cloudMgr.resolvedApps.filter(function(item) {
+                                        return item.section === "other"
+                                    })
+                                }
+                                delegate: CloudAppTile {
+                                    tileData: modelData
+                                    onTriggered: function(appId, url) {
+                                        launcherPopup.close()
+                                        let targetUrl = url
+                                        if (cloudMgr && appId.length > 0) {
+                                            const resolved = cloudMgr.resolveAppUrl(appId)
+                                            if (resolved.toString().length > 0) {
+                                                targetUrl = resolved.toString()
+                                            }
+                                        }
+                                        if (targetUrl && targetUrl.length > 0) {
+                                            launcher.navigateRequested(targetUrl)
+                                        }
+                                    }
+                                    onConfigureRequested: {
+                                        launcherPopup.close()
+                                        launcher.settingsRequested()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Label {
+                        visible: !cloudMgr || cloudMgr.resolvedApps.length === 0
+                        text: qsTr("Aucune application disponible.")
+                        color: "#64748B"
+                        font.pixelSize: 12
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: 12
+                    }
+                }
             }
         }
     }

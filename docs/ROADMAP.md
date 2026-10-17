@@ -17,7 +17,7 @@
 | **ActivityAggregator и семантика цветов (S1.3)** | **implemented, tested (recorded):** строгое разделение `EffectivePolicy` и `ObservedEvent`, правдивый скоуп (tab vs profile), разграничение индикаторов активности от постоянных разрешений |
 | **Navigation Guard и PNA (S2.1)** | **implemented, tested (recorded):** блокировка обращений публичных страниц в локальную сеть/localhost (Private Network Access / RFC 1918) и детекция IDN-гомографических атак в `NavigationGuard` |
 | **Restricted Browsing (S2.2)** | **implemented, tested (recorded):** запуск подозрительных сайтов (IDN-гомографы, опасные сетевые порты) в защищённом режиме: JS-off до загрузки документа, автозапрет sensitive permissions, отключение localStorage и popups, предупреждающий баннер безопасности с кнопками безопасного выхода и явного включения JS |
-| **Cloud Services (ADR 0007)** | **implemented, tested (recorded):** выбираемая облачная экосистема (Proton, Google, Microsoft, Infomaniak, Zoho, Nextcloud, Apple iCloud), Nextcloud self-hosted с валидацией HTTPS, Dark Glass App Launcher 3x3 на NewTabPage, строгая валидация и восстановление настроек |
+| **Cloud Services (ADR 0007 / Cloud Glass 2.0)** | **implemented, tested (recorded):** выбираемая облачная экосистема (Proton, Google, Microsoft, Infomaniak, Zoho, Nextcloud, Apple iCloud), расширенный каталог экосистемы (Proton Pass, Lumo AI, Proton Wallet, Proton VPN portal, Google Keep, OneNote, To Do), FrostedGlassSurface с динамическим размытием обоев Alpine Dawn, 13 векторных SVG-иконок без сетевых запросов, 3-колоночный скроллируемый лаунчер без вложенных рамок и мешающих тултипов, Nextcloud self-hosted с валидацией HTTPS, строгая валидация и восстановление настроек |
 | **Network events** | **implemented:** ограниченная очередь, sanitized origin, blocked reason и type, только scope профиля; нет проверенного per-tab attribution |
 | **Windows** | **tested (recorded):** C++20 Release, Qt 6.12/MSVC, security/controlbar/surface/transport suites; Linux/macOS и release qualification остаются unverified |
 
@@ -27,9 +27,14 @@
 
 **Release gate (план проверки):** инвентаризация исполняемых зависимостей и подтверждение отсутствия extension loader/store/install/update, privileged userscripts и внешних executable helpers в обязательной поставке. Пока не отмечено `tested`.
 
-## Cloud Services — РЕАЛИЗОВАНО И ПРОВЕРЕНО (ADR 0007)
+## Cloud Services — РЕАЛИЗОВАНО И ПРОВЕРЕНО (ADR 0007 / Cloud Glass 2.0)
 
-**Режим выбираемой облачной экосистемы** — выбор общего провайдера (`proton` по умолчанию, Google Workspace, Microsoft 365, Infomaniak, Zoho, Nextcloud Hub, Apple iCloud; `none` для выключения) и независимая настройка для каждой из 7 ролей (Mail, Calendar, Files, Docs, Sheets, Presentations, Meetings). Полноценная поддержка self-hosted Nextcloud с требованием настройки (`requiresConfiguration`). Кнопка «Почта» (скрывается при недоступности) и выпадающая Dark Glass панель 3×3 на `NewTabPage`. Открытие официальных веб-приложений в обычных вкладках со стандартными политиками безопасности. Статус: **implemented, tested (recorded)**.
+**Режим выбираемой облачной экосистемы и Cloud Glass 2.0** — выбор общего провайдера (`proton` по умолчанию, Google Workspace, Microsoft 365, Infomaniak, Zoho, Nextcloud Hub, Apple iCloud; `none` для выключения), независимая настройка для каждой из 7 ролей (Mail, Calendar, Files, Docs, Sheets, Presentations, Meetings), а также полноценная поддержка расширенных веб-сервисов экосистемы:
+- **Proton:** Proton Mail, Proton Calendar, Proton Drive, Proton Docs, Proton Sheets, Proton Meet, а также отдельные веб-приложения: Proton Pass (`pass.proton.me`), Lumo AI (`lumo.proton.me`), Proton Wallet (`wallet.proton.me`), портал Proton VPN (`account.proton.me/u/0/vpn`) и информация об Authenticator (`proton.me/pass/authenticator`).
+- **Google & Microsoft:** поддержка Google Keep, Microsoft To Do и OneNote без конфликта с ролями.
+- **Cloud Glass 2.0:** переработан `CloudAppLauncher.qml` с использованием `FrostedGlassSurface.qml` (настоящее размытие обоев NewTabPage в координатах окна, световой блик, тонкая окантовка 1.5px), устранение визуального шума «карточки внутри карточек» в `CloudAppTile.qml` (прозрачный контейнер в покое, мягкая подсветка `#1838BDF8` при наведении, кольцо фокуса клавиатуры `#38BDF8`), удаление перекрывающих тултипов, переход на 13 локальных векторных SVG-иконок (`assets/cloud/`) без сетевых утечек.
+- **Self-hosted Nextcloud:** требование предварительной настройки (`requiresConfiguration`), проверка персонального HTTPS base URL и санитизация адреса.
+- **Безопасность запуска:** C++ валидация URL (`resolveAppUrl`) и верификация хостов (`isVerifiedServiceUrl`). Статус: **implemented, tested (recorded)**.
 
 ## Далее — приоритетный порядок
 

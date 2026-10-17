@@ -196,6 +196,18 @@ QUrl CloudServiceManager::resolveUrl(const QString &role) const {
     return QUrl(map.value(QStringLiteral("url")).toString());
 }
 
+QUrl CloudServiceManager::resolveAppUrl(const QString &appId) const {
+    const auto appOpt = CloudProviderCatalog::findApp(appId);
+    if (!appOpt) return {};
+
+    const auto &app = *appOpt;
+    if (app.providerId == QStringLiteral("nextcloud")) {
+        if (m_nextcloudBaseUrl.isEmpty()) return {};
+        return QUrl(m_nextcloudBaseUrl + app.officialUrl.toString());
+    }
+    return app.officialUrl;
+}
+
 QUrl CloudServiceManager::mailUrl() const {
     return resolveUrl(QStringLiteral("mail"));
 }
@@ -224,15 +236,76 @@ QVariantList CloudServiceManager::availableProviders() const {
 }
 
 QVariantList CloudServiceManager::resolvedServices() const {
+    return resolvedApps();
+}
+
+QVariantList CloudServiceManager::resolvedApps() const {
     QVariantList list;
     if (!isEnabled()) return list;
 
+    // Set of appIds already added to avoid duplicates
+    QSet<QString> addedAppIds;
+
+    // 1. First add the 7 resolved role services based on overrides/default
     for (const auto &role : CloudProviderCatalog::supportedRoles()) {
         const auto map = resolveRole(role);
-        if (!map.isEmpty()) {
-            list.append(map);
+        if (map.isEmpty()) continue;
+
+        const QString roleProviderId = map.value(QStringLiteral("providerId")).toString();
+        // Look up corresponding CloudAppInfo
+        bool foundApp = false;
+        for (const auto &app : CloudProviderCatalog::allApps()) {
+            if (app.providerId == roleProviderId && app.roleId == role) {
+                QVariantMap item = map;
+                item.insert(QStringLiteral("appId"), app.appId);
+                item.insert(QStringLiteral("iconId"), app.iconId);
+                item.insert(QStringLiteral("kind"), static_cast<int>(app.kind));
+                item.insert(QStringLiteral("section"), QStringLiteral("apps"));
+                list.append(item);
+                addedAppIds.insert(app.appId);
+                foundApp = true;
+                break;
+            }
+        }
+        if (!foundApp) {
+            // Fallback for custom or unmatched role service
+            QVariantMap item = map;
+            item.insert(QStringLiteral("appId"), roleProviderId + QStringLiteral("_") + role);
+            item.insert(QStringLiteral("iconId"), map.value(QStringLiteral("icon")).toString());
+            item.insert(QStringLiteral("kind"), static_cast<int>(CloudAppKind::WebApp));
+            item.insert(QStringLiteral("section"), QStringLiteral("apps"));
+            list.append(item);
+            addedAppIds.insert(item.value(QStringLiteral("appId")).toString());
         }
     }
+
+    // 2. Add standalone apps for the default provider (e.g. Proton Pass, Lumo, Wallet, VPN)
+    const auto providerOpt = CloudProviderCatalog::findProvider(m_defaultProvider);
+    const QString defaultProviderName = providerOpt ? providerOpt->name : m_defaultProvider;
+
+    for (const auto &app : CloudProviderCatalog::appsForProvider(m_defaultProvider)) {
+        if (!app.roleId.isEmpty()) continue; // Skip role apps (already resolved above)
+        if (!app.enabledByDefault) continue;
+        if (addedAppIds.contains(app.appId)) continue;
+
+        QVariantMap item;
+        item.insert(QStringLiteral("appId"), app.appId);
+        item.insert(QStringLiteral("name"), app.displayName);
+        item.insert(QStringLiteral("providerId"), app.providerId);
+        item.insert(QStringLiteral("providerName"), defaultProviderName);
+        item.insert(QStringLiteral("role"), QString());
+        item.insert(QStringLiteral("roleName"), QString());
+        item.insert(QStringLiteral("iconId"), app.iconId);
+        item.insert(QStringLiteral("icon"), app.iconId);
+        item.insert(QStringLiteral("kind"), static_cast<int>(app.kind));
+        item.insert(QStringLiteral("requiresConfiguration"), app.requiresConfiguration);
+        item.insert(QStringLiteral("url"), app.officialUrl.toString());
+        item.insert(QStringLiteral("section"), (app.kind == CloudAppKind::WebApp) ? QStringLiteral("apps") : QStringLiteral("other"));
+
+        list.append(item);
+        addedAppIds.insert(app.appId);
+    }
+
     return list;
 }
 

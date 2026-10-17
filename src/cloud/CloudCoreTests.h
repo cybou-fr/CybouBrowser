@@ -140,7 +140,48 @@ inline bool runCloudCoreTests() {
         if (!mgr.resolvedServices().isEmpty()) return false;
         if (mgr.mailUrl().isValid() || mgr.isMailAvailable()) return false;
 
-        // 4. Corrupted settings recovery
+        // 4. Extended Apps & Ecosystem tests (Cloud Glass 2.0)
+        mgr.setDefaultProvider("proton");
+        mgr.resetAllOverrides();
+        const auto resolvedProtonApps = mgr.resolvedApps();
+        // Should contain 6 roles (no presentations) + standalone Proton apps (Pass, Lumo, Wallet, VPN)
+        if (resolvedProtonApps.size() < 10) {
+            qCritical() << "CLOUD_CORE_TEST FAIL: expected at least 10 proton apps, got" << resolvedProtonApps.size();
+            return false;
+        }
+
+        // Check Proton Pass, Lumo, Wallet
+        const auto passOpt = CloudProviderCatalog::findApp("proton_pass");
+        if (!passOpt || passOpt->officialUrl != QUrl("https://pass.proton.me/") || passOpt->iconId != "pass") return false;
+        const auto lumoOpt = CloudProviderCatalog::findApp("proton_lumo");
+        if (!lumoOpt || lumoOpt->officialUrl != QUrl("https://lumo.proton.me/") || lumoOpt->iconId != "ai") return false;
+        const auto walletOpt = CloudProviderCatalog::findApp("proton_wallet");
+        if (!walletOpt || walletOpt->officialUrl != QUrl("https://wallet.proton.me/") || walletOpt->iconId != "wallet") return false;
+
+        // Test resolveAppUrl
+        if (mgr.resolveAppUrl("proton_pass") != QUrl("https://pass.proton.me/")) return false;
+        if (mgr.resolveAppUrl("proton_lumo") != QUrl("https://lumo.proton.me/")) return false;
+        if (mgr.resolveAppUrl("proton_wallet") != QUrl("https://wallet.proton.me/")) return false;
+        if (mgr.resolveAppUrl("invalid_app_id").isValid()) return false;
+
+        // Test role override non-duplication
+        // If user overrides mail to Google, mail role becomes Gmail, Proton Mail is replaced in role list,
+        // but standalone Proton apps (Pass, Lumo, etc.) remain intact
+        mgr.setRoleOverride("mail", "google");
+        const auto mixedApps = mgr.resolvedApps();
+        bool foundGmail = false;
+        bool foundProtonMail = false;
+        for (const auto &item : mixedApps) {
+            const auto map = item.toMap();
+            if (map.value("appId").toString() == "google_mail") foundGmail = true;
+            if (map.value("appId").toString() == "proton_mail") foundProtonMail = true;
+        }
+        if (!foundGmail || foundProtonMail) {
+            qCritical() << "CLOUD_CORE_TEST FAIL: role override failed non-duplication test";
+            return false;
+        }
+
+        // 5. Corrupted settings recovery
         settings.setValue("cloud/configuration", QStringLiteral("{ corrupt: json }"));
         CloudServiceManager corruptMgr;
         if (corruptMgr.defaultProvider() != "proton" || !corruptMgr.isEnabled()) return false;
@@ -149,6 +190,6 @@ inline bool runCloudCoreTests() {
         settings.setValue("cloud/configuration", backup);
     }
 
-    qInfo() << "CLOUD_CORE_TEST PASS: catalog completeness, verified HTTPS URLs, role overrides, inherit & disabled semantics";
+    qInfo() << "CLOUD_CORE_TEST PASS: catalog completeness, verified HTTPS URLs, role overrides, inherit & disabled semantics, extended apps & ecosystem resolution";
     return true;
 }

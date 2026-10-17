@@ -20,6 +20,8 @@ Item {
         anchors.margins: 20
         anchors.topMargin: 16
         z: 10
+        wallpaperItem: bg
+        blurFactor: root.blurFactor
         onNavigateRequested: function(url) { root.navigateRequested(url) }
         onSettingsRequested: root.settingsRequested()
     }

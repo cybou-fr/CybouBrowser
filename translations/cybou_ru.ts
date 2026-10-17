@@ -1458,22 +1458,22 @@ Passés par exception : %5</source>
         <translation>Почта</translation>
     </message>
     <message>
-        <location filename="../qml/CloudAppLauncher.qml" line="144"/>
         <source>Applications cloud (CYBOU Cloud)</source>
         <translation>Облачные сервисы (CYBOU Cloud)</translation>
     </message>
     <message>
-        <location filename="../qml/CloudAppLauncher.qml" line="192"/>
         <source>Applications cloud</source>
         <translation>Облачные приложения</translation>
     </message>
     <message>
-        <location filename="../qml/CloudAppLauncher.qml" line="202"/>
         <source>Configurer les services cloud</source>
         <translation>Настроить облачные сервисы</translation>
     </message>
     <message>
-        <location filename="../qml/CloudAppLauncher.qml" line="249"/>
+        <source>Autres services</source>
+        <translation>Другие службы</translation>
+    </message>
+    <message>
         <source>Aucune application disponible.</source>
         <translation>Нет доступных приложений.</translation>
     </message>
@@ -1485,8 +1485,12 @@ Passés par exception : %5</source>
         <translation>Требуется настройка</translation>
     </message>
     <message>
-        <source>Cliquez pour configurer l’adresse de votre serveur dans les paramètres.</source>
-        <translation>Нажмите, чтобы настроить адрес сервера в параметрах.</translation>
+        <source>Portail</source>
+        <translation>Портал</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation>Инфо</translation>
     </message>
 </context>
 <context>

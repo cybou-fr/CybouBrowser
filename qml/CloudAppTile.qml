@@ -3,39 +3,42 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Cybou
 
-Rectangle {
+Item {
     id: tile
     property var tileData: (typeof modelData !== "undefined") ? modelData : null
-    signal triggered(string url)
+    signal triggered(string appId, string url)
     signal configureRequested()
 
-    implicitWidth: 92
-    implicitHeight: 98
-    radius: 12
-    color: tileMouse.pressed ? "#3538BDF8" : (tile.activeFocus || tileMouse.containsMouse) ? "#2038BDF8" : "#0D1E36"
-    border.color: tile.activeFocus ? "#38BDF8" : tileMouse.containsMouse ? "#608BB8" : "#204060"
-    border.width: tile.activeFocus ? 1.5 : 1
+    implicitWidth: 94
+    implicitHeight: 82
 
     focus: true
     activeFocusOnTab: true
-
-    Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
-    Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
-
-    scale: tileMouse.pressed ? 0.94 : (tile.activeFocus || tileMouse.containsMouse) ? 1.04 : 1.0
-    Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
 
     function activateTile() {
         if (!tile.tileData) return
         if (tile.tileData.requiresConfiguration) {
             tile.configureRequested()
-        } else if (tile.tileData.url) {
-            tile.triggered(tile.tileData.url)
+        } else {
+            tile.triggered(tile.tileData.appId || "", tile.tileData.url || "")
         }
     }
 
     Keys.onReturnPressed: activateTile()
     Keys.onSpacePressed: activateTile()
+
+    // Smooth hover / active highlight background (transparent at rest)
+    Rectangle {
+        id: bgHighlight
+        anchors.fill: parent
+        radius: 12
+        color: tileMouse.pressed ? "#2E38BDF8" : (tile.activeFocus || tileMouse.containsMouse) ? "#1838BDF8" : "transparent"
+        border.color: tile.activeFocus ? "#38BDF8" : (tileMouse.containsMouse ? "#4038BDF8" : "transparent")
+        border.width: tile.activeFocus ? 1.5 : 1
+
+        Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
+        Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }
+    }
 
     MouseArea {
         id: tileMouse
@@ -47,78 +50,60 @@ Rectangle {
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 4
+        spacing: 5
 
-        // Icon badge
-        Rectangle {
+        // Vector SVG icon (34x34)
+        Item {
             Layout.alignment: Qt.AlignHCenter
-            implicitWidth: 42
-            implicitHeight: 42
-            radius: 12
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: (tile.activeFocus || tileMouse.containsMouse) ? "#5038BDF8" : "#3038BDF8" }
-                GradientStop { position: 1.0; color: (tile.activeFocus || tileMouse.containsMouse) ? "#301D4ED8" : "#181D4ED8" }
-            }
-            border.color: (tile.activeFocus || tileMouse.containsMouse) ? "#8038BDF8" : "#4038BDF8"
-            border.width: 1
+            implicitWidth: 34
+            implicitHeight: 34
 
-            Text {
+            Image {
+                id: appIcon
                 anchors.centerIn: parent
-                text: {
-                    const r = tile.tileData ? tile.tileData.role : ""
-                    if (r === "mail") return "✉"
-                    if (r === "calendar") return "📅"
-                    if (r === "files") return "📁"
-                    if (r === "docs") return "📄"
-                    if (r === "sheets") return "📊"
-                    if (r === "presentations") return "📽"
-                    if (r === "meetings") return "📹"
-                    return "☁"
+                width: 32
+                height: 32
+                sourceSize.width: 32
+                sourceSize.height: 32
+                fillMode: Image.PreserveAspectFit
+                source: {
+                    const iconName = tile.tileData ? (tile.tileData.iconId || tile.tileData.icon || "cloud") : "cloud"
+                    return "qrc:/assets/cloud/" + iconName + ".svg"
                 }
-                font.pixelSize: 21
-                color: "#FFFFFF"
+                smooth: true
+                opacity: tileMouse.pressed ? 0.75 : 1.0
             }
         }
 
-        // App name
+        // App display name (12px, clean contrast)
         Text {
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
-            Layout.maximumWidth: 86
+            Layout.maximumWidth: 88
             text: tile.tileData ? tile.tileData.name : ""
             color: (tile.activeFocus || tileMouse.containsMouse) ? "#FFFFFF" : "#E2E8F0"
-            font.pixelSize: 11
+            font.pixelSize: 12
             font.bold: true
-            wrapMode: Text.WordWrap
-            maximumLineCount: 2
+            wrapMode: Text.NoWrap
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
         }
 
-        // Provider label / config hint
+        // Subtitle or configuration alert badge
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: {
                 if (!tile.tileData) return ""
                 if (tile.tileData.requiresConfiguration) return qsTr("À configurer")
+                if (tile.tileData.kind === 1) return qsTr("Portail")
+                if (tile.tileData.kind === 2) return qsTr("Info")
                 return tile.tileData.providerName || ""
             }
-            color: (tile.tileData && tile.tileData.requiresConfiguration) ? "#F59E0B" : "#64748B"
+            color: (tile.tileData && tile.tileData.requiresConfiguration) ? "#F59E0B" : "#7A8FA6"
             font.pixelSize: 9
             font.bold: tile.tileData && tile.tileData.requiresConfiguration
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
-        }
-    }
-
-    GlassToolTip {
-        parent: tile
-        visible: (tile.activeFocus || tileMouse.containsMouse) && !tileMouse.pressed
-        delay: 500
-        text: {
-            if (!tile.tileData) return ""
-            if (tile.tileData.requiresConfiguration) return qsTr("Cliquez pour configurer l’adresse de votre serveur dans les paramètres.")
-            return tile.tileData.roleName + " — " + tile.tileData.name + " (" + (tile.tileData.providerName || "") + ")"
         }
     }
 }

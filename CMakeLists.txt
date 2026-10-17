@@ -22,6 +22,9 @@ qt_add_resources(cybou_core "brand" PREFIX "/"
 file(GLOB CONTROL_BAR_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/controlbar/*.svg")
 qt_add_resources(cybou_core "controlbar_icons" PREFIX "/" FILES ${CONTROL_BAR_ICONS})
 
+file(GLOB CLOUD_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/cloud/*.svg")
+qt_add_resources(cybou_core "cloud_icons" PREFIX "/" FILES ${CLOUD_ICONS})
+
 set_source_files_properties(qml/CybouTheme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
@@ -51,6 +54,7 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         qml/GlassToolTip.qml
         qml/SettingsPanel.qml
         qml/CloudSettingsSection.qml
+        qml/FrostedGlassSurface.qml
         qml/CloudAppTile.qml
         qml/CloudAppLauncher.qml
         qml/AdaptiveAddress.qml

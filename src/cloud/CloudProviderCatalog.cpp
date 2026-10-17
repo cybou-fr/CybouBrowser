@@ -114,6 +114,96 @@ const QVector<CloudProviderInfo> &CloudProviderCatalog::allProviders() {
     return providers;
 }
 
+const QVector<CloudAppInfo> &CloudProviderCatalog::allApps() {
+    static const QVector<CloudAppInfo> apps = {
+        // Proton Suite (Roles + Standalone WebApps / Portals / Info)
+        { QStringLiteral("proton_mail"), QStringLiteral("proton"), QStringLiteral("Proton Mail"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("https://mail.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_calendar"), QStringLiteral("proton"), QStringLiteral("Proton Calendar"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("https://calendar.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_drive"), QStringLiteral("proton"), QStringLiteral("Proton Drive"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("https://drive.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_docs"), QStringLiteral("proton"), QStringLiteral("Proton Docs"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("https://docs.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_sheets"), QStringLiteral("proton"), QStringLiteral("Proton Sheets"), QStringLiteral("sheets"), QStringLiteral("sheets"), QUrl(QStringLiteral("https://drive.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_meet"), QStringLiteral("proton"), QStringLiteral("Proton Meet"), QStringLiteral("meetings"), QStringLiteral("meet"), QUrl(QStringLiteral("https://meet.proton.me/")), CloudAppKind::WebApp, true, false },
+        // Standalone Proton apps
+        { QStringLiteral("proton_pass"), QStringLiteral("proton"), QStringLiteral("Proton Pass"), QString(), QStringLiteral("pass"), QUrl(QStringLiteral("https://pass.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_lumo"), QStringLiteral("proton"), QStringLiteral("Lumo AI"), QString(), QStringLiteral("ai"), QUrl(QStringLiteral("https://lumo.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_wallet"), QStringLiteral("proton"), QStringLiteral("Proton Wallet"), QString(), QStringLiteral("wallet"), QUrl(QStringLiteral("https://wallet.proton.me/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("proton_vpn"), QStringLiteral("proton"), QStringLiteral("Proton VPN"), QString(), QStringLiteral("vpn"), QUrl(QStringLiteral("https://account.proton.me/u/0/vpn")), CloudAppKind::AccountPortal, true, false },
+        { QStringLiteral("proton_authenticator"), QStringLiteral("proton"), QStringLiteral("Proton Authenticator"), QString(), QStringLiteral("authenticator"), QUrl(QStringLiteral("https://proton.me/pass/authenticator")), CloudAppKind::ProductInfo, false, false },
+
+        // Google Suite
+        { QStringLiteral("google_mail"), QStringLiteral("google"), QStringLiteral("Gmail"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("https://mail.google.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_calendar"), QStringLiteral("google"), QStringLiteral("Google Agenda"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("https://calendar.google.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_drive"), QStringLiteral("google"), QStringLiteral("Google Drive"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("https://drive.google.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_docs"), QStringLiteral("google"), QStringLiteral("Google Docs"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("https://docs.google.com/document/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_sheets"), QStringLiteral("google"), QStringLiteral("Google Sheets"), QStringLiteral("sheets"), QStringLiteral("sheets"), QUrl(QStringLiteral("https://docs.google.com/spreadsheets/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_slides"), QStringLiteral("google"), QStringLiteral("Google Slides"), QStringLiteral("presentations"), QStringLiteral("presentations"), QUrl(QStringLiteral("https://docs.google.com/presentation/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_meet"), QStringLiteral("google"), QStringLiteral("Google Meet"), QStringLiteral("meetings"), QStringLiteral("meet"), QUrl(QStringLiteral("https://meet.google.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("google_keep"), QStringLiteral("google"), QStringLiteral("Google Keep"), QString(), QStringLiteral("docs"), QUrl(QStringLiteral("https://keep.google.com/")), CloudAppKind::WebApp, true, false },
+
+        // Microsoft 365 Suite
+        { QStringLiteral("ms_mail"), QStringLiteral("microsoft"), QStringLiteral("Outlook"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("https://outlook.live.com/mail/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_calendar"), QStringLiteral("microsoft"), QStringLiteral("Outlook Calendrier"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("https://outlook.live.com/calendar/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_files"), QStringLiteral("microsoft"), QStringLiteral("OneDrive"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("https://onedrive.live.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_docs"), QStringLiteral("microsoft"), QStringLiteral("Word"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("https://www.office.com/launch/word")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_sheets"), QStringLiteral("microsoft"), QStringLiteral("Excel"), QStringLiteral("sheets"), QStringLiteral("sheets"), QUrl(QStringLiteral("https://www.office.com/launch/excel")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_presentations"), QStringLiteral("microsoft"), QStringLiteral("PowerPoint"), QStringLiteral("presentations"), QStringLiteral("presentations"), QUrl(QStringLiteral("https://www.office.com/launch/powerpoint")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_meetings"), QStringLiteral("microsoft"), QStringLiteral("Teams"), QStringLiteral("meetings"), QStringLiteral("meet"), QUrl(QStringLiteral("https://teams.live.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_todo"), QStringLiteral("microsoft"), QStringLiteral("Microsoft To Do"), QString(), QStringLiteral("calendar"), QUrl(QStringLiteral("https://to-do.live.com/tasks/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("ms_onenote"), QStringLiteral("microsoft"), QStringLiteral("OneNote"), QString(), QStringLiteral("docs"), QUrl(QStringLiteral("https://www.onenote.com/notebooks")), CloudAppKind::WebApp, true, false },
+
+        // Infomaniak
+        { QStringLiteral("infomaniak_mail"), QStringLiteral("infomaniak"), QStringLiteral("Infomaniak Mail"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("https://mail.infomaniak.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("infomaniak_calendar"), QStringLiteral("infomaniak"), QStringLiteral("Infomaniak Calendrier"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("https://calendar.infomaniak.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("infomaniak_drive"), QStringLiteral("infomaniak"), QStringLiteral("kDrive"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("https://kdrive.infomaniak.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("infomaniak_docs"), QStringLiteral("infomaniak"), QStringLiteral("kDrive Docs"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("https://kdrive.infomaniak.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("infomaniak_meet"), QStringLiteral("infomaniak"), QStringLiteral("kMeet"), QStringLiteral("meetings"), QStringLiteral("meet"), QUrl(QStringLiteral("https://kmeet.infomaniak.com/")), CloudAppKind::WebApp, true, false },
+
+        // Zoho
+        { QStringLiteral("zoho_mail"), QStringLiteral("zoho"), QStringLiteral("Zoho Mail"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("https://mail.zoho.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("zoho_calendar"), QStringLiteral("zoho"), QStringLiteral("Zoho Calendar"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("https://calendar.zoho.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("zoho_drive"), QStringLiteral("zoho"), QStringLiteral("Zoho WorkDrive"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("https://workdrive.zoho.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("zoho_docs"), QStringLiteral("zoho"), QStringLiteral("Zoho Writer"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("https://writer.zoho.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("zoho_sheets"), QStringLiteral("zoho"), QStringLiteral("Zoho Sheet"), QStringLiteral("sheets"), QStringLiteral("sheets"), QUrl(QStringLiteral("https://sheet.zoho.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("zoho_presentations"), QStringLiteral("zoho"), QStringLiteral("Zoho Show"), QStringLiteral("presentations"), QStringLiteral("presentations"), QUrl(QStringLiteral("https://show.zoho.com/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("zoho_meet"), QStringLiteral("zoho"), QStringLiteral("Zoho Meeting"), QStringLiteral("meetings"), QStringLiteral("meet"), QUrl(QStringLiteral("https://meeting.zoho.com/")), CloudAppKind::WebApp, true, false },
+
+        // Nextcloud Hub (self-hosted)
+        { QStringLiteral("nextcloud_files"), QStringLiteral("nextcloud"), QStringLiteral("Nextcloud Files"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("/apps/files/")), CloudAppKind::WebApp, true, true },
+        { QStringLiteral("nextcloud_mail"), QStringLiteral("nextcloud"), QStringLiteral("Nextcloud Mail"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("/apps/mail/")), CloudAppKind::WebApp, true, true },
+        { QStringLiteral("nextcloud_calendar"), QStringLiteral("nextcloud"), QStringLiteral("Nextcloud Calendar"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("/apps/calendar/")), CloudAppKind::WebApp, true, true },
+        { QStringLiteral("nextcloud_docs"), QStringLiteral("nextcloud"), QStringLiteral("Nextcloud Text"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("/apps/files/")), CloudAppKind::WebApp, true, true },
+        { QStringLiteral("nextcloud_talk"), QStringLiteral("nextcloud"), QStringLiteral("Nextcloud Talk"), QStringLiteral("meetings"), QStringLiteral("meet"), QUrl(QStringLiteral("/apps/spreed/")), CloudAppKind::WebApp, true, true },
+
+        // Apple iCloud
+        { QStringLiteral("apple_mail"), QStringLiteral("apple"), QStringLiteral("iCloud Mail"), QStringLiteral("mail"), QStringLiteral("mail"), QUrl(QStringLiteral("https://www.icloud.com/mail/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("apple_calendar"), QStringLiteral("apple"), QStringLiteral("iCloud Calendrier"), QStringLiteral("calendar"), QStringLiteral("calendar"), QUrl(QStringLiteral("https://www.icloud.com/calendar/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("apple_files"), QStringLiteral("apple"), QStringLiteral("iCloud Drive"), QStringLiteral("files"), QStringLiteral("drive"), QUrl(QStringLiteral("https://www.icloud.com/iclouddrive/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("apple_docs"), QStringLiteral("apple"), QStringLiteral("Pages"), QStringLiteral("docs"), QStringLiteral("docs"), QUrl(QStringLiteral("https://www.icloud.com/pages/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("apple_sheets"), QStringLiteral("apple"), QStringLiteral("Numbers"), QStringLiteral("sheets"), QStringLiteral("sheets"), QUrl(QStringLiteral("https://www.icloud.com/numbers/")), CloudAppKind::WebApp, true, false },
+        { QStringLiteral("apple_presentations"), QStringLiteral("apple"), QStringLiteral("Keynote"), QStringLiteral("presentations"), QStringLiteral("presentations"), QUrl(QStringLiteral("https://www.icloud.com/keynote/")), CloudAppKind::WebApp, true, false }
+    };
+    return apps;
+}
+
+QVector<CloudAppInfo> CloudProviderCatalog::appsForProvider(const QString &providerId) {
+    QVector<CloudAppInfo> result;
+    for (const auto &app : allApps()) {
+        if (app.providerId == providerId) {
+            result.append(app);
+        }
+    }
+    return result;
+}
+
+std::optional<CloudAppInfo> CloudProviderCatalog::findApp(const QString &appId) {
+    for (const auto &app : allApps()) {
+        if (app.appId == appId) {
+            return app;
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<CloudProviderInfo> CloudProviderCatalog::findProvider(const QString &providerId) {
     const auto &providers = allProviders();
     for (const auto &p : providers) {
@@ -142,6 +232,17 @@ bool CloudProviderCatalog::isVerifiedServiceUrl(const QUrl &url, const QString &
     // Check against custom user-configured Nextcloud host
     if (!customNextcloudHost.isEmpty() && url.host().compare(customNextcloudHost, Qt::CaseInsensitive) == 0) {
         return true;
+    }
+
+    // Check allApps() catalog URLs
+    for (const auto &app : allApps()) {
+        if (app.providerId == QStringLiteral("nextcloud")) continue;
+        if (app.officialUrl.host().compare(url.host(), Qt::CaseInsensitive) == 0) {
+            const QString servicePath = app.officialUrl.path();
+            if (servicePath.isEmpty() || servicePath == QStringLiteral("/") || url.path().startsWith(servicePath)) {
+                return true;
+            }
+        }
     }
 
     const auto &providers = allProviders();
