@@ -71,3 +71,11 @@ Build/run: `cmake --build build --config Release --target cybou_tests --parallel
 After reload, popover revoke and inline revoke, the server must have observed three opened and three disconnected HTTP streams, with no active stream left. A surviving connection after ten final polling checks (approximately three seconds) fails the test. Existing assertions also require temporary profile destruction and preservation of the unrelated tab.
 
 This tests real temporary-profile HTTP connection teardown and plain-ws denial, not active WebSocket/WSS closure. Temporary HTTP consent intentionally never grants ws. WSS certificate tests and active secure socket teardown remain open.
+
+## TLS / WSS boundary fixture
+
+`src/security/TlsBoundaryTests.h` runs inside `--security-test` with Qt's existing TLS backend and committed public test-only PEM fixtures under `tests/security/fixtures/tls/`. No system trust changes or global certificate bypass flags are used. Ordinary isolated WebEngine profiles must reject self-signed HTTPS and WSS before a WebSocket handshake reaches the server.
+
+A separate positive-control page accepts only the exact fixture leaf fingerprint at the server's loopback address/port, loads HTTPS and receives an actual WSS message. The negative profile must still reject WSS after that exception. The test then destroys the owning positive page without calling WebSocket.close; the server must observe the live socket disconnect. The entire fixture has a 25-second deadline and fails without a working TLS backend.
+
+This proves the engine/page lifecycle subset. The fixture is not a trusted public-CA handshake, expired/hostname/revocation matrix, protocol/cipher qualification or a production temporary-profile UI revoke test. The positive certificate handler exists only in the test header. Run tests from the repository root; OpenSSL is not a runtime dependency.

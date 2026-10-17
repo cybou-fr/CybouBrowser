@@ -67,3 +67,9 @@ Verified subset: loopback distinct-port CORS reads, actual preflight allow/deny,
 Release `cybou_tests` rebuilt and the affected `--transport-test` exited 0. `HTTP_CONTEXT_CONNECTION_TEST PASS` confirms three long-lived same-origin HTTP streams opened and disconnected across reload and both UI revoke paths, plus zero ws handshakes reaching the fixture server. The temporary HTTP profile interceptor explicitly recorded the ws denial; profile-destruction, peer-tab and stale-token checks also passed.
 
 Artifacts: `build/http-context-connections/report.json`, `transport.log`, source snapshots and tracked patch. The report records the tested binary/source-file/log hashes and base commit. Cases remain in_progress; no WSS, already-open WebSocket closure, public/private DNS or broad OWASP PASS is claimed. This iteration changes test fixtures only; production behavior was not changed.
+
+## TLS / WSS engine boundary — 2026-10-18
+
+Release `cybou_tests` rebuilt and `--security-test` exited 0. `TLS_BOUNDARY_TEST PASS` confirms self-signed HTTPS/WSS rejection; a real WSS message in an exact-pinned isolated test-only positive profile; no allowance leaking to another profile; and server-observed active WSS disconnect after destroying the owning QWebEnginePage. The existing CORS/ws and native security assertions also passed in that run.
+
+Artifacts: `build/tls-boundaries/report.json`, `security.log`, tested source/PEM snapshots and tracked patch. Expected Chromium certificate-authority handshake errors in the log are negative-test observations. No system trust store or production certificate policy changed. Cases remain in_progress and controls remain not_verified: the full TLS matrix, production temporary-profile/UI revoke and public/private DNS boundaries are still open. Only the affected security suite was rerun.

@@ -63,7 +63,22 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "in_progress",
+      "testSources": [
+        "src/security/NetworkPolicy.h",
+        "src/security/SecurityTests.h",
+        "src/security/TlsBoundaryTests.h"
+      ],
+      "coveredScenarios": [
+        "strict HTTP/credential denial and existing-document subresource policy regression",
+        "self-signed HTTPS and WSS rejected before application/WebSocket access",
+        "separate test-only TLS allowance limited to exact leaf and endpoint"
+      ],
+      "remainingScenarios": [
+        "trusted CA, expiry, hostname mismatch and revocation matrix",
+        "TLS protocol/cipher qualification",
+        "production redirect/downgrade adversarial matrix"
+      ]
     },
     {
       "id": "CYB-HTTP-002",
@@ -626,16 +641,24 @@
         "strict ws denied with zero server handshakes",
         "positive real HTTP 101 handshake",
         "new ws denied after strict policy restored; interceptor deny events checked",
-        "actual temporary HTTP profile denies ws before server handshake"
+        "actual temporary HTTP profile denies ws before server handshake",
+        "untrusted self-signed WSS rejected with no server handshake",
+        "separate exact-leaf test-only allowance enables real WSS handshake and message",
+        "test-only certificate exception does not affect another isolated profile",
+        "destroying an owning QWebEnginePage disconnects a live WSS socket on the server"
       ],
       "remainingScenarios": [
-        "wss TLS validity and certificate failures",
+        "trusted CA, expiry, hostname mismatch and revocation TLS matrix",
         "public-to-private routing and DNS changes",
-        "revocation of already-open sockets",
-        "WSS in temporary HTTP profiles and active socket teardown"
+        "WSS in production temporary HTTP profiles and UI revoke teardown"
       ],
       "additionalSuites": [
         "transport"
+      ],
+      "testSources": [
+        "src/security/NetworkBoundaryTests.h",
+        "src/security/TlsBoundaryTests.h",
+        "qml/TransportHarness.qml"
       ]
     }
   ]
