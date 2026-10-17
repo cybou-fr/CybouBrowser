@@ -61,3 +61,9 @@ Twelve gate self-tests passed. Both evidence paths now reject empty/tampered log
 The Release test executable rebuilt successfully and `--security-test` exited 0 with both `CORS_BOUNDARY_TEST PASS` and `WEBSOCKET_BOUNDARY_TEST PASS`. Local artifacts: `build/network-boundaries/report.json`, `security.log`, tested source snapshots and patch. The report identifies the base commit, source-file hashes, executable hash and log hash. Diagnostics include engine versions and expected CORS rejection messages.
 
 Verified subset: loopback distinct-port CORS reads, actual preflight allow/deny, cookie omission and wildcard credential rejection; actual ws handshake positive control and strict deny before handshake, including a new connection after strict policy restoration. Cases `CYB-ORIGIN-001` and `CYB-WS-001` remain **in_progress** with explicit remaining scenarios. No broad OWASP control or release-case PASS is asserted. No production browser code changed; only the affected security suite was rerun.
+
+## Temporary HTTP live connections — 2026-10-18
+
+Release `cybou_tests` rebuilt and the affected `--transport-test` exited 0. `HTTP_CONTEXT_CONNECTION_TEST PASS` confirms three long-lived same-origin HTTP streams opened and disconnected across reload and both UI revoke paths, plus zero ws handshakes reaching the fixture server. The temporary HTTP profile interceptor explicitly recorded the ws denial; profile-destruction, peer-tab and stale-token checks also passed.
+
+Artifacts: `build/http-context-connections/report.json`, `transport.log`, source snapshots and tracked patch. The report records the tested binary/source-file/log hashes and base commit. Cases remain in_progress; no WSS, already-open WebSocket closure, public/private DNS or broad OWASP PASS is claimed. This iteration changes test fixtures only; production behavior was not changed.

@@ -3945,10 +3945,12 @@
       "sourceRefs": [
         "src/security/NetworkPolicy.h",
         "src/security/TrackerBlocker.h",
-        "src/security/NetworkBoundaryTests.h"
+        "src/security/NetworkBoundaryTests.h",
+        "tests/test_main.cpp",
+        "qml/TransportHarness.qml"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Real ws positive handshake and strict-policy denial now pass. Add WSS certificate matrix, production temporary-profile, public-to-private/DNS and active-socket revocation fixtures.",
+      "remainingWork": "Real ws positive handshake and strict-policy denial pass; actual temporary HTTP profiles deny ws before server handshake. WSS certificate matrix, public-to-private/DNS and active WebSocket revocation remain open. HTTP streaming teardown is tested separately and is not WebSocket teardown proof.",
       "partialVerification": "Local security suite PASS on 2026-10-18; subset only; see docs/VALIDATION.md and build/network-boundaries/report.json."
     },
     {

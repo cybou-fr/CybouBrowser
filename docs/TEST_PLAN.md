@@ -63,3 +63,11 @@ The test suites and risk inventory exist, but **the current source/binary has no
 This fixture deliberately uses test-only HTTP allowance to establish the positive control. It does not prove production temporary-profile behavior, WSS certificate validation, public/private routing, cross-site cookies or revocation of an already-open socket. The two broad release cases remain in progress.
 
 Build/run: `cmake --build build --config Release --target cybou_tests --parallel 4`, then `build/Release/cybou_tests.exe --security-test`. The fixture has a 20-second deadline and never contacts external services. Evidence from this development iteration is under `build/network-boundaries/`, including the log, report, tested source snapshots and tracked patch.
+
+## Temporary HTTP profile connection teardown
+
+`--transport-test` now serves a same-origin chunked HTTP response that deliberately never finishes. Each of the three consented temporary documents retains a stream reader and must receive its first chunk before the fixture becomes ready. A second probe attempts an actual ws handshake; the fixture server supports a positive HTTP 101 response if reached, while the test requires zero ws requests and a matching `insecure-transport` interceptor event.
+
+After reload, popover revoke and inline revoke, the server must have observed three opened and three disconnected HTTP streams, with no active stream left. A surviving connection after ten final polling checks (approximately three seconds) fails the test. Existing assertions also require temporary profile destruction and preservation of the unrelated tab.
+
+This tests real temporary-profile HTTP connection teardown and plain-ws denial, not active WebSocket/WSS closure. Temporary HTTP consent intentionally never grants ws. WSS certificate tests and active secure socket teardown remain open.

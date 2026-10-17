@@ -80,8 +80,23 @@
       "objective": "temporary context isolation, revoke and stale state",
       "method": "native",
       "tier": "P0",
-      "candidateSuite": "security",
-      "status": "planned"
+      "candidateSuite": "transport",
+      "status": "in_progress",
+      "testSources": [
+        "tests/test_main.cpp",
+        "qml/TransportHarness.qml"
+      ],
+      "coveredScenarios": [
+        "real isolated off-the-record HTTP profiles and no stored positive permissions",
+        "stale token rejection, independent peer tab, reload, panel and inline revoke",
+        "three never-completed HTTP response streams close before test completion",
+        "all ws requests from temporary HTTP documents denied before reaching server"
+      ],
+      "remainingScenarios": [
+        "in-flight downloads and redirect chains during revoke",
+        "WSS and other already-open transport teardown",
+        "fault-injection and adversarial context lifecycle stress"
+      ]
     },
     {
       "id": "CYB-PNA-001",
@@ -610,13 +625,17 @@
       "coveredScenarios": [
         "strict ws denied with zero server handshakes",
         "positive real HTTP 101 handshake",
-        "new ws denied after strict policy restored; interceptor deny events checked"
+        "new ws denied after strict policy restored; interceptor deny events checked",
+        "actual temporary HTTP profile denies ws before server handshake"
       ],
       "remainingScenarios": [
         "wss TLS validity and certificate failures",
-        "production temporary HTTP context behavior",
         "public-to-private routing and DNS changes",
-        "revocation of already-open sockets"
+        "revocation of already-open sockets",
+        "WSS in temporary HTTP profiles and active socket teardown"
+      ],
+      "additionalSuites": [
+        "transport"
       ]
     }
   ]

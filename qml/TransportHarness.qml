@@ -41,6 +41,7 @@ Item {
                 const sample = controller.networkSample()
                 expect(sample.some(e => e.blocked && e.reason === "insecure-transport" && e.origin.includes("localhost")), "cross-origin HTTP subrequest actually blocked")
                 expect(sample.some(e => !e.blocked && e.origin.includes("127.0.0.1")), "same-origin HTTP actually allowed")
+                expect(sample.some(e => e.blocked && e.reason === "insecure-transport" && e.origin.startsWith("ws:")), "temporary HTTP consent does not grant WebSocket access")
                 expect(sample.every(e => !e.origin.includes("?") && !e.origin.includes("exact=")), "network sample retains no query")
                 ownerUid = view.tabUid
                 trackedProfile = view.profile

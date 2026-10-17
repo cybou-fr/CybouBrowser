@@ -8,6 +8,8 @@
 #include <QDebug>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QSet>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QJSValue>
 #include <QMouseEvent>
@@ -60,13 +62,36 @@ int main(int argc, char *argv[])
 
     qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
 
+    QSet<QTcpSocket *> activeTransportStreams;
+    int transportStreamsOpened = 0;
+    int transportStreamsClosed = 0;
+    int transportWsRequests = 0;
     QTcpServer testServer;
     testServer.listen(QHostAddress::LocalHost);
-    QObject::connect(&testServer, &QTcpServer::newConnection, &app, [&testServer] {
+    QObject::connect(&testServer, &QTcpServer::newConnection, &app, [&testServer, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
         while (auto socket = testServer.nextPendingConnection()) {
             QObject::connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
-            QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket] {
+            QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
                 const auto request = socket->readAll();
+                if (request.startsWith("GET /transport-stream ")) {
+                    activeTransportStreams.insert(socket);
+                    ++transportStreamsOpened;
+                    QObject::connect(socket, &QTcpSocket::disconnected, socket, [socket, &activeTransportStreams, &transportStreamsClosed] {
+                        if (activeTransportStreams.remove(socket)) ++transportStreamsClosed;
+                    });
+                    socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nTransfer-Encoding: chunked\r\nCache-Control: no-store\r\n\r\n1\r\nx\r\n");
+                    // Deliberately never finish the body: only client teardown should disconnect it.
+                    return;
+                }
+                if (request.startsWith("GET /transport-socket ")) {
+                    ++transportWsRequests;
+                    QByteArray key;
+                    for (const auto &line : request.split('\n'))
+                        if (line.toLower().startsWith("sec-websocket-key:")) key = line.mid(line.indexOf(':') + 1).trimmed();
+                    const auto digest = QCryptographicHash::hash(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", QCryptographicHash::Sha1).toBase64();
+                    socket->write("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + digest + "\r\n\r\n");
+                    return;
+                }
                 if (request.startsWith("GET /slow-download ")) {
                     const qint64 size = 4 * 1024 * 1024;
                     const auto match = QRegularExpression("Range: bytes=(\\d+)-", QRegularExpression::CaseInsensitiveOption).match(QString::fromLatin1(request));
@@ -89,7 +114,7 @@ int main(int argc, char *argv[])
                 const bool controls = request.startsWith("GET /controls ");
                 const bool tracker = request.startsWith("GET /tracker-document?");
                 const QByteArray trackerBody = QByteArray("<!doctype html><title>Tracker fixture</title><h1>Tracker filter fixture</h1><script>fetch('http://google-analytics.com:") + QByteArray::number(socket->localPort()) + QByteArray("/tracker-asset?private=query').then(r=>r.text()).then(()=>document.title='Tracker allowed').catch(()=>document.title='Tracker blocked')</script>");
-                const QByteArray body = tracker ? trackerBody : download ? QByteArray("CYBOU download test\n") : transport ? QByteArray("<!doctype html><title>Transport document</title><h1>Temporary HTTP fixture</h1><script>Promise.all([fetch('/transport-asset'),fetch('http://localhost:") + QByteArray::number(socket->localPort()) + QByteArray("/cross-origin-http').catch(()=>null)]).then(()=>document.title='Transport ready')</script>") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
+                const QByteArray body = tracker ? trackerBody : download ? QByteArray("CYBOU download test\n") : transport ? QByteArray("<!doctype html><title>Transport document</title><h1>Temporary HTTP fixture</h1><script>Promise.all([fetch('/transport-asset'),fetch('/transport-stream').then(r=>{window.transportReader=r.body.getReader();return window.transportReader.read()}),new Promise((resolve,reject)=>{const s=new WebSocket(location.origin.replace('http:','ws:')+'/transport-socket');s.onerror=()=>resolve();s.onopen=()=>{s.close();reject(Error('ws escaped'))}}),fetch('http://localhost:") + QByteArray::number(socket->localPort()) + QByteArray("/cross-origin-http').catch(()=>null)]).then(()=>document.title='Transport ready')</script>") : controls ? QByteArray("<!doctype html><title>Control fixture</title><body style='background:#dfeaf4;color:#183757;font:20px sans-serif;height:1800px;padding:50px'><h1>CYBOU Control Bar</h1><p>Local engine fixture: independent policies, native permission decisions and bounded network metadata.</p><script>document.title='Scripts enabled';try{localStorage.setItem('cybouControl','1')}catch(e){document.title='Storage blocked'}</script>") : QByteArray("<!doctype html><title>CYBOU smoke page</title><h1>CYBOU test needle</h1>");
                 const auto cookie = request.startsWith("GET /page ") ? QByteArray("Set-Cookie: cybou_smoke=present; Path=/; SameSite=Lax\r\n") : QByteArray();
                 socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: " + QByteArray(download ? "application/octet-stream" : "text/html") + "\r\n" + cookie + (download ? QByteArray("Content-Disposition: attachment; filename=cybou-smoke.txt\r\n") : QByteArray()) + "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
                 socket->disconnectFromHost();
@@ -142,7 +167,7 @@ int main(int argc, char *argv[])
 
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
-        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest, transportTest, trackerTest, surfaceTest] {
+        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests, controlBarTest, transportTest, trackerTest, surfaceTest] {
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->resize(1360, 900);
             QVariant dragCoordinates;
@@ -271,8 +296,9 @@ int main(int argc, char *argv[])
             auto poll = new QTimer(&app);
             auto attempts = std::make_shared<int>(0);
             auto controlStarted = std::make_shared<bool>(false);
+            auto terminalTransportChecks = std::make_shared<int>(0);
             auto retiredHttpProfile = std::make_shared<QPointer<QObject>>();
-            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, trackerTest, controlStarted, retiredHttpProfile] {
+            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, trackerTest, controlStarted, retiredHttpProfile, terminalTransportChecks, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
                 QVariant state;
                 if (*controlStarted) {
                     QMetaObject::invokeMethod(root, transportTest ? "pollTransportTest" : "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
@@ -314,6 +340,21 @@ int main(int argc, char *argv[])
                     }
                 }
                 if (state.toInt() == 1) return;
+                if (state.toInt() == 2 && transportTest && !trackerTest) {
+                    if (transportStreamsOpened != 3 || transportWsRequests != 0) {
+                        qCritical() << "HTTP_CONTEXT_CONNECTION_TEST FAIL: stream controls or websocket escape" << transportStreamsOpened << transportWsRequests;
+                        app.exit(2); return;
+                    }
+                    if (!activeTransportStreams.isEmpty() || transportStreamsClosed != 3) {
+                        if (++*terminalTransportChecks < 10) return;
+                        qCritical() << "HTTP_CONTEXT_CONNECTION_TEST FAIL: active stream survived context revoke" << activeTransportStreams.size() << transportStreamsClosed;
+                        app.exit(2); return;
+                    }
+                    if (*terminalTransportChecks != -1) {
+                        qInfo() << "HTTP_CONTEXT_CONNECTION_TEST PASS: three real streams closed across reload and both revoke paths; temporary profiles denied all ws handshakes";
+                        *terminalTransportChecks = -1;
+                    }
+                }
                 const bool success = state.toInt() == 2 && privateProfileA.isNull() && privateProfileB.isNull() && (!transportTest || retiredHttpProfile->isNull());
                 if (state.toInt() < 0 || ++*attempts > ((controlBarTest || transportTest) ? 700 : 200) || success) {
                     poll->stop();
