@@ -28,6 +28,10 @@
 
 **Текущая реализация** частично смешивает `brandColor` capability и effective policy: красный может обозначать и разрешённую Camera, и блокировку. **Следующее изменение (planned):** разделить PolicyPresentation и EventPresentation. Default closed — нейтральный; pending — янтарный; grant — спокойный зелёный; confirmed blocked — красный event marker; enabled filter — сине-бирюзовый. Форма/подпись дополняют цвет, и grant не выдаётся за использование устройства. Точные критерии — в [SECURITY_UX_EVOLUTION](SECURITY_UX_EVOLUTION.md).
 
+## Граница с облачным launcher новой вкладки
+
+**«Почта» и 3×3 переключатель облачных приложений находятся в правом верхнем углу NewTabPage, а не в браузерной навигационной строке.** Launcher по клику раскрывает вниз отдельную интерактивную панель Dark Glass с действительным смешанным набором сервисов (общий провайдер + индивидуальные overrides). Это не hover popover capability. Браузерные 11 иконок, омнибокс, геометрия и поведение Control Bar неизменны. Нельзя накрывать browser-owned controls. См. [ADR 0007](ADR/0007-selectable-cloud-services.md).
+
 ## Приёмка
 
 Проверять **820×560**, 1024×768, 1360×900, 1920×1080, DPI 100/150/200%, FR/RU, hover pointer corridor, keyboard, Ctrl+L/Escape, реальную работу карты/панелей и передачу клика в страницу Chromium. Если скриншоты нужны, снимать **из запущенного приложения**, а не рисовать макеты.
