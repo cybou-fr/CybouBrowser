@@ -23,6 +23,10 @@
 
 **Release gate (план проверки):** инвентаризация исполняемых зависимостей и подтверждение отсутствия extension loader/store/install/update, privileged userscripts и внешних executable helpers в обязательной поставке. Пока не отмечено `tested`.
 
+## Cloud Services — принятое продуктовое решение, ещё не реализовано
+
+**Режим выбираемой облачной экосистемы** — отдельная от поиска настройка (`proton` по умолчанию, Google Workspace, Microsoft 365 / Office 365, Infomaniak kSuite, Zoho Workplace и Nextcloud Hub; `none` для выключения). Открытие официальных web apps в обычных вкладках, компактные ярлыки на Alpine Dawn, без расширений, сторонних executables, особых полномочий и автоматического подключения аккаунта. Apple iCloud и storage-only providers — последующее расширение списка. Статус **planned**, не `implemented`. [ADR 0007](ADR/0007-selectable-cloud-services.md).
+
 ## Далее — приоритетный порядок
 
 | ID | Приоритет | Задача (**planned**, если не указано иное) | Критерий приёмки |

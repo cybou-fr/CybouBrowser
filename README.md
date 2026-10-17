@@ -44,6 +44,7 @@ The full URL is always available for inspection and editing, but **the address b
 - **Conservative by default.** Sensitive capabilities are unavailable until explicitly granted; defensive network rules are enabled by default. Any relaxation must be deliberate and limited.
 - **Truthful observability.** A policy, a request, a grant, a blocked attempt, and actual device activity are distinct facts. A grant is **not** evidence that a camera or microphone is recording.
 - **No third-party browser extensions — ever by default or by partner exception.** No Chrome/WebExtensions, extension store, installation, side-loading, privileged userscripts or extension runtime. Review useful ideas from other browsers and implement them in CYBOU-owned C++/Qt/QML; minimize nonessential external executables. See [ADR 0006](docs/ADR/0006-no-third-party-extensions.md).
+- **Cloud services are user-chosen, not privileged partners.** Proton is the default cloud suite; Google Workspace, Microsoft 365 (Office 365), Infomaniak kSuite, Zoho Workplace and self-hosted Nextcloud are equal selectable options. The cloud selection is separate from the search engine, does not require an account and cannot override site permissions. This is an accepted **future feature**, not shipped code. [ADR 0007](docs/ADR/0007-selectable-cloud-services.md).
 
 The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Security Model](docs/SECURITY_MODEL.md), and [Capability Contract](docs/CAPABILITY_CONTRACT.md).
 
@@ -53,6 +54,12 @@ The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Secu
 CYBOU **does not support third-party browser extensions**, including signed, partner-branded or Proton extensions. This is an explicit product and security ban, not an unimplemented convenience feature. There will be no Web Store, sideloading, privileged extension runtime or extension auto-updater. Successful extension *ideas* may inform first-party features that CYBOU develops and audits itself.
 
 Qt/Chromium and necessary OS libraries remain external dependencies and require security updates; websites still execute untrusted JavaScript within WebEngine's web-content boundary. Nonessential third-party executable helpers or companion CLIs are not bundled by default. Partnerships cannot waive this rule. [Binding architecture decision](docs/ADR/0006-no-third-party-extensions.md).
+
+## Cloud services: provider choice (planned)
+
+CYBOU will offer a **Cloud Services** selector similar to the existing search-provider selector, with **Proton selected by default** for new preferences, and **Google Workspace, Microsoft 365 / Office 365, Infomaniak kSuite, Zoho Workplace and Nextcloud Hub** available on equal terms. Apple iCloud and specialist file-storage services are candidates for a later catalogue release. The user can also disable cloud shortcuts.
+
+Alpine Dawn can show a small set of opt-in shortcuts to the chosen provider's official mail, files, calendar, documents and meeting web apps. These are **ordinary HTTPS sites**, not browser extensions or native companion executables. Changing the cloud provider never changes the search engine, browser security policy, existing tabs, cookies or session. No site obtains extra privileges from a commercial partnership. **This selector has not yet been implemented.** See [ADR 0007](docs/ADR/0007-selectable-cloud-services.md).
 
 ## Your page, your controls
 
@@ -181,6 +188,7 @@ These suites exercise policy rules, layout and interaction, and browsing workflo
 | [Security Model](docs/SECURITY_MODEL.md) | Threat boundaries and permission lifecycle |
 | [Capability Contract](docs/CAPABILITY_CONTRACT.md) | Observable events and truthful controls |
 | [Control Bar UX](docs/CONTROL_BAR_UX.md) | Permanent, inline **single-row** interaction rules |
+| [ADR 0007 — Selectable Cloud Services](docs/ADR/0007-selectable-cloud-services.md) | Accepted Proton-default, provider-neutral cloud ecosystem catalogue; planned, not shipped |
 | [ADR 0006 — No third-party extensions](docs/ADR/0006-no-third-party-extensions.md) | Mandatory ban on external browser extensions and policy for minimizing executable dependencies |
 | [Architecture](docs/ARCHITECTURE.md) | WebEngine, observation, models and QML |
 | [Roadmap](docs/ROADMAP.md) | Implementation state and verification gates |

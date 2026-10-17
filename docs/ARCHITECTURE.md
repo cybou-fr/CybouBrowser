@@ -24,6 +24,12 @@ Pending request принадлежит coordinator; `QWebEnginePermission` не 
 
 Новый сторонний executable, background helper или динамическая библиотека не добавляется ради удобства без прямого продуктового решения и review происхождения, версии, лицензии, sandbox, patch cadence и альтернатив в имеющемся стеке. Сам Qt WebEngine/Chromium остаётся необходимой отдельно контролируемой внешней зависимостью. JavaScript сайтов не переносить в привилегированный browser-owned контекст. Детальный нормативный контракт: [ADR 0006](ADR/0006-no-third-party-extensions.md).
 
+## Будущий каталог облачных сервисов (решение принято; кода пока нет)
+
+Cloud services — **provider-neutral catalogue**, устроенный как независимая от `searchEngine` пользовательская настройка. Значение по умолчанию `proton`, равноправные `google`, `microsoft`, `infomaniak`, `zoho`, `nextcloud`, отключение `none`; Apple iCloud и file-only сервисы — следующий этап. Проектируемые `CloudProviderCatalog` и `CloudProviderPreferences` — **часть нашего C++/QML**, статические неисполняемые descriptors официальных HTTPS-веб-приложений; выбранные ярлыки выводятся на Alpine Dawn и открываются как обычные вкладки.
+
+Нет browser extensions, injected scripts, companion CLI, облачного proxy и доступа к токенам пользователя. Выбор не меняет поисковик, сеть/permissions, cookies или существующие вкладки. Для собственного Nextcloud — явно указанный пользователем HTTPS origin и проверка схемы. Это **план реализации, не описание существующего API**. Полный контракт: [ADR 0007](ADR/0007-selectable-cloud-services.md), запрет стороннего кода: [ADR 0006](ADR/0006-no-third-party-extensions.md).
+
 ## Будущие компоненты — ещё не implemented
 
 | Компонент | Ответственность |
