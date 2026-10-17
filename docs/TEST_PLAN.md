@@ -8,12 +8,12 @@ Windows Release (Qt 6.12 / MSVC 2022, C++20):
 
 ```powershell
 cmake --build build --config Release --parallel 4
-./build/Release/cybou.exe --security-test
-./build/Release/cybou.exe --controlbar-test
-./build/Release/cybou.exe --transport-test
-./build/Release/cybou.exe --tracker-test
-./build/Release/cybou.exe --surface-test
-./build/Release/cybou.exe --smoke-test
+./build/Release/cybou_tests.exe --security-test
+./build/Release/cybou_tests.exe --controlbar-test
+./build/Release/cybou_tests.exe --transport-test
+./build/Release/cybou_tests.exe --tracker-test
+./build/Release/cybou_tests.exe --surface-test
+./build/Release/cybou_tests.exe --smoke-test
 ```
 
 Test organization и fixtures должны быть отделены от обычного профиля пользователя. Встроенные loopback HTTP fixtures разрешаются только тестовым запуском; production HTTPS strict сохраняется. После существенного изменения permission/view/profile lifecycle прогонять **все** смежные suites.

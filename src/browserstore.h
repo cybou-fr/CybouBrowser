@@ -124,11 +124,9 @@ public:
     bool blockThirdPartyCookies() const { return settings.value("preferences/blockThirdPartyCookies", true).toBool(); }
     bool cacheBusy() const { return m_cacheBusy; }
     bool httpsOnly() const { return !m_testHttp; }
+    void allowTestHttpFixture() { m_allowTestHttp = true; }
     void setHttpsOnly(bool enabled) {
-        const auto arguments = QCoreApplication::arguments();
-        const bool test = arguments.contains("--smoke-test") || arguments.contains("--controlbar-test")
-            || arguments.contains("--security-test") || arguments.contains("--transport-test") || arguments.contains("--surface-test") || arguments.contains("--tracker-test");
-        if (!enabled && !test) return;
+        if (!enabled && !m_allowTestHttp) return;
         if (enabled == httpsOnly()) return;
         m_testHttp = !enabled;
         for (auto observer : observers) observer->setHttpsOnly(enabled);
@@ -447,6 +445,7 @@ private:
     static bool isWebUrl(const QString &url) {
         const auto scheme = QUrl(url).scheme(); return scheme == "http" || scheme == "https";
     }
+    bool m_allowTestHttp = false;
     bool m_testHttp = false;
     QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
     mutable QSettings settings;
