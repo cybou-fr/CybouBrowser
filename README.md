@@ -43,9 +43,16 @@ The full URL is always available for inspection and editing, but **the address b
 - **No user-facing ASK workflow.** A page request highlights the relevant control. The browser does not interrupt ordinary browsing with a routine permission dialog.
 - **Conservative by default.** Sensitive capabilities are unavailable until explicitly granted; defensive network rules are enabled by default. Any relaxation must be deliberate and limited.
 - **Truthful observability.** A policy, a request, a grant, a blocked attempt, and actual device activity are distinct facts. A grant is **not** evidence that a camera or microphone is recording.
+- **No third-party browser extensions — ever by default or by partner exception.** No Chrome/WebExtensions, extension store, installation, side-loading, privileged userscripts or extension runtime. Review useful ideas from other browsers and implement them in CYBOU-owned C++/Qt/QML; minimize nonessential external executables. See [ADR 0006](docs/ADR/0006-no-third-party-extensions.md).
 
 The normative definitions are in [Product Vision](docs/PRODUCT_VISION.md), [Security Model](docs/SECURITY_MODEL.md), and [Capability Contract](docs/CAPABILITY_CONTRACT.md).
 
+
+## Deliberately no extension ecosystem
+
+CYBOU **does not support third-party browser extensions**, including signed, partner-branded or Proton extensions. This is an explicit product and security ban, not an unimplemented convenience feature. There will be no Web Store, sideloading, privileged extension runtime or extension auto-updater. Successful extension *ideas* may inform first-party features that CYBOU develops and audits itself.
+
+Qt/Chromium and necessary OS libraries remain external dependencies and require security updates; websites still execute untrusted JavaScript within WebEngine's web-content boundary. Nonessential third-party executable helpers or companion CLIs are not bundled by default. Partnerships cannot waive this rule. [Binding architecture decision](docs/ADR/0006-no-third-party-extensions.md).
 
 ## Your page, your controls
 
@@ -174,6 +181,7 @@ These suites exercise policy rules, layout and interaction, and browsing workflo
 | [Security Model](docs/SECURITY_MODEL.md) | Threat boundaries and permission lifecycle |
 | [Capability Contract](docs/CAPABILITY_CONTRACT.md) | Observable events and truthful controls |
 | [Control Bar UX](docs/CONTROL_BAR_UX.md) | Permanent, inline **single-row** interaction rules |
+| [ADR 0006 — No third-party extensions](docs/ADR/0006-no-third-party-extensions.md) | Mandatory ban on external browser extensions and policy for minimizing executable dependencies |
 | [Architecture](docs/ARCHITECTURE.md) | WebEngine, observation, models and QML |
 | [Roadmap](docs/ROADMAP.md) | Implementation state and verification gates |
 | [Security & UX Evolution (RU)](docs/SECURITY_UX_EVOLUTION.md) | Current security/UX direction, planned features and test gates |

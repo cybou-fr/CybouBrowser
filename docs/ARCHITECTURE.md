@@ -18,6 +18,12 @@ Pending request принадлежит coordinator; `QWebEnginePermission` не 
 
 Для явного HTTP-исключения существует `HttpNavigationLease` в выделенном off-the-record профиле для точного адреса с ограниченным same-origin HTTP content. Для явного tracker-only исключения — `TrackerExceptionLease` в отдельном off-the-record профиле: оно ограничено документом и first-party origin и пропускает совпадающие запросы из небольшого tracker list. UI показывает информацию и revoke в **существующей Network hover-панели**. Оба режима не являются процессной или маршрутизирующей изоляцией.
 
+## Неприкосновенная граница: никакой extension platform
+
+В CYBOU **не существует допускаемой архитектуры сторонних расширений**. Не строить WebExtensions/CRX runtime, `QWebEngineExtensionManager` install/load flow, plugin store/side-loading или privileged userscript execution. Нативные функции вдохновлённые лучшими расширениями пишутся и сопровождаются **в C++/Qt/QML самого CYBOU**, с теми же границами permissions/network/profile, что у остальных функций. Никакая партнёрская интеграция, включая Proton, не может расширить эти полномочия.
+
+Новый сторонний executable, background helper или динамическая библиотека не добавляется ради удобства без прямого продуктового решения и review происхождения, версии, лицензии, sandbox, patch cadence и альтернатив в имеющемся стеке. Сам Qt WebEngine/Chromium остаётся необходимой отдельно контролируемой внешней зависимостью. JavaScript сайтов не переносить в привилегированный browser-owned контекст. Детальный нормативный контракт: [ADR 0006](ADR/0006-no-third-party-extensions.md).
+
 ## Будущие компоненты — ещё не implemented
 
 | Компонент | Ответственность |

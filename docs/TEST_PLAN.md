@@ -18,6 +18,17 @@ cmake --build build --config Release --parallel 4
 
 Test organization и fixtures должны быть отделены от обычного профиля пользователя. Встроенные loopback HTTP fixtures разрешаются только тестовым запуском; production HTTPS strict сохраняется. После существенного изменения permission/view/profile lifecycle прогонять **все** смежные suites.
 
+## Release gate: запрет сторонних расширений (план проверки)
+
+Нормативный контракт — [ADR 0006](ADR/0006-no-third-party-extensions.md). После каждого изменения Qt WebEngine, CMake/deployment или партнёрской интеграции:
+
+- проверить исходники и артефакты сборки на extension loader/install/update, `QWebEngineExtensionManager`, WebExtensions/CRX/Manifest packages, privileged userscript injection и неявные плагины;
+- проверить отсутствие extension store, интерфейса side-loading, фоновых extension-процессов и скачивания исполняемых дополнений из браузера;
+- проверить состав бинарной поставки: новые CLI/внешние исполняемые файлы, dynamic libraries, версии, лицензии, происхождение и необходимость; Qt/Chromium и системные зависимости учитываются отдельно;
+- проверять, что «позаимствованные» возможности реализованы нативно кодом CYBOU и не добавляют скрытых привилегий партнёрам.
+
+**Это критерии приёмки, а не заявление о уже выполненном аудите runtime.** Обычный web JavaScript не является разрешением установить привилегированное расширение.
+
 ## Функциональная регрессия
 
 | Направление | Что проверять |
