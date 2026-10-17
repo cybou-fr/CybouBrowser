@@ -12,7 +12,7 @@ Popup {
     property bool pointerInside: hover.hovered || surfaceHover.hovered
     property real minimumY: 0
     signal policyRequested(string key, int mode)
-    signal permissionRequested(string key, int mode)
+    signal permissionRequested(string key, int mode, string targetOrigin)
     signal decisionRequested(bool allow, double requestId)
     signal reloadRequested()
     signal cookieRequested()
@@ -144,7 +144,7 @@ Popup {
             color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true
         }
         Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
-        Label { visible: !!card.capability.requester; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
+        Label { visible: !!card.capability.requester && card.capability.requester !== card.capability.origin; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
             visible: !!card.capability.pending
             GlassBtn { text: qsTr("Autoriser cette demande"); onClicked: card.decisionRequested(true, pressedRequestId) }
@@ -155,9 +155,14 @@ Popup {
             visible: !!card.capability.canAct && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key)
             GlassBtn {
                 text: ["camera", "mic"].includes(card.capability.key) ? qsTr("Révoquer l’accès") : qsTr("Réinitialiser")
-                onClicked: card.permissionRequested(card.capability.key, 0)
+                onClicked: card.permissionRequested(card.capability.key, 0, "")
             }
-            GlassBtn { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2) }
+            GlassBtn { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2, "") }
+            GlassBtn {
+                visible: !!card.capability.requester && card.capability.requester !== card.capability.origin
+                text: qsTr("Bloquer le cadre")
+                onClicked: card.permissionRequested(card.capability.key, 2, card.capability.requester)
+            }
         }
         Flow {
             Layout.fillWidth: true; spacing: 5

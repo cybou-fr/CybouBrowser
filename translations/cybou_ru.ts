@@ -117,6 +117,11 @@
         <translation>Запретить</translation>
     </message>
     <message>
+        <location filename="../qml/CapabilityPopover.qml" line="161"/>
+        <source>Bloquer le cadre</source>
+        <translation>Заблокировать фрейм</translation>
+    </message>
+    <message>
         <location filename="../qml/CapabilityPopover.qml" line="151"/>
         <source>Gestes explicites</source>
         <translation>Только действия пользователя</translation>

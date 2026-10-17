@@ -132,12 +132,12 @@ Item {
         onPointerInsideChanged: if (pointerInside) closeTimer.stop(); else if (!control.pinned) closeTimer.restart()
         onClosed: { if (control.pinned && control.selectedIcon && control.selectedIcon.visible) control.selectedIcon.forceActiveFocus(); control.pinned = false }
         onPolicyRequested: function(key, mode) { control.policyRequested(key, mode) }
-        onPermissionRequested: function(key, mode) {
+        onPermissionRequested: function(key, mode, targetOrigin) {
             if (mode === 0) control.permissionResetRequested(key, 0)
             else if (control.selectedData.policy === 1) control.permissionResetRequested(key, mode)
             else {
                 if (control.selectedData.pending) control.decisionRequested(false, control.pendingRequestId)
-                if (!controller.setPermissionPolicy(key, mode)) control.policyRequested("error", 0)
+                if (!controller.setPermissionPolicy(key, mode, targetOrigin || "")) control.policyRequested("error", 0)
             }
         }
         onDecisionRequested: function(allow, requestId) { control.decisionRequested(allow, requestId) }

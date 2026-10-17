@@ -1,5 +1,6 @@
 #include "ControlBarController.h"
 #include "../browserstore.h"
+#include "../security/EffectivePermissionPolicy.h"
 #include <QDateTime>
 
 using Type = QWebEnginePermission::PermissionType;
@@ -78,23 +79,30 @@ QStringList ControlBarController::keysFor(Type type) {
     default: return {};
     }
 }
-bool ControlBarController::setPermissionPolicy(const QString &key, int mode) {
+bool ControlBarController::setPermissionPolicy(const QString &key, int mode, const QUrl &targetUrl) {
     // Never manufacture a grant through queryPermission: only a live request can grant.
     if (typeFor(key) == Type::Unsupported || (mode != 0 && mode != 2)) return false;
-    return writePolicy(m_url, key, mode);
+    const auto effectiveTarget = (targetUrl.isValid() && !targetUrl.isEmpty()) ? targetUrl : m_url;
+    return writePolicy(effectiveTarget, key, mode);
 }
 
 bool ControlBarController::shouldDenyOrigin(const QString &key, const QUrl &requester, const QUrl &topUrl, const QString &tab) const {
     const auto effectiveTop = topUrl.isEmpty() ? m_url : topUrl;
     const auto effectiveTab = tab.isEmpty() ? m_tabId : tab;
-    return key == "screen"
-        || policyValue(effectiveTop, key, 0, effectiveTab).toInt() == 2
-        || policyValue(requester, key, 0, effectiveTab).toInt() == 2;
+    const int topMode = policyValue(effectiveTop, key, 0, effectiveTab).toInt();
+    const int reqMode = policyValue(requester, key, 0, effectiveTab).toInt();
+    const auto eval = EffectivePermissionPolicy::evaluate(key, effectiveTop, requester, topMode, reqMode);
+    return eval.decision == PermissionDecision::Deny;
 }
 bool ControlBarController::shouldDeny(const QWebEnginePermission &permission, const QUrl &topUrl, const QString &tab) const {
-    for (const auto &key : keysFor(permission.permissionType()))
-        if (shouldDenyOrigin(key, permission.origin(), topUrl, tab)) return true;
-    return false;
+    const auto effectiveTop = topUrl.isEmpty() ? m_url : topUrl;
+    const auto effectiveTab = tab.isEmpty() ? m_tabId : tab;
+    const auto keys = keysFor(permission.permissionType());
+    const auto eval = EffectivePermissionPolicy::evaluateCompound(keys, effectiveTop, permission.origin(),
+        [this, &effectiveTab](const QString &k, const QUrl &originUrl) {
+            return policyValue(originUrl, k, 0, effectiveTab).toInt();
+        });
+    return eval.decision == PermissionDecision::Deny;
 }
 void ControlBarController::notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked, quint64 requestId) {
     for (const auto &key : keysFor(permission.permissionType())) {

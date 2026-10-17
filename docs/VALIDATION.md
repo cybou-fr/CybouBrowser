@@ -20,6 +20,17 @@ Windows / MSVC 2022 / Qt 6.12.0. Записанные runtime identifiers: Qt We
 | **CYBOU Cloud Hardening** | PASS: Nextcloud self-hosted, Infomaniak, Zoho, input validation, corrupted settings recovery, dynamic role filtering, keyboard nav, overflow prevention | Тестовые наборы `--security-test` (14 тестов CloudCoreTests), `--surface-test`, `--controlbar-test`, `--smoke-test` пройдены со статусом exit code 0 |
 | **RuleEngine & Ads/Trackers (S1.1 + S1.2)** | PASS: версионированный RuleEngine (версия 1), разделение Ad vs Tracker, иммунитет к CDN/платежам/SSO/CAPTCHA, независимые исключения для рекламы и трекеров в `TrackerExceptionRegistry`, Network hover-карточке и QML | Все 5 тестовых наборов `--security-test`, `--tracker-test`, `--controlbar-test`, `--surface-test`, `--smoke-test` пройдены со статусом exit code 0 |
 | **Restricted Browsing (S2.2)** | PASS: блокировка JS до загрузки HTML, запрет чувствительных permissions, блокировка localStorage/popups, стеклянный PolicyBanner предупреждения, детекция опасных портов и гомографов IDN | Все 4 тестовых набора `--security-test`, `--surface-test`, `--controlbar-test`, `--smoke-test` пройдены со статусом exit code 0 |
+| **Iframe Permission Matrix (S0.1)** | PASS: единый EffectivePermissionPolicy, каскад запрета top origin, независимый requester deny, составные permissions, UI-различение top/frame и кнопка «Bloquer le cadre» | Наборы `--security-test` (включая runCrossOriginIframeMatrixTests), `--surface-test`, `--controlbar-test`, `--smoke-test` пройдены со статусом exit code 0 |
+
+**Cross-Origin Iframe Matrix (S0.1):** Реализована единая модель политик `EffectivePermissionPolicy` и 8-мерная интеграционная матрица cross-origin iframe:
+1. *Нормализация и детекция origin:* строгое различие схем, хостов и портов (`https://top.example:8443` vs `https://top.example`).
+2. *Каскадный запрет (Top-Deny Cascade):* явный запрет на уровне top-level origin автоматически блокирует все вложенные requesters без показа диалогов.
+3. *Изолированный запрет requester (Requester-Specific Deny):* блокировка конкретного iframe (`setPermissionPolicy(key, 2, targetUrl)`) действует только на указанный фрейм и не затрагивает родительскую страницу или другие фреймы.
+4. *Составные разрешения (Compound Permissions):* для спаренных типов (`MediaAudioVideoCapture`) отказ в любом из компонентов (на уровне top или requester) блокирует запрос.
+5. *Изоляция сессий и вкладок:* правила хранятся в контексте вкладки (`m_privatePolicies`), уничтожаются при закрытии вкладки (`expireContext`) и наследуются только при контролируемом форке (`inheritContext`).
+6. *Приоритет активной вкладки и аннулирование:* при смене вкладки запросы активной вкладки получают приоритет; при навигации фрейма/страницы (`documentLoaded`) устаревшие запросы и leases атомарно аннулируются.
+7. *UI-различение и управление:* карточка `CapabilityPopover` отображает отдельную строку «Origine demandeuse : ...» и предоставляет гранулярную кнопку «Bloquer le cadre».
+Локальный тестовый комплекс `runCrossOriginIframeMatrixTests` пройден со статусом PASS на 100%.
 
 **Restricted Browsing (S2.2):** Реализована 4-столповая модель защищённого режима для подозрительных хостов (IDN-гомографы / смешанные алфавиты в `NavigationGuard::hasSuspiciousIdn` и опасные/заблокированные IANA/Chromium порты в `NavigationGuard::isRestrictedPort`). Столпы безопасности:
 1. *JS-off до загрузки:* отключение `javascriptEnabled` до начала парсинга документа (`settings.javascriptEnabled: !restrictedMode`).
@@ -36,7 +47,6 @@ Windows / MSVC 2022 / Qt 6.12.0. Записанные runtime identifiers: Qt We
 
 ## Известные пробелы
 
-- Запрет на top origin и проверка requester origin для стороннего iframe могут расходиться; нужна cross-origin regression.
 - Реальный mic/camera/combined capture, прекращение потока, работа после sleep/resume и продолжительные звонки не проверены.
 - Отзыв permission/temporary context в текущем коде способен разрушить документ и прервать работу.
 - Персональные иконки могут смешивать brandColor с семантикой policy; нельзя выдавать grant за реальную hardware activity.

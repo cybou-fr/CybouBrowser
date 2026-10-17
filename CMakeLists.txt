@@ -31,6 +31,7 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         src/security/SiteContext.h
         src/security/PermissionLease.h
         src/security/NavigationGuard.h
+        src/security/EffectivePermissionPolicy.h
         src/controlbar/ControlBarController.h
         src/controlbar/ControlBarController.cpp
         src/controlbar/CapabilityModel.h
