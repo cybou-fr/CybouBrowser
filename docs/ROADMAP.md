@@ -27,6 +27,8 @@
 
 **Режим выбираемой облачной экосистемы** — отдельная от поиска настройка (`proton` по умолчанию, Google Workspace, Microsoft 365 / Office 365, Infomaniak kSuite, Zoho Workplace и Nextcloud Hub; `none` для выключения). Открытие официальных web apps в обычных вкладках, компактные ярлыки на Alpine Dawn, без расширений, сторонних executables, особых полномочий и автоматического подключения аккаунта. Apple iCloud и storage-only providers — последующее расширение списка. Статус **planned**, не `implemented`. [ADR 0007](ADR/0007-selectable-cloud-services.md).
 
+**Уточнение реализации Cloud Services V1:** общий provider **и отдельный provider для каждой роли** обязательны одновременно; `inherit` / explicit / `disabled`, overrides сохраняются при смене общего набора. На новой вкладке справа сверху **«Почта» + 3×3 кнопка**, выпадающая вниз **Dark Glass панель** фактических приложений, без изменения центральной карточки и Control Bar. Статус: **planned**. [ADR 0007](ADR/0007-selectable-cloud-services.md).
+
 ## Далее — приоритетный порядок
 
 | ID | Приоритет | Задача (**planned**, если не указано иное) | Критерий приёмки |
