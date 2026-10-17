@@ -268,12 +268,14 @@ ApplicationWindow {
     }
     PermissionCoordinator {
         id: permissionCoordinator
+        activeView: currentView
         onRequestObserved: function(permission, tab, top, blocked) {
             controlState.notePermission(permission, tab, top, blocked)
         }
         onDecisionFinished: function(permission, tab, allowed) {
             controlState.finishPermission(permission, tab, allowed)
-            controlState.abandonPending(tab)
+            if (!permissionCoordinator.hasPendingFor(tab))
+                controlState.abandonPending(tab)
         }
         onRevokeDocument: function(view) { window.replaceGrantedView(view) }
     }

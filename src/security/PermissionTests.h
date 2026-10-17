@@ -30,6 +30,11 @@ inline bool runPermissionContextTests() {
     PermissionCoordinator coordinator;
     if (coordinator.submit(QWebEnginePermission(), &view, &profile, true, false)
         || coordinator.hasPending() || coordinator.resolve(true, &view, &profile, 1)) return false;
+    if (coordinator.pendingCount() != 0 || coordinator.queuedCount() != 0 || coordinator.hasPendingFor("tab-1")) return false;
+    coordinator.setActiveView(&view);
+    if (coordinator.activeView() != &view) return false;
+    coordinator.setActiveView(nullptr);
+    if (coordinator.activeView() != nullptr) return false;
     PermissionDeadline expired(0), running(60000);
     if (!expired.expired() || running.expired()) return false;
     // Clock rollback must not extend the monotonic ceiling; forward jumps fail closed.
