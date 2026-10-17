@@ -180,11 +180,17 @@ ApplicationWindow {
         const view = currentView
         const pending = !!view && view.blockedHttpUrl.length > 0 && view.blockedHttpEpoch === view.navigationEpoch
         const trackerActive = !!view && browserStore.isTrackerAllowedInProfile(view.profile, view.url)
-        return {httpPending:pending, httpOrigin:pending ? browserStore.origin(view.blockedHttpUrl) : "",
-            httpToken:view ? view.tabUid + "@" + view.navigationEpoch : "",
-            httpTemporary:!!view && view.temporaryTransport,
-            trackerTemporary:trackerActive,
-            trackerCanAllow:!!view && !view.loading && !view.temporaryContext && !trackerActive && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
+        const adActive = !!view && browserStore.isAdAllowedInProfile(view.profile, view.url)
+        return {
+            httpPending: pending,
+            httpOrigin: pending ? browserStore.origin(view.blockedHttpUrl) : "",
+            httpToken: view ? view.tabUid + "@" + view.navigationEpoch : "",
+            httpTemporary: !!view && view.temporaryTransport,
+            trackerTemporary: trackerActive,
+            adTemporary: adActive,
+            trackerCanAllow: !!view && !view.loading && !view.temporaryContext && !trackerActive && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url),
+            adCanAllow: !!view && !view.loading && !view.temporaryContext && !adActive && browserStore.blockTrackers && browserStore.canRequestTemporaryAds(view.url)
+        }
     }
     function allowTemporaryTrackers(token) {
         if (!currentView || !transportState.trackerCanAllow || token !== transportState.httpToken) return false
@@ -195,6 +201,18 @@ ApplicationWindow {
     function revokeTemporaryTrackers(token) {
         if (!currentView || !transportState.trackerTemporary || token !== transportState.httpToken) return false
         browserStore.revokeTrackersForOrigin(currentView.profile, currentView.url)
+        currentView.reload()
+        return true
+    }
+    function allowTemporaryAds(token) {
+        if (!currentView || !transportState.adCanAllow || token !== transportState.httpToken) return false
+        if (!browserStore.allowAdsInProfile(currentView.profile, currentView.url, currentView)) return false
+        currentView.reload()
+        return true
+    }
+    function revokeTemporaryAds(token) {
+        if (!currentView || !transportState.adTemporary || token !== transportState.httpToken) return false
+        browserStore.revokeAdsForOrigin(currentView.profile, currentView.url)
         currentView.reload()
         return true
     }
@@ -1048,6 +1066,8 @@ ApplicationWindow {
                     transportState: window.transportState
                     onAllowTrackersRequested: function(token) { window.allowTemporaryTrackers(token) }
                     onRevokeTrackersRequested: function(token) { window.revokeTemporaryTrackers(token) }
+                    onAllowAdsRequested: function(token) { window.allowTemporaryAds(token) }
+                    onRevokeAdsRequested: function(token) { window.revokeTemporaryAds(token) }
                     onAllowHttpRequested: function(token) { window.allowTemporaryHttp(token) }
                     onRevokeHttpRequested: function(token) { if (currentView && currentView.temporaryTransport && token === transportState.httpToken) window.replaceGrantedView(currentView) }
                     editing: false

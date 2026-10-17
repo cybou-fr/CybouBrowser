@@ -138,10 +138,11 @@ void ControlBarController::refresh() {
     const bool valid = m_profile && !subject.isEmpty();
     m_aggregator.pruneExpired(60000);
     const auto sample = networkSample();
-    QVariantMap networkCounts{{"transport",0}, {"trackers",0}, {"exceptions",0}, {"other",0}};
+    QVariantMap networkCounts{{"transport",0}, {"ads",0}, {"trackers",0}, {"exceptions",0}, {"other",0}};
     for (const auto &item : sample) {
         const auto event = item.toMap();
-        const QString key = event.value("decision") == "tracker-exception" ? "exceptions"
+        const auto decision = event.value("decision").toString();
+        const QString key = (decision == "tracker-exception" || decision == "ad-exception") ? "exceptions"
             : event.value("blocked").toBool() ? event.value("category").toString() : QString();
         if (networkCounts.contains(key)) networkCounts[key] = networkCounts[key].toInt() + 1;
     }

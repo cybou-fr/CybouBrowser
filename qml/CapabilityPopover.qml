@@ -20,6 +20,8 @@ Popup {
     signal revokeHttpRequested(string token)
     signal allowTrackersRequested(string token)
     signal revokeTrackersRequested(string token)
+    signal allowAdsRequested(string token)
+    signal revokeAdsRequested(string token)
     property string networkFilter: "all"
     onVisibleChanged: if (!visible) networkFilter = "all"
 
@@ -52,6 +54,7 @@ Popup {
     function testHttpAllowPoint() { const p = httpAllow.mapToItem(null, httpAllow.width/2, httpAllow.height/2); return {kind:"click",x:p.x,y:p.y} }
     function testHttpRevokePoint() { const p = httpRevoke.mapToItem(null, httpRevoke.width/2, httpRevoke.height/2); return {kind:"click",x:p.x,y:p.y} }
     function testTrackerPoint(revoke) { const button = revoke ? trackerRevoke : trackerAllow; const p = button.mapToItem(null,button.width/2,button.height/2); return {kind:"click",x:p.x,y:p.y} }
+    function testAdPoint(revoke) { const button = revoke ? adRevoke : adAllow; const p = button.mapToItem(null,button.width/2,button.height/2); return {kind:"click",x:p.x,y:p.y} }
     width: 330; padding: 16
     height: Math.min(implicitHeight, parent.height - minimumY - 8)
     focus: pinned; modal: false
@@ -202,37 +205,69 @@ Popup {
             }
             Label {
                 Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#B9CBE2"; font.pixelSize: 11
-                text: qsTr("Bloqués · HTTP : %1 · traqueurs : %2 · autres : %3\nTraqueurs passés par exception : %4")
-                    .arg((card.capability.networkCounts || {}).transport || 0).arg((card.capability.networkCounts || {}).trackers || 0)
-                    .arg((card.capability.networkCounts || {}).other || 0).arg((card.capability.networkCounts || {}).exceptions || 0)
+                text: qsTr("Bloqués · HTTP : %1 · pubs : %2 · traqueurs : %3 · autres : %4\nPassés par exception : %5")
+                    .arg((card.capability.networkCounts || {}).transport || 0)
+                    .arg((card.capability.networkCounts || {}).ads || 0)
+                    .arg((card.capability.networkCounts || {}).trackers || 0)
+                    .arg((card.capability.networkCounts || {}).other || 0)
+                    .arg((card.capability.networkCounts || {}).exceptions || 0)
             }
-            Label {
-                Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
-                text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs active pour cette page. Révoquée au prochain chargement.")
-                    : qsTr("Si le filtre casse ce site HTTPS, rechargez cette page avec une exception temporaire pour cette adresse. Révoquée au prochain chargement.")
+            Rectangle { Layout.fillWidth: true; height: 1; color: "#224A75" }
+            ColumnLayout {
+                Layout.fillWidth: true; spacing: 3
+                Label {
+                    Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
+                    text: card.capability.adTemporary ? qsTr("Exception publicitaire active pour cette page. Révoquée au prochain chargement.")
+                        : qsTr("Publicités bloquées par défaut. Si le contenu est altéré, vous pouvez autoriser temporairement les annonces.")
+                }
+                RowLayout {
+                    spacing: 6
+                    GlassBtn {
+                        id: adAllow
+                        visible: !card.capability.adTemporary
+                        enabled: !!card.capability.adCanAllow
+                        text: qsTr("Autoriser les publicités")
+                        onClicked: card.allowAdsRequested(pressedHttpToken)
+                    }
+                    GlassBtn {
+                        id: adRevoke
+                        visible: !!card.capability.adTemporary
+                        text: qsTr("Révoquer les publicités et recharger")
+                        onClicked: card.revokeAdsRequested(pressedHttpToken)
+                    }
+                }
             }
-            GlassBtn {
-                id: trackerAllow
-                visible: !card.capability.trackerTemporary
-                enabled: !!card.capability.trackerCanAllow
-                text: qsTr("Autoriser les traqueurs sur cette page")
-                onClicked: card.allowTrackersRequested(pressedHttpToken)
+            Rectangle { Layout.fillWidth: true; height: 1; color: "#224A75" }
+            ColumnLayout {
+                Layout.fillWidth: true; spacing: 3
+                Label {
+                    Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
+                    text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs active pour cette page. Révoquée au prochain chargement.")
+                        : qsTr("Pistage bloqué par défaut. Si le site est cassé, vous pouvez autoriser temporairement les outils de mesure.")
+                }
+                RowLayout {
+                    spacing: 6
+                    GlassBtn {
+                        id: trackerAllow
+                        visible: !card.capability.trackerTemporary
+                        enabled: !!card.capability.trackerCanAllow
+                        text: qsTr("Autoriser les traqueurs")
+                        onClicked: card.allowTrackersRequested(pressedHttpToken)
+                    }
+                    GlassBtn {
+                        id: trackerRevoke
+                        visible: !!card.capability.trackerTemporary
+                        text: qsTr("Révoquer les traqueurs et recharger")
+                        onClicked: card.revokeTrackersRequested(pressedHttpToken)
+                    }
+                }
             }
-            Label {
-                visible: !card.capability.trackerTemporary && !card.capability.trackerCanAllow
-                Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#A9C1DC"; font.pixelSize: 11
-                text: browserStore.blockTrackers ? qsTr("Disponible pour une page HTTPS chargée, hors exception HTTP.") : qsTr("Le filtre de traqueurs est désactivé dans les paramètres.")
-            }
-            GlassBtn {
-                id: trackerRevoke
-                visible: !!card.capability.trackerTemporary
-                text: qsTr("Révoquer l’exception et recharger")
-                onClicked: card.revokeTrackersRequested(pressedHttpToken)
-            }
+            Rectangle { Layout.fillWidth: true; height: 1; color: "#224A75" }
             Flow {
                 Layout.fillWidth: true; spacing: 4
                 GlassBtn { text: qsTr("Tout"); highlighted: card.networkFilter === "all"; onClicked: card.networkFilter = "all" }
                 GlassBtn { text: qsTr("HTTP"); highlighted: card.networkFilter === "transport"; onClicked: card.networkFilter = "transport" }
+                GlassBtn { text: qsTr("Pubs"); highlighted: card.networkFilter === "ads"; onClicked: card.networkFilter = "ads" }
                 GlassBtn { text: qsTr("Traqueurs"); highlighted: card.networkFilter === "trackers"; onClicked: card.networkFilter = "trackers" }
                 GlassBtn { text: qsTr("Autres"); highlighted: card.networkFilter === "other"; onClicked: card.networkFilter = "other" }
             }

@@ -11,6 +11,7 @@ qt_add_library(cybou_core STATIC
     src/ui/AddressDisplay.h
     src/security/NetworkPolicy.h
     src/security/DownloadPolicy.h
+    src/security/RuleEngine.h
     src/security/TrackerBlocker.h
     src/security/TrackerExceptionRegistry.h
 )

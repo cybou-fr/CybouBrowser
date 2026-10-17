@@ -31,6 +31,8 @@ Item {
     signal revokeHttpRequested(string token)
     signal allowTrackersRequested(string token)
     signal revokeTrackersRequested(string token)
+    signal allowAdsRequested(string token)
+    signal revokeAdsRequested(string token)
     signal reloadRequested()
     implicitWidth: effectiveWidth; implicitHeight: 28
     function keys(first, last) {
@@ -144,6 +146,8 @@ Item {
         onRevokeHttpRequested: function(token) { control.revokeHttpRequested(token) }
         onAllowTrackersRequested: function(token) { control.allowTrackersRequested(token) }
         onRevokeTrackersRequested: function(token) { control.revokeTrackersRequested(token) }
+        onAllowAdsRequested: function(token) { control.allowAdsRequested(token) }
+        onRevokeAdsRequested: function(token) { control.revokeAdsRequested(token) }
         onCookieRequested: browserStore.blockThirdPartyCookies = !browserStore.blockThirdPartyCookies
     }
     function testHttpAllowPoint() { return card.testHttpAllowPoint() }
@@ -154,6 +158,7 @@ Item {
     }
     function testCard() { return {key:selectedKey,pointerInside:card.pointerInside,visible:card.visible,pinned:pinned,x:card.x,y:card.y,width:card.width,height:card.height} }
     function testTrackerPoint(revoke) { return card.testTrackerPoint(revoke) }
+    function testAdPoint(revoke) { return card.testAdPoint(revoke) }
     function testFocus() { if (visibleCount > 3) icons.itemAt(3).forceActiveFocus() }
     function testFocusedKey() { const icon = icons.itemAt(rovingIndex); return icon && icon.activeFocus ? icon.capability.key : "" }
     function testInputPoint(key, kind) {

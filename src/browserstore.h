@@ -185,6 +185,9 @@ public:
         const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
         return (url.scheme() == "https" || fixture) && !url.host().isEmpty() && url.userInfo().isEmpty();
     }
+    Q_INVOKABLE bool canRequestTemporaryAds(const QUrl &url) const {
+        return canRequestTemporaryTrackers(url);
+    }
     Q_INVOKABLE bool allowTrackersInProfile(QObject *object, const QUrl &url, QObject *owner) {
         if (!canRequestTemporaryTrackers(url)) return false;
         const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
@@ -194,15 +197,36 @@ public:
         if (ok) emit trackerExceptionsChanged();
         return ok;
     }
+    Q_INVOKABLE bool allowAdsInProfile(QObject *object, const QUrl &url, QObject *owner) {
+        if (!canRequestTemporaryAds(url)) return false;
+        const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        auto observer = observers.value(profile);
+        const bool ok = observer && observer->allowAdsForOrigin(url, owner, fixture);
+        if (ok) emit trackerExceptionsChanged();
+        return ok;
+    }
     Q_INVOKABLE bool isTrackerAllowedInProfile(QObject *object, const QUrl &url) const {
         const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
         auto observer = observers.value(profile);
         return observer && observer->isTrackerAllowed(url);
     }
+    Q_INVOKABLE bool isAdAllowedInProfile(QObject *object, const QUrl &url) const {
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        auto observer = observers.value(profile);
+        return observer && observer->isAdAllowed(url);
+    }
     Q_INVOKABLE bool revokeTrackersForOrigin(QObject *object, const QUrl &url) {
         const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
         auto observer = observers.value(profile);
         const bool ok = observer && observer->revokeTrackersForOrigin(url);
+        if (ok) emit trackerExceptionsChanged();
+        return ok;
+    }
+    Q_INVOKABLE bool revokeAdsForOrigin(QObject *object, const QUrl &url) {
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        auto observer = observers.value(profile);
+        const bool ok = observer && observer->revokeAdsForOrigin(url);
         if (ok) emit trackerExceptionsChanged();
         return ok;
     }
@@ -237,6 +261,16 @@ public:
     Q_INVOKABLE int totalBlockedTrackers() const {
         int total = 0;
         for (auto observer : observers) total += observer->blockedCount();
+        return total;
+    }
+    Q_INVOKABLE int totalBlockedTrackersOnly() const {
+        int total = 0;
+        for (auto observer : observers) total += observer->blockedTrackers();
+        return total;
+    }
+    Q_INVOKABLE int totalBlockedAds() const {
+        int total = 0;
+        for (auto observer : observers) total += observer->blockedAds();
         return total;
     }
     Q_INVOKABLE QString navigationBlockReason(const QUrl &url, QObject *profile = nullptr, bool mainFrame = true) const {

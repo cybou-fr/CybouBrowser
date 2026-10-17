@@ -212,36 +212,62 @@
         <translation>Фильтр трекеров отключён в настройках.</translation>
     </message>
     <message>
-        <location filename="../qml/CapabilityPopover.qml" line="217"/>
         <source>Tout</source>
         <translation>Все</translation>
     </message>
     <message>
-        <location filename="../qml/CapabilityPopover.qml" line="218"/>
         <source>HTTP</source>
         <translation>HTTP</translation>
     </message>
     <message>
-        <location filename="../qml/CapabilityPopover.qml" line="219"/>
+        <source>Pubs</source>
+        <translation>Реклама</translation>
+    </message>
+    <message>
         <source>Traqueurs</source>
         <translation>Трекеры</translation>
     </message>
     <message>
-        <location filename="../qml/CapabilityPopover.qml" line="220"/>
         <source>Autres</source>
         <translation>Прочее</translation>
     </message>
     <message>
-        <location filename="../qml/CapabilityPopover.qml" line="231"/>
         <source>Passé par le filtre</source>
         <translation>Прошёл фильтр</translation>
     </message>
     <message>
-        <location filename="../qml/CapabilityPopover.qml" line="188"/>
-        <source>Bloqués · HTTP : %1 · traqueurs : %2 · autres : %3
-Traqueurs passés par exception : %4</source>
-        <translation>Заблокировано · HTTP: %1 · трекеры: %2 · прочее: %3
-Трекеры, пропущенные по исключению: %4</translation>
+        <source>Bloqués · HTTP : %1 · pubs : %2 · traqueurs : %3 · autres : %4
+Passés par exception : %5</source>
+        <translation>Заблокировано · HTTP: %1 · реклама: %2 · трекеры: %3 · прочее: %4
+Пропущено по исключению: %5</translation>
+    </message>
+    <message>
+        <source>Exception publicitaire active pour cette page. Révoquée au prochain chargement.</source>
+        <translation>Исключение для рекламы активно на этой странице. Будет отозвано при следующей загрузке.</translation>
+    </message>
+    <message>
+        <source>Publicités bloquées par défaut. Si le contenu est altéré, vous pouvez autoriser temporairement les annonces.</source>
+        <translation>Реклама заблокирована по умолчанию. Если отображение нарушено, можно временно разрешить объявления.</translation>
+    </message>
+    <message>
+        <source>Pistage bloqué par défaut. Si le site est cassé, vous pouvez autoriser temporairement les outils de mesure.</source>
+        <translation>Отслеживание заблокировано по умолчанию. Если сайт не работает, можно временно разрешить инструменты сбора данных.</translation>
+    </message>
+    <message>
+        <source>Autoriser les publicités</source>
+        <translation>Разрешить рекламу</translation>
+    </message>
+    <message>
+        <source>Révoquer les publicités et recharger</source>
+        <translation>Отозвать рекламу и перезагрузить</translation>
+    </message>
+    <message>
+        <source>Autoriser les traqueurs</source>
+        <translation>Разрешить трекеры</translation>
+    </message>
+    <message>
+        <source>Révoquer les traqueurs et recharger</source>
+        <translation>Отозвать трекеры и перезагрузить</translation>
     </message>
 </context>
 <context>
@@ -986,6 +1012,14 @@ Traqueurs passés par exception : %4</source>
         <location filename="../src/controlbar/RequestObserver.h" line="68"/>
         <source>Nouvelle navigation : l’exception a pris fin</source>
         <translation>Новый переход: срок действия исключения завершён</translation>
+    </message>
+    <message>
+        <source>Domaine publicitaire tiers bloqué par le filtre</source>
+        <translation>Сторонний рекламный домен заблокирован фильтром</translation>
+    </message>
+    <message>
+        <source>Publicité autorisée par l’exception temporaire</source>
+        <translation>Реклама пропущена по временному исключению</translation>
     </message>
     <message>
         <location filename="../src/controlbar/RequestObserver.h" line="69"/>
