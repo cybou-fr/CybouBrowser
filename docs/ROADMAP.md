@@ -35,12 +35,12 @@ This review covers the local Windows implementation and test infrastructure. Imp
 ### Immediate delivery queue
 
 - [x] **R1 — repeatable baseline (local development, 2026-10-18):** fix IDN failure, wait for the real hover delay, capture nonempty suite logs, record current source/binary identity, obtain six green suites.
-- [ ] **R2 — inventory:** official ASVS 5.0.0 (345) and WSTG 4.2 (97) inputs vendored and SHA-pinned; parsers and exact counts tested. All 442 rows created as untriaged. Remaining: review applicability, assign owners and map cases/evidence. No automatic N/A or fabricated PASS.
+- [ ] **R2 — inventory:** official ASVS 5.0.0 (345) and WSTG 4.2 (97) inputs vendored and SHA-pinned; parsers and exact counts tested. 20 controls now classified applicable with source references and explicit verification gaps; 422 remain untriaged. Remaining: review applicability, assign owners and map cases/evidence. No automatic N/A or fabricated PASS.
 - [ ] **R3 — browser-specific negative fixtures:** restricted-mode origin/redirect/override lifecycle, cross-frame permissions, real capture revoke, downloads and local-network boundaries.
 - [ ] **R4 — Windows product qualification:** cloud login/2FA, keyboard/FR/RU/DPI, many tabs, crash/session recovery and cleanup.
 - [ ] **R5 — distributable candidate:** reproducible installer, licenses/SBOM, signing, safe update/rollback, independent review and matching candidate evidence.
 
-R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is active: import/pinning complete, applicability and evidence mapping pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
+R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is active: import/pinning complete, first 20-control applicability batch recorded in [OWASP_TRIAGE](OWASP_TRIAGE.md), evidence still pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
 
 ## Gates
 

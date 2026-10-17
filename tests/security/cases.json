@@ -577,6 +577,24 @@
       "tier": "P0",
       "candidateSuite": "manual",
       "status": "planned"
+    },
+    {
+      "id": "CYB-ORIGIN-001",
+      "domain": "network",
+      "objective": "real cross-origin fetch CORS preflight, credential isolation and rejected response access",
+      "method": "integration",
+      "tier": "P0",
+      "candidateSuite": "planned",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-WS-001",
+      "domain": "transport",
+      "objective": "real ws/wss handshake respects HTTPS temporary context, origin, private-network boundary and revocation",
+      "method": "integration",
+      "tier": "P0",
+      "candidateSuite": "planned",
+      "status": "planned"
     }
   ]
 }

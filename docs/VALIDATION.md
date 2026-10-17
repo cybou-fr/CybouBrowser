@@ -49,3 +49,9 @@ Official ASVS 5.0.0 release CSV and WSTG 4.2 Markdown checklist are stored under
 The importer now reads ASVS's actual `req_id` column (`V1.1.1` form), rejects malformed/duplicate identifiers, checks exact pinned counts and compares WSTG IDs with the pinned upstream Markdown. The upstream JSON duplicate is documented in the standards README.
 
 `--mode inventory` successfully imports all 442 entries, then intentionally reports **BLOCKED** because applicability and case evidence remain incomplete. Local diagnostic report: `build/owasp-inventory/report.json`. Native browser code has not changed in this import step, so the earlier native baseline was not rerun.
+
+## First applicability batch — 2026-10-18
+
+20 controls are classified applicable with code references, browser-specific rationale, planned case mappings and explicit remaining work; 422 remain untriaged. No N/A waiver or verified control was added. See [OWASP_TRIAGE](OWASP_TRIAGE.md). Two additional P0 planned cases cover actual CORS and WebSocket behavior (66 total browser-specific cases).
+
+Twelve gate self-tests passed. Both evidence paths now reject empty/tampered logs and stale source/binary identities; duplicate or unknown case records block qualification. Local inventory diagnostic `build/owasp-triage/report.json` confirms 442 imported controls, 20 applicable, 422 untriaged, zero N/A and zero unknown coverage IDs. The overall result remains BLOCKED. Native code was unchanged and was not rebuilt for this metadata/gate iteration.

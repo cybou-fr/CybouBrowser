@@ -109,6 +109,20 @@ def case_index(path):
             errors.append("Incomplete case metadata: "+str(x.get("id")))
     return {x['id']:x for x in cases if x.get('id')},errors,len(ids)
 
+def current_pass_evidence(item, commit, binary_sha):
+    if not item or not commit or commit=="unknown" or not binary_sha:
+        return False
+    if item.get("result")!="PASS" or item.get("commit")!=commit or item.get("binarySha256")!=binary_sha:
+        return False
+    if not item.get("log") or not item.get("logSha256"):
+        return False
+    try:
+        path=Path(item["log"])
+        if not path.is_absolute(): path=ROOT/path
+        return path.is_file() and path.stat().st_size>0 and item["logSha256"]==sha(path)
+    except OSError:
+        return False
+
 def check_coverage(requirements, coverage_file, evidence_file, cases, commit, binary_sha):
     errors=[]
     rows=read_json(coverage_file).get("requirements",[])
@@ -123,7 +137,14 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
     if absent: errors.append(f"{len(absent)} official controls untriaged")
     if extra: errors.append(f"{len(extra)} mapped controls missing from pinned standards")
     evidences=read_json(evidence_file).get("evidence",[]) if Path(evidence_file).exists() else []
-    evidence={x.get("caseId"):x for x in evidences}
+    evidence={}
+    for item in evidences:
+        case_id=item.get("caseId")
+        if not case_id or case_id in evidence:
+            errors.append("Duplicate or missing evidence caseId: "+str(case_id))
+        if case_id not in cases:
+            errors.append("Evidence references unknown case: "+str(case_id))
+        evidence[case_id]=item
 
     # Browser-specific risks are independently mandatory for release, even when not in ASVS.
     if commit=="unknown":
@@ -132,10 +153,7 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
         if item.get("status")!="verified":
             errors.append(case_id+": browser-specific case not verified")
         e=evidence.get(case_id)
-        if not e or e.get("result")!="PASS" or e.get("commit")!=commit \
-           or e.get("binarySha256")!=binary_sha or not e.get("log") \
-           or not Path(e["log"]).is_file() \
-           or e.get("logSha256")!=sha(e["log"]):
+        if not current_pass_evidence(e,commit,binary_sha):
             errors.append(case_id+": no current-sha/hash PASS evidence")
     applicable=0
     skipped=0
@@ -156,9 +174,7 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
                     errors.append(key+": unknown case "+str(cid))
                     continue
                 e=evidence.get(cid)
-                if not e or e.get("result")!="PASS" or e.get("commit")!=commit \
-                   or e.get("binarySha256")!=binary_sha \
-                   or not e.get("log") or not Path(e["log"]).is_file():
+                if not current_pass_evidence(e,commit,binary_sha):
                     errors.append(key+": missing current-revision PASS evidence for "+cid)
         else:
             errors.append(key+": disposition must be applicable/not_applicable")

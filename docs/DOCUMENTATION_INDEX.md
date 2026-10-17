@@ -17,6 +17,7 @@
 | [Roadmap](ROADMAP.md) | Required engineering work before 1.0.0 |
 | [Test Plan](TEST_PLAN.md) | Executable suites and additional required campaigns |
 | [Security Verification Framework](SECURITY_VERIFICATION_FRAMEWORK.md) | OWASP imports, case coverage, execution evidence |
+| [OWASP Triage](OWASP_TRIAGE.md) | Browser-specific applicability, mappings and remaining verification gaps |
 | [Validation](VALIDATION.md) | Current verification status, without unsupported PASS claims |
 | [Release Criteria](RELEASE_CRITERIA.md) | Formal GO/NO-GO |
 | [ADR 0005](ADR/0005-origin-scoped-tracker-exceptions.md) | Current origin/profile tracker-exception policy |

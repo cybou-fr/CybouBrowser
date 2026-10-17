@@ -91,6 +91,41 @@ class GateContractTests(unittest.TestCase):
             self.assertEqual(s["untriaged"],1)
             self.assertTrue(any("not verified" in e for e in errors))
 
+    def test_evidence_is_bound_to_nonempty_unchanged_log_and_candidate(self):
+        with tempfile.TemporaryDirectory() as d:
+            log=Path(d)/"case.log"; log.write_text("negative fixture PASS\n",encoding="utf-8")
+            item={"caseId":"TEST-001","result":"PASS","commit":"source-a",
+                  "binarySha256":"binary-a","log":str(log),"logSha256":gate.sha(log)}
+            self.assertTrue(gate.current_pass_evidence(item,"source-a","binary-a"))
+            for commit,binary in [("unknown","binary-a"),("source-b","binary-a"),("source-a",""),("source-a","binary-b")]:
+                self.assertFalse(gate.current_pass_evidence(item,commit,binary))
+            log.write_text("changed\n",encoding="utf-8")
+            self.assertFalse(gate.current_pass_evidence(item,"source-a","binary-a"))
+            log.write_text("",encoding="utf-8"); item["logSha256"]=gate.sha(log)
+            self.assertFalse(gate.current_pass_evidence(item,"source-a","binary-a"))
+            log.unlink()
+            self.assertFalse(gate.current_pass_evidence(item,"source-a","binary-a"))
+
+    def test_applicable_control_requires_real_case_evidence(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d); control="ASVS:v5.0.0-8.2.1"
+            coverage=base/"coverage.json"; evidence=base/"evidence.json"; log=base/"case.log"
+            coverage.write_text(json.dumps({"requirements":[{"id":control,"disposition":"applicable",
+                                 "owner":"test-owner","caseIds":["TEST-001"]}]}),encoding="utf-8")
+            log.write_text("PASS\n",encoding="utf-8")
+            item={"caseId":"TEST-001","result":"PASS","commit":"source-a","binarySha256":"binary-a",
+                  "log":str(log),"logSha256":gate.sha(log)}
+            cases={"TEST-001":{"status":"verified"}}
+            def check(items):
+                evidence.write_text(json.dumps({"evidence":items}),encoding="utf-8")
+                return gate.check_coverage({control},coverage,evidence,cases,"source-a","binary-a")[0]
+            self.assertEqual(check([item]),[])
+            self.assertTrue(any("Duplicate" in x for x in check([item,item])))
+            item["logSha256"]="wrong"
+            errors=check([item])
+            self.assertTrue(any("current-sha/hash" in x for x in errors))
+            self.assertTrue(any("current-revision" in x for x in errors))
+
     def test_reviewed_na_does_not_waive_native_tests(self):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d)
