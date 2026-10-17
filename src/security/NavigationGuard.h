@@ -323,93 +323,66 @@ public:
         DnsRebindGuard::instance().reset();
     }
 
-    static QString decodePunycodeLabel(const QString &label) {
-        if (!label.startsWith(QStringLiteral("xn--"), Qt::CaseInsensitive)) return label;
-        const QString ext = label.mid(4);
-        int hyphen = ext.lastIndexOf(QLatin1Char('-'));
-        QString base;
-        QString extended;
-        if (hyphen >= 0) {
-            base = ext.left(hyphen);
-            extended = ext.mid(hyphen + 1).toUpper();
-        } else {
-            extended = ext.toUpper();
-        }
-
-        uint32_t charCode = 0x80;
-        int pos = -1;
-        int bias = 72;
-        int extpos = 0;
-
-        auto adapt = [](int delta, bool first, int numchars) -> int {
-            if (first) delta /= 700;
-            else delta /= 2;
-            delta += delta / numchars;
-            int divisions = 0;
-            while (delta > 455) {
-                delta /= 35;
-                divisions += 36;
-            }
-            return divisions + (36 * delta / (delta + 38));
-        };
-
-        auto tFunc = [](int j, int b) -> int {
-            int res = 36 * (j + 1) - b;
-            if (res < 1) return 1;
-            if (res > 26) return 26;
-            return res;
-        };
-
-        while (extpos < extended.size()) {
-            int result = 0;
-            int w = 1;
-            int j = 0;
-            while (true) {
-                if (extpos >= extended.size()) return base;
-                const QChar ch = extended[extpos++];
-                const char latin = ch.toLatin1();
-                int digit = 0;
-                if (latin >= 'A' && latin <= 'Z') digit = latin - 'A';
-                else if (latin >= '0' && latin <= '9') digit = latin - '0' + 26;
-                else return base; // Invalid character
-
-                const int t = tFunc(j, bias);
-                result += digit * w;
-                if (digit < t) break;
-                w *= (36 - t);
-                ++j;
-            }
-
-            pos += result + 1;
-            charCode += pos / (base.size() + 1);
-            if (charCode > 0x10FFFF) charCode = '?';
-            pos = pos % (base.size() + 1);
-            base.insert(pos, QChar::fromUcs4(charCode));
-            bias = adapt(result, (extpos == 0), base.size());
-        }
-        return base;
-    }
-
     static bool hasSuspiciousIdn(const QUrl &url) {
         const QString host = url.host().toLower();
         if (!host.contains(QStringLiteral("xn--"))) return false;
 
         const QStringList labels = host.split(QLatin1Char('.'));
-        for (const QString &label : labels) {
-            const QString unicodeLabel = decodePunycodeLabel(label);
+        if (labels.isEmpty()) return false;
+
+        const QString tld = labels.last();
+        bool isLatinTld = true;
+        for (const QChar &ch : tld) {
+            if (ch.script() != QChar::Script_Latin) {
+                isLatinTld = false;
+                break;
+            }
+        }
+
+        for (int i = 0; i < labels.size(); ++i) {
+            const QString &label = labels[i];
+            const QString unicodeLabel = label.startsWith(QStringLiteral("xn--"), Qt::CaseInsensitive)
+                ? QUrl::fromAce(label.toLatin1())
+                : label;
 
             bool hasLatin = false;
             bool hasNonLatinConfusable = false;
+            int confusableLookalikeCount = 0;
             for (const QChar &ch : unicodeLabel) {
+                const ushort u = ch.unicode();
+                // Check zero-width / bidi override control characters
+                if (u == 0x200B || u == 0x200C || u == 0x200D || u == 0xFEFF || u == 0x200E || u == 0x200F || (u >= 0x202A && u <= 0x202E)) {
+                    return true;
+                }
+
                 const auto s = ch.script();
                 if (s == QChar::Script_Latin) {
                     hasLatin = true;
                 } else if (s == QChar::Script_Cyrillic || s == QChar::Script_Greek) {
                     hasNonLatinConfusable = true;
+                    // Check if char is an exact lookalike to Latin letter
+                    if (u == 0x0430 || u == 0x0441 || u == 0x0435 || u == 0x043E || u == 0x0440 ||
+                        u == 0x0445 || u == 0x0443 || u == 0x0456 || u == 0x0458 || u == 0x0455 ||
+                        u == 0x0410 || u == 0x0412 || u == 0x0421 || u == 0x0415 || u == 0x041D ||
+                        u == 0x0406 || u == 0x0408 || u == 0x041A || u == 0x041C || u == 0x041E ||
+                        u == 0x0420 || u == 0x0422 || u == 0x0425 ||
+                        u == 0x03BF || u == 0x03BD || u == 0x03C1 || u == 0x03C4 ||
+                        u == 0x039F || u == 0x0391 || u == 0x0392 || u == 0x0395 || u == 0x0396 ||
+                        u == 0x0397 || u == 0x0399 || u == 0x039A || u == 0x039C || u == 0x039D ||
+                        u == 0x03A1 || u == 0x03A4 || u == 0x03A7 || u == 0x03A5) {
+                        ++confusableLookalikeCount;
+                    }
                 }
             }
+
+            // 1. Mixed-script homograph within the label (e.g. аpple where 'а' is Cyrillic)
             if (hasLatin && hasNonLatinConfusable) {
-                return true; // Mixed-script homograph detected
+                return true;
+            }
+
+            // 2. Whole-script confusable spoof under a Latin TLD (e.g. all-Cyrillic apple.com)
+            if (isLatinTld && i < labels.size() - 1 && confusableLookalikeCount > 0 && confusableLookalikeCount == unicodeLabel.size()) {
+                return true;
             }
         }
         return false;

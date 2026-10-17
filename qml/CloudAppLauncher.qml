@@ -6,7 +6,9 @@ import Cybou
 Item {
     id: launcher
     implicitWidth: launcherRow.implicitWidth
-    implicitHeight: 36
+    implicitHeight: buttonSize
+
+    readonly property int buttonSize: 36
 
     property Item wallpaperItem: null
     property real blurFactor: 0.85
@@ -32,9 +34,16 @@ Item {
         Button {
             id: mailButton
             visible: cloudMgr ? cloudMgr.isMailAvailable() : false
-            implicitHeight: 34
-            implicitWidth: mailRow.implicitWidth + 24
+            implicitHeight: launcher.buttonSize
+            implicitWidth: mailLabel.implicitWidth + 16 + 7 + 24
+            Layout.minimumWidth: implicitWidth
+            Layout.maximumWidth: implicitWidth
+            Layout.minimumHeight: launcher.buttonSize
+            Layout.maximumHeight: launcher.buttonSize
+            Accessible.name: mailLabel.text
             padding: 0
+            leftPadding: 12
+            rightPadding: 12
             hoverEnabled: true
             scale: down ? 0.95 : hovered ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
@@ -50,18 +59,22 @@ Item {
 
             contentItem: RowLayout {
                 id: mailRow
-                anchors.centerIn: parent
                 spacing: 7
                 Image {
                     source: "qrc:/assets/cloud/mail.svg"
-                    width: 16
-                    height: 16
+                    Layout.minimumWidth: 16
+                    Layout.maximumWidth: 16
+                    Layout.minimumHeight: 16
+                    Layout.maximumHeight: 16
+                    Layout.alignment: Qt.AlignVCenter
                     sourceSize.width: 16
                     sourceSize.height: 16
                     fillMode: Image.PreserveAspectFit
                     opacity: mailButton.hovered ? 1.0 : 0.8
                 }
                 Text {
+                    id: mailLabel
+                    Layout.alignment: Qt.AlignVCenter
                     text: qsTr("Courrier")
                     color: mailButton.hovered ? "#FFFFFF" : "#E2E8F0"
                     font.pixelSize: 13
@@ -70,7 +83,7 @@ Item {
             }
 
             background: Rectangle {
-                radius: 17
+                radius: height / 2
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: mailButton.down ? "#DD0D2038" : mailButton.hovered ? "#CC1E3D68" : "#80122B4C" }
                     GradientStop { position: 1.0; color: mailButton.down ? "#EE071222" : mailButton.hovered ? "#DD132948" : "#900A1A30" }
@@ -99,8 +112,13 @@ Item {
         // 3x3 dots button (Grid App Launcher)
         Button {
             id: gridButton
-            implicitWidth: 34
-            implicitHeight: 34
+            implicitWidth: launcher.buttonSize
+            implicitHeight: launcher.buttonSize
+            Layout.minimumWidth: launcher.buttonSize
+            Layout.maximumWidth: launcher.buttonSize
+            Layout.minimumHeight: launcher.buttonSize
+            Layout.maximumHeight: launcher.buttonSize
+            Accessible.name: qsTr("Applications cloud (CYBOU Cloud)")
             padding: 0
             hoverEnabled: true
             scale: down ? 0.95 : hovered ? 1.05 : 1.0
@@ -136,7 +154,7 @@ Item {
             }
 
             background: Rectangle {
-                radius: 17
+                radius: height / 2
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: gridButton.down ? "#DD0D2038" : gridButton.hovered ? "#CC1E3D68" : "#80122B4C" }
                     GradientStop { position: 1.0; color: gridButton.down ? "#EE071222" : gridButton.hovered ? "#DD132948" : "#900A1A30" }

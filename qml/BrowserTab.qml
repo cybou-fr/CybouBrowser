@@ -43,6 +43,8 @@ WebEngineView {
     signal restrictedModeTriggered(var view, string reason)
 
     property bool restrictedMode: false
+    property bool restrictedModeOverridden: false
+    readonly property bool restrictedActive: restrictedMode && !restrictedModeOverridden
     property string restrictedReason: ""
     property string blockedHttpUrl: ""
     property int blockedHttpEpoch: -1
@@ -73,11 +75,11 @@ WebEngineView {
         target: web.temporaryContext ? web.profile : null
         function onDownloadRequested(download) { web.downloadRequested(download) }
     }
-    audioMuted: isMuted
+    audioMuted: isMuted || restrictedActive
     onRecentlyAudibleChanged: function(value) { tabPropertyUpdate(index, "audible", value) }
-    settings.javascriptEnabled: !restrictedMode && (controller ? controller.settingFor(url, "javascript", tabUid) : true)
-    settings.localStorageEnabled: !restrictedMode && (controller ? controller.settingFor(url, "storage", tabUid) : true)
-    settings.javascriptCanOpenWindows: !restrictedMode && (controller ? controller.popupMode(url, tabUid) !== 2 : true)
+    settings.javascriptEnabled: !restrictedActive && (controller ? controller.settingFor(url, "javascript", tabUid) : true)
+    settings.localStorageEnabled: !restrictedActive && (controller ? controller.settingFor(url, "storage", tabUid) : true)
+    settings.javascriptCanOpenWindows: !restrictedActive && (controller ? controller.popupMode(url, tabUid) !== 2 : true)
     settings.localContentCanAccessRemoteUrls: false
     settings.localContentCanAccessFileUrls: false
     settings.allowRunningInsecureContent: false
@@ -89,20 +91,25 @@ WebEngineView {
         if (store && initialUrl !== "about:blank" && store.requiresRestrictedBrowsing(initialUrl)) {
             web.restrictedMode = true
             web.restrictedReason = store.restrictedBrowsingReason(initialUrl)
-            if (isCurrentTab) restrictedModeTriggered(web, web.restrictedReason)
+            if (isCurrentTab && web.restrictedActive) restrictedModeTriggered(web, web.restrictedReason)
         }
     }
 
     onNavigationRequested: function(request) {
         if (request.isMainFrame) {
             web.navigationEpoch++
+            const nextOrigin = store ? store.origin(request.url.toString()) : ""
+            if (web.policyOrigin !== nextOrigin) {
+                web.restrictedModeOverridden = false
+            }
             if (store && store.requiresRestrictedBrowsing(request.url)) {
                 web.restrictedMode = true
                 web.restrictedReason = store.restrictedBrowsingReason(request.url)
-                if (isCurrentTab) restrictedModeTriggered(web, web.restrictedReason)
+                if (isCurrentTab && !web.restrictedModeOverridden) restrictedModeTriggered(web, web.restrictedReason)
             } else {
                 web.restrictedMode = false
                 web.restrictedReason = ""
+                web.restrictedModeOverridden = false
             }
             if (request.url.toString() !== web.upgradeExpectedUrl) {
                 web.upgradedFromHttpUrl = ""
@@ -163,7 +170,7 @@ WebEngineView {
         pdfFinished(filePath, success)
     }
     onPermissionRequested: function(permission) {
-        if (web.restrictedMode) {
+        if (web.restrictedActive) {
             permission.deny()
             return
         }
@@ -177,7 +184,7 @@ WebEngineView {
         if (permitted) newTabRequested(request.requestedUrl.toString())
     }
     onIsCurrentTabChanged: {
-        if (isCurrentTab && web.restrictedMode && url.toString() !== "about:blank") {
+        if (isCurrentTab && web.restrictedActive && url.toString() !== "about:blank") {
             restrictedModeTriggered(web, web.restrictedReason)
         }
     }
@@ -187,8 +194,8 @@ WebEngineView {
             if (coordinator) coordinator.documentLoaded(web, web.navigationEpoch)
             web.upgradedFromHttpUrl = ""
             web.upgradeExpectedUrl = ""
-            if (!isPrivate && store) store.recordVisit(url.toString(), title)
-            if (web.restrictedMode && isCurrentTab) {
+            if (!isPrivate && !web.restrictedActive && store) store.recordVisit(url.toString(), title)
+            if (web.restrictedActive && isCurrentTab) {
                 restrictedModeTriggered(web, web.restrictedReason)
             }
         }

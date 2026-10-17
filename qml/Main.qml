@@ -766,6 +766,11 @@ ApplicationWindow {
     }
     function maximizeToggle() { visibility === Window.Maximized ? showNormal() : showMaximized() }
     function handleDownload(download) {
+        if (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden) {
+            download.cancel()
+            window.showStatus(qsTr("Téléchargement bloqué : site en mode restreint."))
+            return
+        }
         download.downloadDirectory = smokeMode ? smokeDownloadPath : browserStore.downloadsPath
         downloadItems = [download].concat(downloadItems)
         showLibrary("downloads")
@@ -852,7 +857,8 @@ ApplicationWindow {
                     Layout.topMargin: 4; Layout.bottomMargin: 4
                     orientation: ListView.Horizontal
                     spacing: 3; clip: true
-                    rightMargin: 36
+                    rightMargin: newTabBtn.implicitWidth + newTabButtonSpacing + 4
+                    readonly property int newTabButtonSpacing: 12
                     model: tabs
                     NavButton {
                         id: newTabBtn
@@ -862,7 +868,7 @@ ApplicationWindow {
                         hint: qsTr("Nouvel onglet · Ctrl+T")
                         implicitWidth: 28
                         implicitHeight: chromeControlHeight
-                        x: Math.max(0, tabStrip.contentWidth + 4)
+                        x: Math.max(0, tabStrip.contentWidth + tabStrip.newTabButtonSpacing)
                         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                         onClicked: addTab("")
                     }
@@ -1005,7 +1011,7 @@ ApplicationWindow {
                         GradientStop { position: 1.0; color: address.activeFocus ? "#F4061324" : "#DD091B32" }
                     }
                     border.width: address.activeFocus ? 1.5 : 1
-                    border.color: address.activeFocus ? "#0088FF" : "#357DA5CC"
+                    border.color: address.activeFocus ? "#0088FF" : (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden ? "#D97706" : "#357DA5CC")
                     Behavior on border.color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 150 } }
                     Rectangle {
                         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
@@ -1018,20 +1024,29 @@ ApplicationWindow {
                             readonly property bool httpAction: window.transportState.httpPending || window.transportState.httpTemporary
                             property string pressedToken: ""
                             property bool pressedHttpAction: false
-                            text: httpAction ? "HTTP" : currentView && currentView.url.toString().startsWith("https:") ? "🔒" : "ⓘ"
+                            text: httpAction ? "HTTP" : (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden ? "⚠" : currentView && currentView.url.toString().startsWith("https:") ? "🔒" : "ⓘ")
                             implicitWidth: httpAction ? 36 : 24
-                            hint: httpAction ? "" : currentView && currentView.url.toString().startsWith("https:") ? qsTr("Connexion chiffrée (HTTPS), sans garantie sur le site") : qsTr("Informations de connexion")
+                            hint: httpAction ? "" : (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden ? (qsTr("Site suspect en mode restreint : ") + currentView.restrictedReason) : currentView && currentView.url.toString().startsWith("https:") ? qsTr("Connexion chiffrée (HTTPS), sans garantie sur le site") : qsTr("Informations de connexion"))
                             Accessible.name: httpAction ? (window.transportState.httpTemporary ? qsTr("Révoquer l’accès HTTP temporaire") : qsTr("Autoriser cette adresse HTTP temporairement")) : hint
                             onPressed: { pressedToken = window.transportState.httpToken; pressedHttpAction = httpAction }
                             onClicked: {
-                                if (!pressedHttpAction) { if (!httpAction) connectionInfo.open(); return }
+                                if (!pressedHttpAction) {
+                                    if (!httpAction) {
+                                        if (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden) {
+                                            policyBanner.showRestricted(currentView.restrictedReason, currentView.tabUid, currentView.navigationEpoch, currentView.url.toString())
+                                        } else {
+                                            connectionInfo.open()
+                                        }
+                                    }
+                                    return
+                                }
                                 if (pressedToken !== window.transportState.httpToken) return
                                 if (window.transportState.httpTemporary) window.replaceGrantedView(currentView)
                                 else window.allowTemporaryHttp(pressedToken)
                             }
                             contentItem: Text {
                                 text: httpButton.text; font.pixelSize: httpButton.httpAction ? 10 : 17; font.bold: httpButton.httpAction
-                                color: httpButton.httpAction ? "#FFD08A" : "#A0B3D0"
+                                color: httpButton.httpAction ? "#FFD08A" : (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden ? "#F59E0B" : "#A0B3D0")
                                 horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                             }
                         }
@@ -1186,6 +1201,7 @@ ApplicationWindow {
             onEnableJsRequested: {
                 policyBanner.close()
                 if (currentView) {
+                    currentView.restrictedModeOverridden = true
                     currentView.restrictedMode = false
                     currentView.reload()
                     window.showStatus(qsTr("JavaScript activé pour cette session."))

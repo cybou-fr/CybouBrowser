@@ -187,18 +187,31 @@ inline bool runNavigationGuardTests() {
         return false;
     }
 
-    const QUrl restrictedPortUrl("http://example.com:22/");
-    if (!NavigationGuard::requiresRestrictedBrowsing(restrictedPortUrl)) {
-        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: port 22 not flagged";
-        return false;
-    }
-    const QString portReason = NavigationGuard::restrictedBrowsingReason(restrictedPortUrl);
-    if (portReason.isEmpty() || !portReason.contains("Port réseau")) {
-        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: port reason unexpected" << portReason;
+    // Whole-script confusable spoof: all-Cyrillic 'apple.com' under Latin .com TLD
+    const QUrl wholeScriptSpoofUrl("https://xn--80ak6aa92e.com/");
+    if (!NavigationGuard::requiresRestrictedBrowsing(wholeScriptSpoofUrl)) {
+        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: whole-script confusable spoof not flagged";
         return false;
     }
 
-    for (const auto &urlStr : {"https://example.com/", "https://cybou.fr/", "https://example.com:443/", "http://example.com:80/", "http://example.com:8080/path"}) {
+    // Dangerous / restricted ports
+    for (int port : {21, 22, 23, 25, 53, 135, 139, 445, 6379, 11211, 27017}) {
+        const QUrl restrictedPortUrl(QString("http://example.com:%1/").arg(port));
+        if (!NavigationGuard::requiresRestrictedBrowsing(restrictedPortUrl)) {
+            qCritical() << "RESTRICTED_BROWSING_TEST FAIL: dangerous port not flagged" << port;
+            return false;
+        }
+        const QString portReason = NavigationGuard::restrictedBrowsingReason(restrictedPortUrl);
+        if (portReason.isEmpty() || !portReason.contains("Port réseau")) {
+            qCritical() << "RESTRICTED_BROWSING_TEST FAIL: port reason unexpected" << portReason;
+            return false;
+        }
+    }
+
+    // Safe URLs & ports (MUST NOT be flagged as restricted)
+    for (const auto &urlStr : {"https://example.com/", "https://cybou.fr/", "https://example.com:443/",
+                               "http://example.com:80/", "http://example.com:8080/path",
+                               "http://example.com:3000/", "http://example.com:5000/", "http://example.com:8000/", "http://example.com:9000/"}) {
         const QUrl safeUrl(QString::fromLatin1(urlStr));
         if (NavigationGuard::requiresRestrictedBrowsing(safeUrl)) {
             qCritical() << "RESTRICTED_BROWSING_TEST FAIL: safe URL flagged" << urlStr;
