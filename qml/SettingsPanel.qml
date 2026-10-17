@@ -68,8 +68,8 @@ Drawer {
     ColumnLayout {
         anchors.fill: parent; anchors.margins: 24; spacing: 18
         RowLayout {
-            Label { text: "Paramètres"; color: "#FFFFFF"; font.pixelSize: 26; font.bold: true; Layout.fillWidth: true }
-            NavButton { text: "×"; hint: "Fermer les paramètres"; onClicked: panel.close() }
+            Label { text: qsTr("Paramètres"); color: "#FFFFFF"; font.pixelSize: 26; font.bold: true; Layout.fillWidth: true }
+            NavButton { text: "×"; hint: qsTr("Fermer les paramètres"); onClicked: panel.close() }
         }
         ScrollView {
             Layout.fillWidth: true; Layout.fillHeight: true
@@ -77,8 +77,8 @@ Drawer {
             clip: true
             ColumnLayout {
                 width: parent.width; spacing: 18
-                Label { text: "NAVIGATION"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
-                Label { text: "Moteur de recherche"; color: "#E2E8F0"; font.bold: true }
+                Label { text: qsTr("NAVIGATION"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
+                Label { text: qsTr("Moteur de recherche"); color: "#E2E8F0"; font.bold: true }
                 ComboBox {
                     id: searchProvider
                     Layout.fillWidth: true
@@ -89,7 +89,7 @@ Drawer {
                 }
                 Switch {
                     id: restoreSwitch
-                    text: "Restaurer les onglets au démarrage"
+                    text: qsTr("Restaurer les onglets au démarrage")
                     checked: browserStore.restoreSession
                     onToggled: browserStore.restoreSession = checked
                     indicator: Rectangle {
@@ -103,7 +103,7 @@ Drawer {
                         }
                     }
                 }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; text: "Les fenêtres privées démarrent toujours sur un nouvel onglet."; font.pixelSize: 12 }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; text: qsTr("Les fenêtres privées démarrent toujours sur un nouvel onglet."); font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: qsTr("APPARENCE & FOND D’ÉCRAN"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Label { text: qsTr("Fond de la page d’accueil"); color: "#E2E8F0"; font.bold: true }
@@ -137,10 +137,10 @@ Drawer {
                     onActivated: browserStore.glassBlurLevel = currentIndex
                 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
-                Label { text: "TÉLÉCHARGEMENTS"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
+                Label { text: qsTr("TÉLÉCHARGEMENTS"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Label { Layout.fillWidth: true; text: browserStore.downloadsPath; wrapMode: Text.WrapAnywhere; color: "#94A3B8"; font.pixelSize: 12 }
-                GlassButton { text: "Choisir le dossier…"; onClicked: downloadFolder.open() }
-                CheckBox { text: "Toujours demander où enregistrer"; checked: browserStore.askDownloadLocation; onToggled: browserStore.askDownloadLocation = checked }
+                GlassButton { text: qsTr("Choisir le dossier…"); onClicked: downloadFolder.open() }
+                CheckBox { text: qsTr("Toujours demander où enregistrer"); checked: browserStore.askDownloadLocation; onToggled: browserStore.askDownloadLocation = checked }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: qsTr("CONTROL BAR"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 ComboBox {
@@ -157,7 +157,7 @@ Drawer {
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Tente HTTPS pour les adresses HTTP publiques. En cas d’échec, le panneau Réseau peut proposer une exception HTTP explicite et temporaire, sans chiffrement.") }
                 CheckBox { text: qsTr("HTTPS par défaut · exceptions HTTP temporaires dans Réseau"); checked: browserStore.httpsOnly; enabled: false }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Bloque HTTP et les WebSocket non chiffrés dans tous les profils, y compris sur le réseau local. Une exception HTTP exige une action dans le panneau Réseau, pour une seule navigation dans un profil temporaire de l’onglet. Rechargez les onglets pour interrompre les connexions déjà ouvertes. Les protocoles externes sont désactivés et WebRTC utilise uniquement les interfaces publiques.") }
-                Label { text: "CONFIDENTIALITÉ"; color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
+                Label { text: qsTr("CONFIDENTIALITÉ"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Switch {
                     id: trackerSwitch
                     text: qsTr("Protection anti-pistage & blocage des traqueurs")
@@ -177,7 +177,7 @@ Drawer {
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Bloque automatiquement les réseaux publicitaires tiers, les balises de suivi et les outils d’analyse de navigation pour préserver votre vie privée et accélérer le chargement.") }
                 Switch {
                     id: cookieSwitch
-                    text: "Bloquer les cookies tiers"
+                    text: qsTr("Bloquer les cookies tiers")
                     checked: browserStore.blockThirdPartyCookies
                     onToggled: browserStore.blockThirdPartyCookies = checked
                     indicator: Rectangle {
@@ -191,16 +191,16 @@ Drawer {
                         }
                     }
                 }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: "Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies." }
-                GlassButton { text: "Effacer les données de navigation…"; enabled: !browserStore.cacheBusy; onClicked: clearDialog.open() }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; visible: browserStore.cacheBusy || panel.statusText.length > 0; text: browserStore.cacheBusy ? "Nettoyage du cache en cours…" : panel.statusText; color: "#7DD3FC"; font.pixelSize: 12 }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies.") }
+                GlassButton { text: qsTr("Effacer les données de navigation…"); enabled: !browserStore.cacheBusy; onClicked: clearDialog.open() }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; visible: browserStore.cacheBusy || panel.statusText.length > 0; text: browserStore.cacheBusy ? qsTr("Nettoyage du cache en cours…") : panel.statusText; color: "#7DD3FC"; font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 RowLayout {
-                    Label { text: "AUTORISATIONS DES SITES"; Layout.fillWidth: true; color: "#38BDF8"; font.letterSpacing: 1; font.pixelSize: 11; font.bold: true }
-                    NavButton { text: "↻"; hint: "Actualiser les autorisations"; onClicked: panel.refreshPermissions() }
+                    Label { text: qsTr("AUTORISATIONS DES SITES"); Layout.fillWidth: true; color: "#38BDF8"; font.letterSpacing: 1; font.pixelSize: 11; font.bold: true }
+                    NavButton { text: "↻"; hint: qsTr("Actualiser les autorisations"); onClicked: panel.refreshPermissions() }
                 }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: "Les sites demandent votre accord avant d’accéder aux appareils et à la localisation. Réinitialiser un choix fera apparaître une nouvelle demande. Un accès déjà actif cesse à la fermeture de l’onglet."; color: "#94A3B8"; font.pixelSize: 12 }
-                Label { visible: panel.sitePermissions.length === 0; text: "Aucune décision mémorisée"; color: "#64748B" }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: qsTr("Les sites demandent votre accord avant d’accéder aux appareils et à la localisation. Réinitialiser un choix fera apparaître une nouvelle demande. Un accès déjà actif cesse à la fermeture de l’onglet."); color: "#94A3B8"; font.pixelSize: 12 }
+                Label { visible: panel.sitePermissions.length === 0; text: qsTr("Aucune décision mémorisée"); color: "#64748B" }
                 Repeater {
                     model: panel.sitePermissions
                     delegate: Rectangle {
@@ -219,20 +219,20 @@ Drawer {
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 10; spacing: 3
                             Label { Layout.fillWidth: true; text: modelData.origin.toString(); elide: Text.ElideMiddle; font.bold: true; color: "#FFFFFF" }
-                            Label { Layout.fillWidth: true; text: browserStore.permissionName(modelData.permissionType) + " · " + (modelData.state === 2 ? "Autorisé" : modelData.state === 3 ? "Refusé" : "Demander"); color: modelData.state === 2 ? "#10B981" : modelData.state === 3 ? "#EF4444" : "#F59E0B"; font.pixelSize: 12 }
-                            GlassButton { text: "Réinitialiser"; onClicked: { modelData.reset(); panel.refreshPermissions() } }
+                            Label { Layout.fillWidth: true; text: browserStore.permissionName(modelData.permissionType) + " · " + (modelData.state === 2 ? qsTr("Autorisé") : modelData.state === 3 ? qsTr("Refusé") : qsTr("Demander")); color: modelData.state === 2 ? "#10B981" : modelData.state === 3 ? "#EF4444" : "#F59E0B"; font.pixelSize: 12 }
+                            GlassButton { text: qsTr("Réinitialiser"); onClicked: { modelData.reset(); panel.refreshPermissions() } }
                         }
                     }
                 }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#64748B"; font.pixelSize: 12; text: panel.privateMode ? "Profil privé : les données de cette fenêtre restent en mémoire. Elles sont supprimées à sa fermeture. Les téléchargements et favoris restent sur le disque." : "Les paramètres et favoris sont partagés entre les fenêtres. Les données privées restent séparées." }
+                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#64748B"; font.pixelSize: 12; text: panel.privateMode ? qsTr("Profil privé : les données de cette fenêtre restent en mémoire. Elles sont supprimées à sa fermeture. Les téléchargements et favoris restent sur le disque.") : qsTr("Les paramètres et favoris sont partagés entre les fenêtres. Les données privées restent séparées.") }
             }
         }
     }
     NativeDialogs.FolderDialog {
         id: downloadFolder
-        title: "Dossier des téléchargements"
+        title: qsTr("Dossier des téléchargements")
         currentFolder: browserStore.fileUrl(browserStore.downloadsPath)
-        onAccepted: if (!browserStore.setDownloadFolder(selectedFolder)) panel.statusText = "Ce dossier n’est pas accessible en écriture."
+        onAccepted: if (!browserStore.setDownloadFolder(selectedFolder)) panel.statusText = qsTr("Ce dossier n’est pas accessible en écriture.")
     }
     NativeDialogs.FileDialog {
         id: wallpaperFileDialog
@@ -251,7 +251,7 @@ Drawer {
         parent: Overlay.overlay
         anchors.centerIn: parent
         width: 450
-        title: panel.privateMode ? "Effacer les données privées" : "Effacer les données de navigation"
+        title: panel.privateMode ? qsTr("Effacer les données privées") : qsTr("Effacer les données de navigation")
         modal: true
         header: Label { text: clearDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         standardButtons: Dialog.Ok | Dialog.Cancel
@@ -281,13 +281,13 @@ Drawer {
         }
         contentItem: ColumnLayout {
             spacing: 8
-            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: "Période : toutes les données du profil de cette fenêtre. Les favoris et fichiers téléchargés sont conservés."; color: CybouTheme.mainText }
-            CheckBox { id: cookiesCheck; text: "Cookies (déconnexion des sites)"; checked: true }
-            CheckBox { id: cacheCheck; text: "Cache des pages"; checked: true }
-            CheckBox { id: historyCheck; text: "Historique de navigation"; enabled: !panel.privateMode }
-            CheckBox { id: permissionsCheck; text: "Décisions d’autorisation"; checked: true }
-            CheckBox { id: sessionCheck; text: "Onglets sauvegardés"; enabled: !panel.privateMode }
-            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#65758E"; font.pixelSize: 12; text: "L’effacement des cookies ou des onglets sauvegardés ferme les onglets de cette fenêtre. Le stockage local des sites (localStorage, IndexedDB) n’est pas effacé par cette commande." }
+            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: qsTr("Période : toutes les données du profil de cette fenêtre. Les favoris et fichiers téléchargés sont conservés."); color: CybouTheme.mainText }
+            CheckBox { id: cookiesCheck; text: qsTr("Cookies (déconnexion des sites)"); checked: true }
+            CheckBox { id: cacheCheck; text: qsTr("Cache des pages"); checked: true }
+            CheckBox { id: historyCheck; text: qsTr("Historique de navigation"); enabled: !panel.privateMode }
+            CheckBox { id: permissionsCheck; text: qsTr("Décisions d’autorisation"); checked: true }
+            CheckBox { id: sessionCheck; text: qsTr("Onglets sauvegardés"); enabled: !panel.privateMode }
+            Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#65758E"; font.pixelSize: 12; text: qsTr("L’effacement des cookies ou des onglets sauvegardés ferme les onglets de cette fenêtre. Le stockage local des sites (localStorage, IndexedDB) n’est pas effacé par cette commande.") }
         }
         onAccepted: panel.clearRequested(cookiesCheck.checked, cacheCheck.checked, historyCheck.checked && !panel.privateMode, permissionsCheck.checked, sessionCheck.checked && !panel.privateMode)
     }

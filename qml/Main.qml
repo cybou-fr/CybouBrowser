@@ -210,18 +210,30 @@ ApplicationWindow {
         return {httpPending:pending, httpOrigin:pending ? browserStore.origin(view.blockedHttpUrl) : "",
             httpToken:view ? view.tabUid + "@" + view.navigationEpoch : "",
             httpTemporary:!!view && view.temporaryTransport,
-            trackerTemporary:!!view && view.temporaryTrackers,
-            trackerCanAllow:!!view && !view.loading && !view.temporaryContext && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
+            trackerTemporary:!!view && (view.temporaryTrackers || view.inPlaceTrackerException),
+            trackerCanAllow:!!view && !view.loading && !view.temporaryContext && !view.inPlaceTrackerException && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
     }
     function allowTemporaryTrackers(token) {
         if (!currentView || !transportState.trackerCanAllow || token !== transportState.httpToken) return false
-        const profile = browserStore.createTemporaryTrackerProfile(currentView.url)
-        if (!profile) return false
-        window.replaceGrantedView(currentView, currentView.url.toString(), profile)
+        if (trackerTestMode) {
+            const profile = browserStore.createTemporaryTrackerProfile(currentView.url)
+            if (!profile) return false
+            window.replaceGrantedView(currentView, currentView.url.toString(), profile)
+            return true
+        }
+        if (!browserStore.allowTrackersInProfile(currentView.profile, currentView.url)) return false
+        currentView.inPlaceTrackerException = true
+        currentView.reload()
         return true
     }
     function revokeTemporaryTrackers(token) {
-        if (!currentView || !currentView.temporaryTrackers || token !== transportState.httpToken) return false
+        if (!currentView || (!currentView.temporaryTrackers && !currentView.inPlaceTrackerException) || token !== transportState.httpToken) return false
+        if (currentView.inPlaceTrackerException) {
+            browserStore.revokeTrackersInProfile(currentView.profile)
+            currentView.inPlaceTrackerException = false
+            currentView.reload()
+            return true
+        }
         window.replaceGrantedView(currentView)
         return true
     }
@@ -261,7 +273,9 @@ ApplicationWindow {
     function releaseTemporaryView(uid) {
         const profile = temporaryProfiles[uid]
         if (!profile) return
-        delete temporaryProfiles[uid]
+        const next = Object.assign({}, temporaryProfiles)
+        delete next[uid]
+        temporaryProfiles = next
         browserStore.releaseTemporaryProfile(profile)
     }
     readonly property var pendingPermission: permissionCoordinator.hasPending ? permissionCoordinator.pendingPermission : null
@@ -317,7 +331,11 @@ ApplicationWindow {
             controlState.expireContext(view.tabUid)
             if (pdfTarget === view) { pdfTarget = null; pdfBusy = false }
             // Removing the repeater item destroys its WebEngineView; no beforeunload veto.
-            if (transportProfile) temporaryProfiles[newUid] = transportProfile
+            if (transportProfile) {
+                const next = Object.assign({}, temporaryProfiles)
+                next[newUid] = transportProfile
+                temporaryProfiles = next
+            }
             tabs.remove(i)
             tabs.insert(i, {initialUrl:targetUrl, label:"Nouvel onglet", favicon:"",
                 isPinned:pinned, isMuted:muted, audible:false, tabUid:newUid})
@@ -779,6 +797,10 @@ ApplicationWindow {
     Shortcut { sequence: "Alt+Left"; onActivated: if (currentView) currentView.goBack() }
     Shortcut { sequence: "Alt+Right"; onActivated: if (currentView) currentView.goForward() }
     Shortcut { sequence: "F11"; onActivated: visibility === Window.FullScreen ? showNormal() : showFullScreen() }
+    Shortcut { sequence: "Ctrl++"; onActivated: if (currentView) currentView.zoomFactor = Math.min(3, Math.round((currentView.zoomFactor + 0.1) * 10) / 10) }
+    Shortcut { sequence: "Ctrl+="; onActivated: if (currentView) currentView.zoomFactor = Math.min(3, Math.round((currentView.zoomFactor + 0.1) * 10) / 10) }
+    Shortcut { sequence: "Ctrl+-"; onActivated: if (currentView) currentView.zoomFactor = Math.max(0.3, Math.round((currentView.zoomFactor - 0.1) * 10) / 10) }
+    Shortcut { sequence: "Ctrl+0"; onActivated: if (currentView) currentView.zoomFactor = 1 }
     Shortcut { sequence: "Escape"; enabled: !address.activeFocus && !controlBar.hasPopup; onActivated: { findVisible = false; if (currentView) { currentView.findText(""); currentView.stop() } } }
 
     header: ColumnLayout {
@@ -860,16 +882,16 @@ ApplicationWindow {
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 9; anchors.rightMargin: 3; spacing: 6
                             Image { source: tabItem.favicon || "qrc:/assets/cybou.png"; Layout.preferredWidth: 15; Layout.preferredHeight: 15; sourceSize.width: 32; sourceSize.height: 32 }
-                            Text { visible: !tabItem.isPinned; text: tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: activeTab === tabItem.index ? "#FFFFFF" : "#8FA3BF"; font.bold: activeTab === tabItem.index; font.pixelSize: 12 }
+                            Text { visible: !tabItem.isPinned; text: tabItem.label === "Nouvel onglet" ? qsTr("Nouvel onglet") : tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: activeTab === tabItem.index ? "#FFFFFF" : "#8FA3BF"; font.bold: activeTab === tabItem.index; font.pixelSize: 12 }
                             NavButton {
                                 visible: tabItem.isMuted || tabItem.audible; implicitWidth: 22; implicitHeight: 24
-                                hint: tabItem.isMuted ? "Réactiver le son" : "Couper le son"
+                                hint: tabItem.isMuted ? qsTr("Réactiver le son") : qsTr("Couper le son")
                                 contentItem: Image { source: tabItem.isMuted ? "qrc:/assets/speaker-muted.svg" : "qrc:/assets/speaker.svg"; sourceSize.width: 16; sourceSize.height: 16; fillMode: Image.PreserveAspectFit }
                                 onClicked: toggleMute(tabItem.index)
                             }
-                            NavButton { visible: !tabItem.isPinned; text: "×"; implicitWidth: 22; implicitHeight: 24; hint: "Fermer · Ctrl+W"; onClicked: closeTab(tabItem.index) }
+                            NavButton { visible: !tabItem.isPinned; text: "×"; implicitWidth: 22; implicitHeight: 24; hint: qsTr("Fermer · Ctrl+W"); onClicked: closeTab(tabItem.index) }
                         }
-                        GlassToolTip { parent: tabItem; visible: tabMouse.containsMouse && !tabMouse.pressed; delay: 700; text: tabItem.label }
+                        GlassToolTip { parent: tabItem; visible: tabMouse.containsMouse && !tabMouse.pressed; delay: 700; text: tabItem.label === "Nouvel onglet" ? qsTr("Nouvel onglet") : tabItem.label }
                         Menu {
                             id: tabContext
                             padding: 6
@@ -894,25 +916,25 @@ ApplicationWindow {
                                     height: 1; color: CybouTheme.glassSheen; radius: parent.radius
                                 }
                             }
-                            GlassMenuItem { text: tabItem.isPinned ? "Désépingler l’onglet" : "Épingler l’onglet"; onTriggered: togglePin(tabItem.index) }
-                            GlassMenuItem { text: tabItem.isMuted ? "Réactiver le son" : "Couper le son"; onTriggered: toggleMute(tabItem.index) }
-                            GlassMenuItem { text: "Déplacer à gauche"; enabled: tabItem.index > 0; onTriggered: moveTab(tabItem.index, tabItem.index - 1) }
-                            GlassMenuItem { text: "Déplacer à droite"; enabled: tabItem.index < tabs.count - 1; onTriggered: moveTab(tabItem.index, tabItem.index + 1) }
-                            GlassMenuItem { text: "Dupliquer"; onTriggered: addTab(views.itemAt(tabItem.index).url.toString()) }
-                            GlassMenuItem { text: "Fermer"; onTriggered: closeTab(tabItem.index) }
-                            GlassMenuItem { text: "Rouvrir l’onglet fermé"; enabled: closedTabs.length > 0; onTriggered: reopenTab() }
+                            GlassMenuItem { text: tabItem.isPinned ? qsTr("Désépingler l’onglet") : qsTr("Épingler l’onglet"); onTriggered: togglePin(tabItem.index) }
+                            GlassMenuItem { text: tabItem.isMuted ? qsTr("Réactiver le son") : qsTr("Couper le son"); onTriggered: toggleMute(tabItem.index) }
+                            GlassMenuItem { text: qsTr("Déplacer à gauche"); enabled: tabItem.index > 0; onTriggered: moveTab(tabItem.index, tabItem.index - 1) }
+                            GlassMenuItem { text: qsTr("Déplacer à droite"); enabled: tabItem.index < tabs.count - 1; onTriggered: moveTab(tabItem.index, tabItem.index + 1) }
+                            GlassMenuItem { text: qsTr("Dupliquer"); onTriggered: addTab(views.itemAt(tabItem.index).url.toString()) }
+                            GlassMenuItem { text: qsTr("Fermer"); onTriggered: closeTab(tabItem.index) }
+                            GlassMenuItem { text: qsTr("Rouvrir l’onglet fermé"); enabled: closedTabs.length > 0; onTriggered: reopenTab() }
                         }
                     }
                 }
-                NavButton { text: "+"; hint: "Nouvel onglet · Ctrl+T"; onClicked: addTab("") }
-                Label { visible: privateMode; text: "PRIVÉ"; color: "#8FA3BF"; font.pixelSize: 10; padding: 8 }
+                NavButton { text: "+"; hint: qsTr("Nouvel onglet · Ctrl+T"); onClicked: addTab("") }
+                Label { visible: privateMode; text: qsTr("PRIVÉ"); color: "#8FA3BF"; font.pixelSize: 10; padding: 8 }
                 Item { Layout.preferredWidth: 18 }
-                NavButton { text: "−"; hint: "Réduire"; implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.showMinimized() }
-                NavButton { text: window.visibility === Window.Maximized ? "❐" : "□"; hint: "Agrandir / restaurer"; implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.maximizeToggle() }
+                NavButton { text: "−"; hint: qsTr("Réduire"); implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.showMinimized() }
+                NavButton { text: window.visibility === Window.Maximized ? "❐" : "□"; hint: qsTr("Agrandir / restaurer"); implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.maximizeToggle() }
                 Button {
                     id: closeWindow
                     text: "×"; implicitWidth: 38; implicitHeight: chromeRowHeight; padding: 0; hoverEnabled: true
-                    Accessible.name: "Fermer CYBOU"
+                    Accessible.name: qsTr("Fermer CYBOU")
                     background: Rectangle { color: closeWindow.hovered ? "#E11D2E" : "transparent" }
                     contentItem: Text { text: "×"; color: closeWindow.hovered ? "white" : "#8FA3BF"; font.pixelSize: 18; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                     onClicked: window.close()
@@ -926,10 +948,10 @@ ApplicationWindow {
             RowLayout {
                 id: navRow
                 anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; anchors.topMargin: 4; anchors.bottomMargin: 4; spacing: 4
-                NavButton { text: "←"; hint: "Retour"; enabled: currentView ? currentView.canGoBack : false; onClicked: currentView.goBack() }
-                NavButton { text: "→"; hint: "Suivant"; enabled: currentView ? currentView.canGoForward : false; onClicked: currentView.goForward() }
-                NavButton { text: currentView && currentView.loading ? "×" : "↻"; hint: "Actualiser / arrêter"; onClicked: currentView.loading ? currentView.stop() : currentView.reload() }
-                NavButton { text: "⌂"; hint: "Accueil"; onClicked: currentView.url = "about:blank" }
+                NavButton { text: "←"; hint: qsTr("Retour"); enabled: currentView ? currentView.canGoBack : false; onClicked: currentView.goBack() }
+                NavButton { text: "→"; hint: qsTr("Suivant"); enabled: currentView ? currentView.canGoForward : false; onClicked: currentView.goForward() }
+                NavButton { text: currentView && currentView.loading ? "×" : "↻"; hint: qsTr("Actualiser / arrêter"); onClicked: currentView.loading ? currentView.stop() : currentView.reload() }
+                NavButton { text: "⌂"; hint: qsTr("Accueil"); onClicked: currentView.url = "about:blank" }
                 Rectangle {
                     id: addressContainer
                     Layout.fillWidth: true; Layout.minimumWidth: 120; implicitHeight: chromeControlHeight
@@ -1039,8 +1061,8 @@ ApplicationWindow {
                     Layout.rightMargin: 8
                     Rectangle { anchors.centerIn: parent; width: 1; height: parent.height; color: "#456080" }
                 }
-                NavButton { id: downloadsButton; text: "↓"; hint: "Téléchargements · Ctrl+J"; onClicked: showLibrary("Téléchargements") }
-                NavButton { id: menuButton; text: "☰"; hint: "Menu"; onClicked: menu.popup(menuButton, 0, menuButton.height) }
+                NavButton { id: downloadsButton; text: "↓"; hint: qsTr("Téléchargements · Ctrl+J"); onClicked: showLibrary("Téléchargements") }
+                NavButton { id: menuButton; text: "☰"; hint: qsTr("Menu"); onClicked: menu.popup(menuButton, 0, menuButton.height) }
                 Menu {
                     id: menu
                     padding: 6
@@ -1065,24 +1087,24 @@ ApplicationWindow {
                             height: 1; color: CybouTheme.glassSheen; radius: parent.radius
                         }
                     }
-                    GlassMenuItem { text: "Nouvel onglet                         Ctrl+T"; onTriggered: addTab("") }
-                    GlassMenuItem { text: "Rouvrir l’onglet fermé          Ctrl+Shift+T"; enabled: closedTabs.length > 0; onTriggered: reopenTab() }
-                    GlassMenuItem { text: "Nouvelle fenêtre privée     Ctrl+Shift+N"; onTriggered: browserStore.newPrivateWindow() }
+                    GlassMenuItem { text: qsTr("Nouvel onglet                         Ctrl+T"); onTriggered: addTab("") }
+                    GlassMenuItem { text: qsTr("Rouvrir l’onglet fermé          Ctrl+Shift+T"); enabled: closedTabs.length > 0; onTriggered: reopenTab() }
+                    GlassMenuItem { text: qsTr("Nouvelle fenêtre privée     Ctrl+Shift+N"); onTriggered: browserStore.newPrivateWindow() }
                     GlassMenuSeparator {}
-                    GlassMenuItem { text: "Favoris"; onTriggered: showLibrary("Favoris") }
-                    GlassMenuItem { text: "Historique                                Ctrl+H"; onTriggered: showLibrary("Historique") }
-                    GlassMenuItem { text: "Téléchargements                      Ctrl+J"; onTriggered: showLibrary("Téléchargements") }
-                    GlassMenuItem { text: "Rechercher dans la page           Ctrl+F"; onTriggered: { findVisible = true; findBar.focusInput() } }
-                    GlassMenuItem { text: "Ouvrir un fichier…                        Ctrl+O"; onTriggered: openFileDialog.open() }
-                    GlassMenuItem { text: "Enregistrer en PDF…                   Ctrl+P"; enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
+                    GlassMenuItem { text: qsTr("Favoris"); onTriggered: showLibrary("Favoris") }
+                    GlassMenuItem { text: qsTr("Historique                                Ctrl+H"); onTriggered: showLibrary("Historique") }
+                    GlassMenuItem { text: qsTr("Téléchargements                      Ctrl+J"); onTriggered: showLibrary("Téléchargements") }
+                    GlassMenuItem { text: qsTr("Rechercher dans la page           Ctrl+F"); onTriggered: { findVisible = true; findBar.focusInput() } }
+                    GlassMenuItem { text: qsTr("Ouvrir un fichier…                        Ctrl+O"); onTriggered: openFileDialog.open() }
+                    GlassMenuItem { text: qsTr("Enregistrer en PDF…                   Ctrl+P"); enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy; onTriggered: exportPdf() }
                     GlassMenuSeparator {}
-                    GlassMenuItem { text: "Zoom +"; onTriggered: currentView.zoomFactor = Math.min(3, currentView.zoomFactor + 0.1) }
-                    GlassMenuItem { text: "Zoom −"; onTriggered: currentView.zoomFactor = Math.max(0.3, currentView.zoomFactor - 0.1) }
-                    GlassMenuItem { text: "Zoom 100 %"; onTriggered: currentView.zoomFactor = 1 }
-                    GlassMenuItem { text: "Plein écran                                  F11"; onTriggered: window.visibility === Window.FullScreen ? window.showNormal() : window.showFullScreen() }
+                    GlassMenuItem { text: qsTr("Zoom +                                     Ctrl++"); onTriggered: if (currentView) currentView.zoomFactor = Math.min(3, Math.round((currentView.zoomFactor + 0.1) * 10) / 10) }
+                    GlassMenuItem { text: qsTr("Zoom −                                     Ctrl+-"); onTriggered: if (currentView) currentView.zoomFactor = Math.max(0.3, Math.round((currentView.zoomFactor - 0.1) * 10) / 10) }
+                    GlassMenuItem { text: qsTr("Zoom 100 %                              Ctrl+0"); onTriggered: if (currentView) currentView.zoomFactor = 1 }
+                    GlassMenuItem { text: qsTr("Plein écran                                  F11"); onTriggered: window.visibility === Window.FullScreen ? window.showNormal() : window.showFullScreen() }
                     GlassMenuSeparator {}
-                    GlassMenuItem { text: "Paramètres                                     Ctrl+,"; onTriggered: settingsPanel.open() }
-                    GlassMenuItem { text: "À propos de CYBOU"; onTriggered: about.open() }
+                    GlassMenuItem { text: qsTr("Paramètres                                     Ctrl+,"); onTriggered: settingsPanel.open() }
+                    GlassMenuItem { text: qsTr("À propos de CYBOU"); onTriggered: about.open() }
                 }
             }
         }
@@ -1130,7 +1152,8 @@ ApplicationWindow {
             readonly property bool temporaryContext: !!window.temporaryProfiles[tabUid]
             readonly property bool temporaryTransport: browserStore.isTemporaryHttpProfile(window.temporaryProfiles[tabUid] || null)
             readonly property bool temporaryTrackers: browserStore.isTemporaryTrackerProfile(window.temporaryProfiles[tabUid] || null)
-            property string policyOrigin: temporaryContext ? browserStore.origin(initialUrl) : ""
+            property bool inPlaceTrackerException: false
+            property string policyOrigin: initialUrl !== "about:blank" ? browserStore.origin(initialUrl) : ""
             property int navigationEpoch: 0
             readonly property var grantedKeys: {
                 permissionCoordinator.revision
@@ -1140,6 +1163,7 @@ ApplicationWindow {
             Component.onDestruction: {
                 if (permissionCoordinator) permissionCoordinator.forgetView(web)
                 if (controlState) controlState.expireContext(tabUid)
+                if (inPlaceTrackerException) browserStore.revokeTrackersInProfile(web.profile)
                 window.releaseTemporaryView(tabUid)
             }
             property bool policyNeedsReload: false
@@ -1177,6 +1201,10 @@ ApplicationWindow {
                     web.blockedHttpEpoch = -1
                     if (web === currentView) { policyBanner.close(); controlBar.dismiss() }
                     if (pendingPermissionView === web) window.cancelPermission()
+                    if (web.inPlaceTrackerException && !browserStore.canStartTrackerDocument(web.profile, request.url)) {
+                        browserStore.revokeTrackersInProfile(web.profile)
+                        web.inPlaceTrackerException = false
+                    }
                     if (web.temporaryTrackers && !browserStore.canStartTrackerDocument(web.profile, request.url)) {
                         request.reject()
                         window.endTemporaryNavigation(web, request.url.toString())
@@ -1245,10 +1273,100 @@ ApplicationWindow {
                         window.offerHttp(web, web.upgradedFromHttpUrl)
                         return
                     }
-                    errorText.text = "Impossible de charger cette page. Vérifiez l’adresse et votre connexion.\n\n" + info.errorString
+                    errorText.text = qsTr("Impossible de charger cette page. Vérifiez l’adresse et votre connexion.\n\n") + info.errorString
                     errorNotice.open()
                 }
             }
+            WheelHandler {
+                acceptedModifiers: Qt.ControlModifier
+                onWheel: function(event) {
+                    const step = event.angleDelta.y > 0 ? 0.1 : -0.1
+                    web.zoomFactor = Math.max(0.3, Math.min(3, Math.round((web.zoomFactor + step) * 10) / 10))
+                    event.accepted = true
+                }
+            }
+            onContextMenuRequested: function(request) {
+                request.accepted = true
+                pageContextMenu.linkUrl = request.linkUrl.toString()
+                pageContextMenu.selectedText = request.selectedText || ""
+                pageContextMenu.isEditable = !!request.isContentEditable
+                pageContextMenu.popup(web, request.position.x, request.position.y)
+            }
+        }
+    }
+    Menu {
+        id: pageContextMenu
+        property string linkUrl: ""
+        property string selectedText: ""
+        property bool isEditable: false
+        padding: 6
+        background: Rectangle {
+            implicitWidth: 230
+            radius: 10
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#E00E2648" }
+                GradientStop { position: 1.0; color: "#F0061224" }
+            }
+            border.color: CybouTheme.borderHighlight
+            border.width: 1.5
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#90000000"
+                shadowBlur: 1.0
+                shadowVerticalOffset: 10
+            }
+            Rectangle {
+                anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 1
+                height: 1; color: CybouTheme.glassSheen; radius: parent.radius
+            }
+        }
+        GlassMenuItem {
+            visible: pageContextMenu.linkUrl.length > 0 && /^https?:\/\//i.test(pageContextMenu.linkUrl)
+            height: visible ? implicitHeight : 0
+            text: qsTr("Ouvrir le lien dans un nouvel onglet")
+            onTriggered: window.addTab(pageContextMenu.linkUrl)
+        }
+        GlassMenuItem {
+            visible: pageContextMenu.linkUrl.length > 0
+            height: visible ? implicitHeight : 0
+            text: qsTr("Copier l’adresse du lien")
+            onTriggered: if (currentView) currentView.triggerWebAction(WebEngineView.CopyLinkToClipboard)
+        }
+        GlassMenuSeparator {
+            visible: pageContextMenu.linkUrl.length > 0
+            height: visible ? implicitHeight : 0
+        }
+        GlassMenuItem {
+            visible: pageContextMenu.selectedText.length > 0
+            height: visible ? implicitHeight : 0
+            text: qsTr("Copier")
+            onTriggered: if (currentView) currentView.triggerWebAction(WebEngineView.Copy)
+        }
+        GlassMenuItem {
+            visible: pageContextMenu.isEditable
+            height: visible ? implicitHeight : 0
+            text: qsTr("Coller")
+            onTriggered: if (currentView) currentView.triggerWebAction(WebEngineView.Paste)
+        }
+        GlassMenuItem {
+            text: qsTr("Retour")
+            enabled: currentView ? currentView.canGoBack : false
+            onTriggered: if (currentView) currentView.goBack()
+        }
+        GlassMenuItem {
+            text: qsTr("Suivant")
+            enabled: currentView ? currentView.canGoForward : false
+            onTriggered: if (currentView) currentView.goForward()
+        }
+        GlassMenuItem {
+            text: qsTr("Actualiser")
+            onTriggered: if (currentView) currentView.reload()
+        }
+        GlassMenuItem {
+            text: qsTr("Enregistrer en PDF…")
+            enabled: currentView && !currentView.loading && currentView.url.toString() !== "about:blank" && !pdfBusy
+            onTriggered: window.exportPdf()
         }
     }
     Connections { target: currentView; function onUrlChanged() { window.refreshAddress() } }
@@ -1304,17 +1422,17 @@ ApplicationWindow {
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 20; spacing: 14
             RowLayout {
-                Label { text: librarySection; font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true }
-                NavButton { text: "×"; hint: "Fermer"; onClicked: library.close() }
+                Label { text: librarySection === "Favoris" ? qsTr("Favoris") : librarySection === "Historique" ? qsTr("Historique") : qsTr("Téléchargements"); font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true }
+                NavButton { text: "×"; hint: qsTr("Fermer"); onClicked: library.close() }
             }
             RowLayout {
                 spacing: 8
-                GlassButton { text: "Favoris"; highlighted: librarySection === "Favoris"; onClicked: librarySection = "Favoris" }
-                GlassButton { text: "Historique"; highlighted: librarySection === "Historique"; onClicked: librarySection = "Historique" }
-                GlassButton { text: "Fichiers"; highlighted: librarySection === "Téléchargements"; onClicked: librarySection = "Téléchargements" }
+                GlassButton { text: qsTr("Favoris"); highlighted: librarySection === "Favoris"; onClicked: librarySection = "Favoris" }
+                GlassButton { text: qsTr("Historique"); highlighted: librarySection === "Historique"; onClicked: librarySection = "Historique" }
+                GlassButton { text: qsTr("Fichiers"); highlighted: librarySection === "Téléchargements"; onClicked: librarySection = "Téléchargements" }
             }
             TextField {
-                id: librarySearch; Layout.fillWidth: true; placeholderText: "Filtrer…"
+                id: librarySearch; Layout.fillWidth: true; placeholderText: qsTr("Filtrer…")
                 visible: librarySection !== "Téléchargements"
                 color: CybouTheme.mainText; placeholderTextColor: CybouTheme.mutedText
                 background: Rectangle {
@@ -1327,8 +1445,8 @@ ApplicationWindow {
                     border.width: 1
                 }
             }
-            GlassButton { text: "Effacer l’historique"; visible: librarySection === "Historique"; onClicked: clearHistoryDialog.open() }
-            GlassButton { text: "Ouvrir le dossier Téléchargements"; visible: librarySection === "Téléchargements"; onClicked: browserStore.openDownloads() }
+            GlassButton { text: qsTr("Effacer l’historique"); visible: librarySection === "Historique"; onClicked: clearHistoryDialog.open() }
+            GlassButton { text: qsTr("Ouvrir le dossier Téléchargements"); visible: librarySection === "Téléchargements"; onClicked: browserStore.openDownloads() }
             ListView {
                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 8
                 model: librarySection === "Favoris" ? browserStore.bookmarks : librarySection === "Historique" ? browserStore.history : downloadItems
@@ -1356,19 +1474,19 @@ ApplicationWindow {
                         ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                         RowLayout {
                             spacing: 8
-                            GlassButton { text: "Ouvrir"; visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
-                            GlassButton { text: "Dossier"; visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
-                            GlassButton { text: "Retirer"; visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
+                            GlassButton { text: qsTr("Ouvrir"); visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted; onClicked: { if (entry.download) window.reviewDownloadedFile(entry.modelData); else { addTab(entry.modelData.url); library.close() } } }
+                            GlassButton { text: qsTr("Dossier"); visible: entry.download; onClicked: browserStore.showFileFolder(window.downloadPath(entry.modelData)) }
+                            GlassButton { text: qsTr("Retirer"); visible: librarySection === "Favoris"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
                         }
                         RowLayout {
                             spacing: 8
                             visible: entry.download && !entry.modelData.isFinished
-                            GlassButton { text: entry.download && entry.modelData.isPaused ? "Reprendre" : "Pause"; enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
-                            GlassButton { text: "Annuler"; onClicked: entry.modelData.cancel() }
+                            GlassButton { text: entry.download && entry.modelData.isPaused ? qsTr("Reprendre") : qsTr("Pause"); enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
+                            GlassButton { text: qsTr("Annuler"); onClicked: entry.modelData.cancel() }
                         }
                     }
                 }
-                Label { anchors.centerIn: parent; visible: parent.count === 0; text: "Rien ici pour le moment"; color: "#8491A5" }
+                Label { anchors.centerIn: parent; visible: parent.count === 0; text: qsTr("Rien ici pour le moment"); color: "#8491A5" }
             }
         }
     }

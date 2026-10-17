@@ -47,8 +47,9 @@ Menu {
                 }
                 Label {
                     anchors.right: parent.right; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter
-                    text: entry.row.pending ? qsTr("Demande") : entry.row.policy === 1 ? qsTr("Autorisé") : entry.row.policy === 2 ? qsTr("Bloqué") : entry.row.policy === 4 ? qsTr("Rechargement") : qsTr("Demander")
-                    color: entry.row.pending ? "#F59E0B" : entry.row.policy === 1 ? "#10B981" : entry.row.policy === 2 ? "#EF4444" : "#F59E0B"
+                    readonly property bool activeDeny: entry.row.policy === 2 && (!!entry.row.explicitDeny || !!entry.row.blocked)
+                    text: entry.row.pending ? qsTr("Demande") : entry.row.policy === 1 ? qsTr("Autorisé") : activeDeny ? qsTr("Bloqué") : entry.row.policy === 4 ? qsTr("Rechargement") : qsTr("Demander")
+                    color: entry.row.pending ? "#F59E0B" : entry.row.policy === 1 ? "#10B981" : activeDeny ? "#EF4444" : "#8FA3BF"
                     font.pixelSize: 12; font.bold: true
                 }
             }

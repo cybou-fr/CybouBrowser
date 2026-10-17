@@ -162,6 +162,17 @@ public:
         const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
         return (url.scheme() == "https" || fixture) && !url.host().isEmpty() && url.userInfo().isEmpty();
     }
+    Q_INVOKABLE bool allowTrackersInProfile(QObject *object, const QUrl &url) {
+        if (!canRequestTemporaryTrackers(url)) return false;
+        const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        auto observer = observers.value(profile);
+        return observer && observer->allowTrackersForDocument(url, fixture, false);
+    }
+    Q_INVOKABLE void revokeTrackersInProfile(QObject *object) {
+        const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
+        if (auto observer = observers.value(profile)) observer->revokeTrackers();
+    }
     Q_INVOKABLE QObject *createTemporaryTrackerProfile(const QUrl &url) {
         if (!canRequestTemporaryTrackers(url)) return nullptr;
         const bool fixture = QCoreApplication::arguments().contains("--tracker-test") && isLocalHost(url) && url.scheme() == "http";
@@ -170,7 +181,7 @@ public:
         configureProfile(profile);
         auto observer = observers.value(profile);
         observer->setHttpsOnly(!fixture);
-        if (!profile->isOffTheRecord() || !observer->allowTrackersForDocument(url, fixture)) { profile->deleteLater(); return nullptr; }
+        if (!profile->isOffTheRecord() || !observer->allowTrackersForDocument(url, fixture, true)) { profile->deleteLater(); return nullptr; }
         m_temporaryTrackerProfiles.insert(profile);
         return profile;
     }
@@ -180,7 +191,7 @@ public:
     Q_INVOKABLE bool canStartTrackerDocument(QObject *object, const QUrl &url) const {
         const auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
         auto observer = observers.value(profile);
-        return m_temporaryTrackerProfiles.contains(profile) && observer && observer->canStartTrackerDocument(url);
+        return observer && observer->canStartTrackerDocument(url);
     }
     Q_INVOKABLE void releaseTemporaryProfile(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);

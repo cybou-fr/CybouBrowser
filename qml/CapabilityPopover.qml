@@ -191,8 +191,8 @@ Popup {
             }
             Label {
                 Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
-                text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs active pour cette page. Cet onglet uniquement, cookies et cache séparés.")
-                    : qsTr("Si le filtre casse ce site HTTPS, rouvrez cette page dans un profil temporaire sans vos cookies habituels. Révoquée au prochain chargement.")
+                text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs active pour cette page. Révoquée au prochain chargement.")
+                    : qsTr("Si le filtre casse ce site HTTPS, rechargez cette page avec une exception temporaire pour cette adresse. Révoquée au prochain chargement.")
             }
             GlassBtn {
                 id: trackerAllow
@@ -209,7 +209,7 @@ Popup {
             GlassBtn {
                 id: trackerRevoke
                 visible: !!card.capability.trackerTemporary
-                text: qsTr("Révoquer l’exception et fermer la page")
+                text: qsTr("Révoquer l’exception et recharger")
                 onClicked: card.revokeTrackersRequested(pressedHttpToken)
             }
             Flow {

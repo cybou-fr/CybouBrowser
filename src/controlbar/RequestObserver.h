@@ -22,9 +22,13 @@ public:
     bool allowHttpNavigation(const QUrl &url) { return httpLease.start(url); }
     bool canStartHttpNavigation(const QUrl &url) const { return httpLease.canStart(url); }
     void revokeHttpNavigation() { httpLease.revoke(); }
-    bool allowTrackersForDocument(const QUrl &url, bool testHttp = false) { trackerProfile = trackerLease.start(url, testHttp); return trackerProfile; }
+    bool allowTrackersForDocument(const QUrl &url, bool testHttp = false, bool isolatedProfile = false) {
+        const bool started = trackerLease.start(url, testHttp);
+        trackerProfile.store(started && isolatedProfile);
+        return started;
+    }
     bool canStartTrackerDocument(const QUrl &url) const { return trackerLease.canStart(url); }
-    void revokeTrackers() { trackerLease.revoke(); }
+    void revokeTrackers() { trackerProfile.store(false); trackerLease.revoke(); }
     struct Event { QString origin; QString firstParty; int type; qint64 time; bool blocked; QString reason; QString decision; };
     void interceptRequest(QWebEngineUrlRequestInfo &info) override {
         const auto url = info.requestUrl();
@@ -32,7 +36,7 @@ public:
         if (NetworkPolicy::hasWebCredentials(url)) reason = "embedded-credentials";
         else if (NetworkPolicy::blocks(url, strictHttps.load())
                  && !httpLease.allows(url, info.firstPartyUrl(), info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame)) reason = "insecure-transport";
-        else if (trackerProfile && info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame && !trackerLease.consume(url)) reason = "temporary-navigation";
+        else if (info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame && !trackerLease.consume(url) && trackerProfile.load()) reason = "temporary-navigation";
         else if (blockTrackers.load() && info.resourceType() != QWebEngineUrlRequestInfo::ResourceTypeMainFrame
                  && TrackerBlocker::isTracker(url, info.firstPartyUrl())) {
             if (trackerLease.allows(info.firstPartyUrl())) decision = "tracker-exception";
