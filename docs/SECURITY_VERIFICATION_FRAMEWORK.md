@@ -87,3 +87,9 @@ python tools/security/owasp_gate.py --mode baseline --exe build/Release/cybou_te
 ```
 
 All six suites passing proves only this local baseline. It does not disposition official requirements or qualify hardware, cloud services, signing, sandbox isolation or independent review.
+
+## Vendored official inputs (2026-10-18)
+
+Default inventory inputs are now available offline in `tests/security/standards/`; no manual dataset download is needed for a normal local run. Use `python tools/security/owasp_gate.py --mode inventory --out build/owasp-inventory/report.json`. Explicit `--asvs-csv` and `--wstg-ids` overrides still require matching lock hashes. The official ASVS CSV uses the `req_id` header and `V1.1.1` IDs. Import checks exact counts (345 ASVS / 97 WSTG), duplicates, malformed rows, source hashes and WSTG source-to-index agreement. See the standards README for provenance, licensing and the upstream JSON discrepancy.
+
+Coverage currently imports all 442 controls as `untriaged`. This is an inventory completion step, not completion of the 0.4 maturity gate. Assign applicability, owners, case mappings and current evidence through review; keep unknown decisions blocked.

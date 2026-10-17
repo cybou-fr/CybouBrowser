@@ -17,7 +17,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[2]
 SUITES=("security","controlbar","transport","tracker","surface","smoke")
-ASVS_ID=re.compile(r"(?:v5\.0\.0-)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
+ASVS_ID=re.compile(r"(?:v5\.0\.0-|V)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
 WSTG_ID=re.compile(r"WSTG-(?:v42-)?([A-Z]{4}-\d{2})")
 
 def read_json(path):
@@ -57,24 +57,44 @@ def inventory(asvs, wstg, lock):
         return set(),errors
     result=set()
     with Path(asvs).open(encoding="utf-8-sig",newline="") as f:
-        for row in csv.reader(f):
-            # Look for a complete requirement ID in a CSV cell, never from a prose snippet.
-            for cell in row:
-                c=cell.strip()
-                m=ASVS_ID.fullmatch(c)
-                if m:
-                    result.add("ASVS:v5.0.0-"+m.group(1))
-                    break
-    if len([x for x in result if x.startswith("ASVS:")])<100:
-        errors.append("ASVS inventory suspiciously small (<100 requirements)")
+        reader=csv.DictReader(f)
+        if not reader.fieldnames or "req_id" not in reader.fieldnames:
+            return set(),["ASVS CSV requires the official req_id column"]
+        for row in reader:
+            cell=(row.get("req_id") or "").strip()
+            match=ASVS_ID.fullmatch(cell)
+            if not match:
+                errors.append("Malformed ASVS requirement ID: "+cell)
+                continue
+            key="ASVS:v5.0.0-"+match.group(1)
+            if key in result: errors.append("Duplicate ASVS requirement ID: "+cell)
+            result.add(key)
     with Path(wstg).open(encoding="utf-8-sig") as f:
         for line in f:
-            c=line.strip()
-            m=WSTG_ID.fullmatch(c)
-            if m:
-                result.add("WSTG:v4.2-"+m.group(1))
-    if len([x for x in result if x.startswith("WSTG:")])<50:
-        errors.append("WSTG inventory suspiciously small (<50 scenarios)")
+            cell=line.strip()
+            if not cell: continue
+            match=WSTG_ID.fullmatch(cell)
+            if not match:
+                errors.append("Malformed WSTG ID: "+cell)
+                continue
+            key="WSTG:v4.2-"+match.group(1)
+            if key in result: errors.append("Duplicate WSTG ID: "+cell)
+            result.add(key)
+    for key,prefix,minimum in [("asvs","ASVS:",100),("wstg","WSTG:",50)]:
+        count=sum(x.startswith(prefix) for x in result)
+        expected=standards.get(key,{}).get("requirementCount")
+        if count<minimum or (expected is not None and count!=expected):
+            errors.append(f"{key}: requirement count mismatch ({count}, pinned {expected})")
+    source=standards.get("wstg",{})
+    if source.get("sourcePath"):
+        source_path=ROOT/source["sourcePath"]
+        if not source_path.is_file() or sha(source_path)!=source.get("sourceSha256"):
+            errors.append("WSTG source checklist SHA-256 mismatch or missing")
+        else:
+            ids=re.findall(r"^\|\s*(WSTG-[A-Z]{4}-\d{2})\s*\|",source_path.read_text(encoding="utf-8-sig"),re.M)
+            derived={"WSTG:v4.2-"+WSTG_ID.fullmatch(x).group(1) for x in ids}
+            if len(ids)!=len(set(ids)) or derived!={x for x in result if x.startswith("WSTG:")}:
+                errors.append("WSTG index differs from pinned source checklist")
     return result,errors
 
 def case_index(path):
@@ -146,7 +166,7 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
         errors.append("No pinned official requirements loaded")
     return errors,{"total":len(requirements),"mapped":len(requirements & set(mapping)),
                    "applicable":applicable,"notApplicable":skipped,
-                   "untriaged":len(absent),"extra":len(extra)}
+                   "untriaged":len(absent)+sum(mapping[k].get("disposition") not in ("applicable","not_applicable") for k in requirements & set(mapping)),"extra":len(extra)}
 
 def run_suites(executable, output_dir, timeout):
     results=[]
@@ -172,8 +192,8 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--mode",choices=("baseline","inventory","release"),default="baseline")
     p.add_argument("--exe",help="Path to cybou_tests executable")
-    p.add_argument("--asvs-csv",help="Official OWASP ASVS 5.0.0 CSV (offline)")
-    p.add_argument("--wstg-ids",help="Pinned canonical WSTG v4.2 IDs, one per line")
+    p.add_argument("--asvs-csv",default=str(ROOT/"tests/security/standards/asvs-5.0.0.csv"),help="Official OWASP ASVS 5.0.0 CSV (offline)")
+    p.add_argument("--wstg-ids",default=str(ROOT/"tests/security/standards/wstg-4.2-ids.txt"),help="Pinned canonical WSTG v4.2 IDs, one per line")
     p.add_argument("--timeout",type=int,default=300)
     p.add_argument("--lock",default=str(ROOT/"tests/security/standards.lock.json"))
     p.add_argument("--cases",default=str(ROOT/"tests/security/cases.json"))

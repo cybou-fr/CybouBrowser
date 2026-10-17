@@ -16,6 +16,49 @@ class GateContractTests(unittest.TestCase):
         self.assertFalse(req)
         self.assertTrue(errors)
 
+    def pinned_inventory(self, lock=None, asvs=None, wstg=None):
+        root=gate.ROOT/"tests/security"
+        return gate.inventory(asvs or root/"standards/asvs-5.0.0.csv",
+                              wstg or root/"standards/wstg-4.2-ids.txt",
+                              lock or root/"standards.lock.json")
+
+    def test_complete_pinned_inventory(self):
+        requirements,errors=self.pinned_inventory()
+        self.assertEqual(errors,[])
+        self.assertEqual(sum(x.startswith("ASVS:") for x in requirements),345)
+        self.assertEqual(sum(x.startswith("WSTG:") for x in requirements),97)
+        coverage=gate.read_json(gate.ROOT/"tests/security/coverage.json")["requirements"]
+        self.assertEqual({x["id"] for x in coverage},requirements)
+        self.assertEqual(len(coverage),len(requirements))
+
+    def test_tampered_inventory_is_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            tampered=Path(d)/"asvs.csv"
+            tampered.write_text("req_id\nV1.1.1\n",encoding="utf-8")
+            requirements,errors=self.pinned_inventory(asvs=tampered)
+            self.assertFalse(requirements)
+            self.assertTrue(any("SHA-256 mismatch" in x for x in errors))
+
+    def test_repinning_duplicate_or_malformed_id_still_fails(self):
+        root=gate.ROOT/"tests/security"
+        original=(root/"standards/asvs-5.0.0.csv").read_bytes()
+        for extra in [b"V1.1.1\n",b"garbage\n"]:
+            with self.subTest(extra=extra),tempfile.TemporaryDirectory() as d:
+                base=Path(d); data=base/"asvs.csv"; data.write_bytes(original+b"\n"+extra)
+                lock=gate.read_json(root/"standards.lock.json")
+                lock["asvs"]["sha256"]=gate.sha(data)
+                lockfile=base/"lock.json"; lockfile.write_text(json.dumps(lock),encoding="utf-8")
+                _,errors=self.pinned_inventory(lock=lockfile,asvs=data)
+                self.assertTrue(any("Duplicate ASVS" in x or "Malformed ASVS" in x for x in errors))
+
+    def test_wrong_pinned_count_is_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            lock=gate.read_json(gate.ROOT/"tests/security/standards.lock.json")
+            lock["asvs"]["requirementCount"]=344
+            path=Path(d)/"lock.json"; path.write_text(json.dumps(lock),encoding="utf-8")
+            _,errors=self.pinned_inventory(lock=path)
+            self.assertTrue(any("count mismatch" in x for x in errors))
+
     def test_missing_binary_blocks(self):
         with tempfile.TemporaryDirectory() as d:
             results=gate.run_suites(None,Path(d),1)

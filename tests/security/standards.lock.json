@@ -2,15 +2,25 @@
   "schemaVersion": 1,
   "asvs": {
     "version": "5.0.0",
-    "source": "https://github.com/OWASP/ASVS/releases/tag/v5.0.0",
+    "source": "https://github.com/OWASP/ASVS/releases/tag/v5.0.0_release",
     "format": "official CSV",
-    "sha256": null
+    "sha256": "6124dba176dc563f66363a11ae0c47f9b86b8a4a84c66a793670bd196ed86cd5",
+    "path": "tests/security/standards/asvs-5.0.0.csv",
+    "upstreamCommit": "5cf9b032440be53ce345ab3c130fda46ba1ce7a2",
+    "tag": "v5.0.0_release",
+    "requirementCount": 345
   },
   "wstg": {
     "version": "4.2",
-    "source": "https://wstg.owasp.org/v4.2/",
+    "source": "https://github.com/OWASP/wstg/blob/dd33419e10edb22b78d89325a6c2aad9f184e3a2/checklist/Testing_Checklist.md",
     "format": "canonical WSTG-v42 test ID index, one per line",
-    "sha256": null
+    "sha256": "5fb3fbc75a7b21558839cd56bba089da7bd011973d183e5a364e44688322ee12",
+    "path": "tests/security/standards/wstg-4.2-ids.txt",
+    "upstreamCommit": "dd33419e10edb22b78d89325a6c2aad9f184e3a2",
+    "tag": "v4.2",
+    "requirementCount": 97,
+    "sourcePath": "tests/security/standards/wstg-4.2-checklist.md",
+    "sourceSha256": "a0b9c0a794422850c497e2b31ff283c05895bcf9e8eaf595dde8ad8a0dbb54d8"
   },
   "top10": {
     "version": "2025",

@@ -9,7 +9,7 @@ This is a status ledger, **not** a test-results archive. A test is PASS only wit
 | Build (Windows x64) | Release build succeeded locally on 2026-10-18 (Windows x64 / Qt 6.12 / MSVC); development working tree | Successful Release build tied to a current full commit |
 | Gate self-tests | 6 self-tests passed locally on 2026-10-18, including empty-log rejection and diagnostic hash preservation | Execute and save output |
 | Native baseline | 6/6 suites PASS locally on 2026-10-18; nonempty per-suite logs, binary hash and tested patch preserved below | Run `owasp_gate.py --mode baseline` and preserve logs |
-| OWASP ASVS/WSTG | Official inventory SHA pins and full requirement mappings incomplete | Pin canonical datasets, triage each item and verify applicable cases |
+| OWASP ASVS/WSTG | Official inputs SHA-pinned: ASVS 345 + WSTG 97; complete 442-entry inventory imported; applicability and evidence mappings untriaged | Review each imported item, assign applicability/owner and verify applicable cases |
 | Browser-specific security | Cases in `tests/security/cases.json` are plans, not proof | Deterministic fixtures, stress/fuzz, real devices and attack-driven negative testing |
 | Chromium/Qt sandbox | Packaged binary runtime boundary not proved | Inspect renderer sandbox/processes and security patch level |
 | Cloud interoperability | C++/QML implementation available; vendor login/2FA and media not qualified | Real supported-platform test accounts and logs |
@@ -41,3 +41,11 @@ Artifact directory: `build/release-audit-2026-10-18/` (ignored, local only). Pre
 - Environment: `Windows-11-10.0.26300-SP0`, Python `3.14.7`; Qt/Chromium engine versions appear in suite diagnostics.
 
 This document and the roadmap were updated after the run; those documentation-only edits are not in the tested patch. No application/test code changed after the successful run. Artifact availability on this machine does not imply the files are published in Git. All official inventory, hardware, cloud, packaging and independent-review release gates remain open.
+
+## OWASP inventory import — 2026-10-18
+
+Official ASVS 5.0.0 release CSV and WSTG 4.2 Markdown checklist are stored under `tests/security/standards/`, with provenance and upstream licenses. SHA-256 pins, immutable source commits and exact counts are in `standards.lock.json`. Coverage has 442 unique identifiers: 345 ASVS and 97 WSTG. All 442 remain **untriaged**; no reviewer, N/A waiver or test result was fabricated.
+
+The importer now reads ASVS's actual `req_id` column (`V1.1.1` form), rejects malformed/duplicate identifiers, checks exact pinned counts and compares WSTG IDs with the pinned upstream Markdown. The upstream JSON duplicate is documented in the standards README.
+
+`--mode inventory` successfully imports all 442 entries, then intentionally reports **BLOCKED** because applicability and case evidence remain incomplete. Local diagnostic report: `build/owasp-inventory/report.json`. Native browser code has not changed in this import step, so the earlier native baseline was not rerun.

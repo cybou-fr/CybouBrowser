@@ -11,7 +11,7 @@ First supported production release: Windows x64 with specifically documented, te
 | Gate | Required evidence | Current |
 | --- | --- | --- |
 | Scope & threat model | Frozen Windows 1.0 behavior; reviewed trust boundaries and exploit scenarios | **BLOCKED** |
-| OWASP inventory | Pinned full ASVS 5.0.0 and WSTG 4.2 datasets, **100% disposition** with peer-reviewed N/A | **BLOCKED** |
+| OWASP inventory | Pinned full ASVS 5.0.0 and WSTG 4.2 datasets, **100% disposition** with peer-reviewed N/A | **BLOCKED — inputs pinned; 442 applicability decisions pending** |
 | Applicable OWASP verification | Every applicable requirement maps to executed case and recent PASS evidence; no stale/skip/fail | **BLOCKED** |
 | Additional risk review | OWASP Top 10:2025 all ten, SCVS, SAMM, desktop-browser threats documented | **BLOCKED** |
 | C++/QML security & functional | All six existing suites plus added fuzz, negative, system/hardware, 11-button UX and cloud checks on candidate | **BLOCKED** |

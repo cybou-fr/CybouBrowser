@@ -1,0 +1,3 @@
+
+# Preserve upstream OWASP bytes: standards.lock.json hashes raw files.
+tests/security/standards/* -text

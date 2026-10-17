@@ -30,17 +30,17 @@ This review covers the local Windows implementation and test infrastructure. Imp
 | Filtering | `src/security/RuleEngine.h` | Small built-in categorized suffix list with protected endpoints; no qualified list-update pipeline or broad effectiveness claim |
 | Cloud apps | `src/cloud/`, `qml/CloudSettingsSection.qml` | Local catalog, role resolver, Nextcloud configuration and launcher implemented; real vendor login/2FA and document/media workflows unverified |
 | Test evidence | `tests/test_main.cpp`, `tools/security/owasp_gate.py` | Six suites exist; previous report had empty suite logs and two failures. Diagnostics capture, empty-log rejection and source-diff identification added; fresh results tracked in VALIDATION |
-| Release infrastructure | `CMakeLists.txt`, `tests/security/standards.lock.json` | Windows build exists; official dataset hashes are null. No installer/signing/updater/SBOM pipeline found in reviewed tracked source |
+| Release infrastructure | `CMakeLists.txt`, `tests/security/standards.lock.json` | Windows build exists; official ASVS/WSTG files, hashes and 442 coverage entries are now present; all applicability decisions remain untriaged. No installer/signing/updater/SBOM pipeline found in reviewed tracked source |
 
 ### Immediate delivery queue
 
 - [x] **R1 — repeatable baseline (local development, 2026-10-18):** fix IDN failure, wait for the real hover delay, capture nonempty suite logs, record current source/binary identity, obtain six green suites.
-- [ ] **R2 — inventory:** vendor the pinned official ASVS/WSTG inputs, validate parsers and control counts, assign applicability/owners. No automatic N/A or fabricated PASS.
+- [ ] **R2 — inventory:** official ASVS 5.0.0 (345) and WSTG 4.2 (97) inputs vendored and SHA-pinned; parsers and exact counts tested. All 442 rows created as untriaged. Remaining: review applicability, assign owners and map cases/evidence. No automatic N/A or fabricated PASS.
 - [ ] **R3 — browser-specific negative fixtures:** restricted-mode origin/redirect/override lifecycle, cross-frame permissions, real capture revoke, downloads and local-network boundaries.
 - [ ] **R4 — Windows product qualification:** cloud login/2FA, keyboard/FR/RU/DPI, many tabs, crash/session recovery and cleanup.
 - [ ] **R5 — distributable candidate:** reproducible installer, licenses/SBOM, signing, safe update/rollback, independent review and matching candidate evidence.
 
-R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is next; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
+R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is active: import/pinning complete, applicability and evidence mapping pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
 
 ## Gates
 
@@ -57,7 +57,7 @@ No estimated date or percentage stands in place of actual completion.
 
 ## Current execution order
 
-1. **Testing foundation (P0):** obtain official pinned inventories, complete control applicability, implement deterministic local fixtures and connect each applicable requirement to executed evidence.
+1. **Testing foundation (P0):** review the 442 imported controls and their applicability, implement deterministic local fixtures and connect each applicable requirement to executed evidence.
 2. **Browser security (P0):** renderer and OS boundaries, permissions, WebRTC/media revoke, local/private network, TLS/redirects, download and process abuse, fuzzing and negative tests.
 3. **Engine/release supply chain (P0):** Qt/Chromium vulnerability management, actual sandbox, SBOM, signing, update/rollback.
 4. **Product quality (P1):** cloud account compatibility, realistic ad/tracker filtering, UX/FR/RU accessibility, keyboard navigation, device and stress regressions.
