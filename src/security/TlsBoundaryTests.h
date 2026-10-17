@@ -29,6 +29,9 @@ public:
     int handshakes = 0;
     int httpRequests = 0;
     int closedSockets = 0;
+    bool ignoreWebSocketCloseFrames = false;
+    int peerCloseFrames = 0;
+    int serverCloseReplies = 0;
     QSet<QSslSocket *> activeSockets;
     std::function<void()> onSocketClosed;
 protected:
@@ -49,8 +52,11 @@ protected:
         QObject::connect(socket, &QSslSocket::readyRead, socket, [this, socket] {
             const auto data = socket->readAll();
             if (socket->property("upgraded").toBool()) {
-                // Complete the peer's WebSocket close handshake, never initiate one ourselves.
+                // Optionally act as an uncooperative peer: never reply or close the TCP socket.
                 if (!data.isEmpty() && (quint8(data[0]) & 0x0f) == 8) {
+                    ++peerCloseFrames;
+                    if (ignoreWebSocketCloseFrames) return;
+                    ++serverCloseReplies;
                     socket->write(QByteArray::fromHex("8800"));
                     socket->disconnectFromHost();
                 }

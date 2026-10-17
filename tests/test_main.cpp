@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
 #if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
         QFile leaf("tests/security/fixtures/tls/valid-cert.pem"), key("tests/security/fixtures/tls/localhost-key.pem");
         if (!leaf.open(QIODevice::ReadOnly) || !key.open(QIODevice::ReadOnly)) return 2;
+        transportTls.ignoreWebSocketCloseFrames = true;
         transportTls.certificate = QSslCertificate(leaf.readAll()); transportTls.key = QSslKey(key.readAll(), QSsl::Rsa);
         if (!QSslSocket::supportsSsl() || transportTls.certificate.isNull() || transportTls.key.isNull() || !transportTls.listen(QHostAddress::LocalHost)) return 2;
         transportWssUrl = QString("wss://127.0.0.1:%1/socket").arg(transportTls.serverPort());
@@ -384,11 +385,12 @@ int main(int argc, char *argv[])
                         qCritical() << "HTTP_CONTEXT_CONNECTION_TEST FAIL: active stream survived context revoke" << activeTransportStreams.size() << transportStreamsClosed;
                         app.exit(2); return;
                     }
-                    if (transportTls.handshakes != 3) {
+                    if (transportTls.handshakes != 3 || !transportTls.ignoreWebSocketCloseFrames || transportTls.serverCloseReplies != 0) {
                         qCritical() << "TRANSPORT_WSS_TEST FAIL: positive socket controls missing" << transportTls.handshakes;
                         app.exit(2); return;
                     }
                     if (*terminalTransportChecks != -1) {
+                        qInfo() << "TRANSPORT_WSS_UNCOOPERATIVE_TEST PASS: server sent no close replies and never closed upgraded sockets; client teardown disconnected all three" << "peerCloseFrames" << transportTls.peerCloseFrames;
                         qInfo() << "TRANSPORT_WSS_TEST PASS: three live WSS message controls; reload, popover and inline revoke closed all sockets and retired their profile owners";
                         qInfo() << "HTTP_CONTEXT_CONNECTION_TEST PASS: three real streams closed across reload and both revoke paths; temporary profiles denied all ws handshakes";
                         *terminalTransportChecks = -1;

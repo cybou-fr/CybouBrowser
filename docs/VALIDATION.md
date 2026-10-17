@@ -91,3 +91,11 @@ The Windows Release browser and test executable both rebuilt. A focused transpor
 Artifacts: `build/transport-wss-ui/baseline.json`, `security-logs/`, focused log, `run-summary.json`, source snapshots and `tested-working-tree.patch`. The patch SHA was checked against the baseline source-diff SHA and both tested source hashes were rechecked. The supplementary summary fingerprints `cybou.exe`; the baseline fingerprints `cybou_tests.exe` and each nonempty log. This is development working-tree evidence; the following documentation/coverage edits were made after the run, without further native code changes. No broad release case/control was promoted to verified.
 
 Remaining: hostile close peers and renderer/download stress, CRL/OCSP and protocol/cipher matrix, redirect/downgrade and public/private DNS boundaries, plus the other unchanged release gates.
+
+## Adversarial transport — 2026-10-18
+
+The Release test target rebuilt and the final affected suites both exited 0: security and transport. The security log records seven `HTTP_REDIRECT_CASE PASS` markers (two positive endpoints, five blocked 302 variants). The transport log records `TRANSPORT_WSS_UNCOOPERATIVE_TEST PASS`, including three observed close frames, zero server replies and all three WSS sockets disconnected before completion. Existing TLS/CORS/permission/security and UI/profile/HTTP-stream checks passed in those runs.
+
+Artifacts: `build/adversarial-transport/report.json`, both logs, source snapshots including the new redirect header and tracked patch. The report fingerprints the one final test executable, each log and all changed test source files. Earlier redirect attempts exposed fixture setup errors (favicon counted as landing; strict mode not explicitly enabled); their logs are preserved under `build/http-redirect-boundaries/` and are superseded by the final strict-mode run. Production source behavior was unchanged in this iteration, so only the two affected suites were rerun; the preceding 6/6 baseline remains evidence for its recorded candidate, not this test binary.
+
+Broader cases remain in_progress and controls not_verified. Remaining: suspended renderer/download stress, other redirect status/methods, HTTPS downgrade, DNS/CNAME boundaries and TLS revocation/protocol/cipher qualification.

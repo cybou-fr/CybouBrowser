@@ -88,7 +88,23 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "in_progress",
+      "testSources": [
+        "src/security/HttpRedirectTests.h",
+        "src/security/HttpLeaseTests.h",
+        "qml/TransportHarness.qml"
+      ],
+      "coveredScenarios": [
+        "real HTTP 302 path/query/loop/cross-origin/credential redirects cannot inherit consumed HTTP consent",
+        "both endpoint servers pass independent direct HTTP navigation controls",
+        "native interceptor deny observations and sanitized target origin are asserted",
+        "actual UI HTTP consent, same-origin resources and ws denial"
+      ],
+      "remainingScenarios": [
+        "301/303/307/308 and method-preserving request matrix",
+        "HTTPS-to-HTTP downgrade and redirect-chain UI consent behavior",
+        "DNS/CNAME and network boundary changes"
+      ]
     },
     {
       "id": "CYB-HTTP-003",
@@ -109,11 +125,12 @@
         "stale token rejection, independent peer tab, reload, panel and inline revoke",
         "three never-completed HTTP response streams close before test completion",
         "all ws requests from temporary HTTP documents denied before reaching server",
-        "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners"
+        "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners",
+        "uncooperative WSS peer received three close frames, sent no replies and initiated no socket closes; reload and both UI revoke paths still disconnected all three"
       ],
       "remainingScenarios": [
-        "uncooperative close peers, suspended renderer and in-flight download stress",
-        "redirect/downgrade and public-to-private DNS boundary matrix",
+        "suspended renderer and in-flight download stress",
+        "HTTPS downgrade, method-preserving redirects and public-to-private DNS boundary matrix",
         "TLS revocation and protocol/cipher qualification"
       ]
     },
@@ -651,11 +668,12 @@
         "test-only certificate exception does not affect another isolated profile",
         "destroying an owning QWebEnginePage disconnects a live WSS socket on the server",
         "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake",
-        "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners"
+        "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners",
+        "uncooperative WSS peer received three close frames, sent no replies and initiated no socket closes; reload and both UI revoke paths still disconnected all three"
       ],
       "remainingScenarios": [
-        "uncooperative close peers, suspended renderer and in-flight download stress",
-        "redirect/downgrade and public-to-private DNS boundary matrix",
+        "suspended renderer and in-flight download stress",
+        "HTTPS downgrade, method-preserving redirects and public-to-private DNS boundary matrix",
         "TLS revocation and protocol/cipher qualification"
       ],
       "additionalSuites": [

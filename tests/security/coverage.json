@@ -2390,10 +2390,12 @@
       "rationale": "Browser client connections use strict HTTPS by default.",
       "sourceRefs": [
         "src/security/NetworkPolicy.h",
-        "src/security/HttpNavigationLease.h"
+        "src/security/HttpNavigationLease.h",
+        "src/security/HttpRedirectTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "The explicit temporary HTTP exception conflicts with an unconditional all-TLS interpretation; review product scope and exception policy, not a PASS waiver."
+      "remainingWork": "The explicit temporary HTTP exception conflicts with an unconditional all-TLS interpretation; review product scope and exception policy, not a PASS waiver.",
+      "partialVerification": "2026-10-18 Release security PASS: two live positive endpoints and five denied HTTP 302 redirect variants through production HTTP lease/interceptor. See build/adversarial-transport/report.json; control remains not_verified."
     },
     {
       "id": "ASVS:v5.0.0-12.2.2",
@@ -3882,10 +3884,12 @@
       "rationale": "Untrusted redirects must preserve transport, origin and restricted browsing boundaries.",
       "sourceRefs": [
         "qml/BrowserTab.qml",
-        "src/security/NavigationGuard.h"
+        "src/security/NavigationGuard.h",
+        "src/security/HttpRedirectTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Add script/meta/HTTP redirect chains and IDN/trailing-dot variants; parser assertions do not prove navigation behavior."
+      "remainingWork": "Add script/meta/HTTP redirect chains and IDN/trailing-dot variants; parser assertions do not prove navigation behavior.",
+      "partialVerification": "2026-10-18 Release security PASS: two live positive endpoints and five denied HTTP 302 redirect variants through production HTTP lease/interceptor. See build/adversarial-transport/report.json; control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CLNT-05",
@@ -3956,8 +3960,8 @@
         "src/browserstore.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Add uncooperative-peer/suspended-renderer stress, OCSP/CRL and protocol/cipher matrix, redirects/downgrade and public-to-private/DNS tests. Local profile trust does not qualify public services or a signed distribution.",
-      "partialVerification": "2026-10-18 six-suite baseline PASS; UI reload and both revoke paths close three live WSS sockets in temporary QML HTTP profiles with C++-injected local CA. See build/transport-wss-ui/baseline.json. Broader control remains not_verified."
+      "remainingWork": "Suspended-renderer/download stress, TLS revocation/protocol/cipher matrix, 301/303/307/308 and HTTPS downgrade, public/private DNS boundaries remain open.",
+      "partialVerification": "2026-10-18 transport PASS with uncooperative WSS peer: three close frames ignored, zero server close replies, three client-side disconnections after UI reload/revoke. See build/adversarial-transport/report.json; broader control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CLNT-11",

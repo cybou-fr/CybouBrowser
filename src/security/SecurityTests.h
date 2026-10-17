@@ -8,6 +8,7 @@
 #include "DownloadPolicy.h"
 #include "NetworkBoundaryTests.h"
 #include "TlsBoundaryTests.h"
+#include "HttpRedirectTests.h"
 #include "PermissionTests.h"
 #include "HttpLeaseTests.h"
 #include "TrackerLeaseTests.h"
@@ -137,7 +138,7 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         qInfo() << "HTTPS_FIRST_TEST PASS: upgrade retained, public HTTP denied, no host fallback";
     }
 
-    if (!runNetworkBoundaryTests() || !runTlsBoundaryTests() || !runTlsCertificateMatrixTests()) return 2;
+    if (!runNetworkBoundaryTests() || !runTlsBoundaryTests() || !runTlsCertificateMatrixTests() || !runHttpRedirectTests()) return 2;
 
     QWebEngineProfile profile;
     RequestObserver interceptor(&profile);
