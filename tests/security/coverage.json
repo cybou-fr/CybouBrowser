@@ -3952,11 +3952,12 @@
         "src/security/NetworkBoundaryTests.h",
         "tests/test_main.cpp",
         "qml/TransportHarness.qml",
-        "src/security/TlsBoundaryTests.h"
+        "src/security/TlsBoundaryTests.h",
+        "src/browserstore.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Add OCSP/CRL revocation, TLS protocol/cipher and redirects/downgrade matrix, production temporary-profile/UI WSS revoke and public/private DNS scenarios. Private test CA is not public-CA service qualification.",
-      "partialVerification": "2026-10-18 security PASS: valid private-CA HTTPS/WSS, expired (-201), mismatch (-200), authority (-202); invalid WSS never reaches HTTP handler. See build/tls-certificate-matrix/report.json. Broader control remains not_verified."
+      "remainingWork": "Add uncooperative-peer/suspended-renderer stress, OCSP/CRL and protocol/cipher matrix, redirects/downgrade and public-to-private/DNS tests. Local profile trust does not qualify public services or a signed distribution.",
+      "partialVerification": "2026-10-18 six-suite baseline PASS; UI reload and both revoke paths close three live WSS sockets in temporary QML HTTP profiles with C++-injected local CA. See build/transport-wss-ui/baseline.json. Broader control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CLNT-11",

@@ -81,3 +81,13 @@ The final Release security run exited 0. All four cases passed: valid private-CA
 The first matrix attempt exposed a test-server teardown crash after the positive case. Socket callbacks are now disconnected before server member destruction, and profiles are off-the-record. The failing log is retained as `build/tls-certificate-matrix/security-before-cleanup-fix.log`; final evidence is `report.json`, `security.log`, source/fixture snapshots and patch in that directory. The report fingerprints current source files, binary, log and fixture bytes. No production policy changed, and cases/controls remain in_progress/not_verified for the broader open requirements.
 
 This matrix needs Qt 6.10+ profile-local trust; the source retains the Qt 6.9 compilation baseline but reports the unavailable verification as BLOCKED there. No OS trust store was modified.
+
+## WSS revoke through temporary-profile UI — 2026-10-18
+
+The Windows Release browser and test executable both rebuilt. A focused transport run passed, followed by **6/6 PASS** in a full baseline (security, controlbar, transport, tracker, surface, smoke). The transport log includes `TRANSPORT_WSS_TEST PASS`: three real WSS handshakes/messages followed by server-observed closure across reload, popover revoke and inline revoke. The same three HTTP streams close; all ws attempts remain denied. Retired profile pointers clear and the unrelated tab remains intact.
+
+`BrowserStore` now records a native owner for temporary profiles; the default owner is the profile itself. Its optional constructor-only C++ factory lets the test use a public Qt prototype with profile-local CA trust. Production construction does not provide the factory and has no added trust input. The actual BrowserTab, lease/interceptor, tab replacement and UI revoke functions run unchanged in this test.
+
+Artifacts: `build/transport-wss-ui/baseline.json`, `security-logs/`, focused log, `run-summary.json`, source snapshots and `tested-working-tree.patch`. The patch SHA was checked against the baseline source-diff SHA and both tested source hashes were rechecked. The supplementary summary fingerprints `cybou.exe`; the baseline fingerprints `cybou_tests.exe` and each nonempty log. This is development working-tree evidence; the following documentation/coverage edits were made after the run, without further native code changes. No broad release case/control was promoted to verified.
+
+Remaining: hostile close peers and renderer/download stress, CRL/OCSP and protocol/cipher matrix, redirect/downgrade and public/private DNS boundaries, plus the other unchanged release gates.

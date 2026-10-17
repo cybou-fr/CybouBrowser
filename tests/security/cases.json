@@ -100,18 +100,21 @@
       "status": "in_progress",
       "testSources": [
         "tests/test_main.cpp",
-        "qml/TransportHarness.qml"
+        "src/browserstore.h",
+        "qml/TransportHarness.qml",
+        "src/security/TlsBoundaryTests.h"
       ],
       "coveredScenarios": [
         "real isolated off-the-record HTTP profiles and no stored positive permissions",
         "stale token rejection, independent peer tab, reload, panel and inline revoke",
         "three never-completed HTTP response streams close before test completion",
-        "all ws requests from temporary HTTP documents denied before reaching server"
+        "all ws requests from temporary HTTP documents denied before reaching server",
+        "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners"
       ],
       "remainingScenarios": [
-        "in-flight downloads and redirect chains during revoke",
-        "WSS and other already-open transport teardown",
-        "fault-injection and adversarial context lifecycle stress"
+        "uncooperative close peers, suspended renderer and in-flight download stress",
+        "redirect/downgrade and public-to-private DNS boundary matrix",
+        "TLS revocation and protocol/cipher qualification"
       ]
     },
     {
@@ -647,20 +650,22 @@
         "separate exact-leaf test-only allowance enables real WSS handshake and message",
         "test-only certificate exception does not affect another isolated profile",
         "destroying an owning QWebEnginePage disconnects a live WSS socket on the server",
-        "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake"
+        "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake",
+        "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners"
       ],
       "remainingScenarios": [
-        "OCSP/CRL revocation and TLS protocol/cipher matrix",
-        "production profile/UI redirect, downgrade and WSS revoke regression",
-        "public/private routing and DNS changes"
+        "uncooperative close peers, suspended renderer and in-flight download stress",
+        "redirect/downgrade and public-to-private DNS boundary matrix",
+        "TLS revocation and protocol/cipher qualification"
       ],
       "additionalSuites": [
         "transport"
       ],
       "testSources": [
-        "src/security/NetworkBoundaryTests.h",
-        "src/security/TlsBoundaryTests.h",
-        "qml/TransportHarness.qml"
+        "tests/test_main.cpp",
+        "src/browserstore.h",
+        "qml/TransportHarness.qml",
+        "src/security/TlsBoundaryTests.h"
       ]
     }
   ]

@@ -26,3 +26,9 @@
 Нет сторонней системы расширений/привилегированных userscripts ([ADR 0006](ADR/0006-no-third-party-extensions.md)). Qt/Chromium и системные библиотеки — внешние зависимости, подлежащие проверке.
 
 Реальный sandbox, OS/hardware behavior, DNS rebinding, WebRTC и полная cloud login compatibility не квалифицированы. [SECURITY_MODEL](SECURITY_MODEL.md) · [TEST_PLAN](TEST_PLAN.md).
+
+## Temporary-profile native ownership
+
+`BrowserStore` accepts an optional C++ `TemporaryProfileFactory` at construction. The default path creates the same off-the-record `QQuickWebEngineProfile` as before; there is no QML setter, certificate file option or command-line trust switch in the production app. A factory returns both a profile and its native owning QObject, supporting Qt's `WebEngineProfilePrototype` ownership without deleting a borrowed profile twice. Temporary creation still requires off-the-record state, AskEveryTime permissions, the configured interceptor and an exact HTTP lease.
+
+On release, the lease is revoked and the recorded owner is scheduled for deletion. Default profiles own themselves; prototype-backed profiles are destroyed by the prototype. Observer/temporary-owner bookkeeping is removed when the profile dies. The transport test alone supplies a prototype with a loopback-only test CA, using public Qt QML APIs and preserving the production UI revoke path. The production executable does not supply that factory or test trust.

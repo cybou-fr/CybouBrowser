@@ -20,6 +20,7 @@
 #include <QHostAddress>
 #include <optional>
 #include <memory>
+#include <functional>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include "controlbar/RequestObserver.h"
@@ -51,7 +52,13 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool blockTrackers READ blockTrackers WRITE setBlockTrackers NOTIFY preferencesChanged)
     Q_PROPERTY(QObject* cloud READ cloud CONSTANT)
 public:
-    explicit BrowserStore(QObject *parent = nullptr) : QObject(parent), m_cloud(this) {
+    struct TemporaryProfileContext {
+        QQuickWebEngineProfile *profile = nullptr;
+        QObject *owner = nullptr; // Owns the profile; prototype factories retain their native ownership.
+    };
+    using TemporaryProfileFactory = std::function<TemporaryProfileContext(QObject *)>;
+    explicit BrowserStore(QObject *parent = nullptr, TemporaryProfileFactory factory = {})
+        : QObject(parent), m_cloud(this), m_temporaryProfileFactory(std::move(factory)) {
         settings.remove("preferences/httpsOnly"); // Retire the old persistent global HTTP opt-out.
         m_historySaveTimer.setInterval(1000);
         m_historySaveTimer.setSingleShot(true);
@@ -170,12 +177,17 @@ public:
     }
     Q_INVOKABLE QObject *createTemporaryHttpProfile(const QUrl &url) {
         if (!canRequestTemporaryHttp(url)) return nullptr;
-        auto profile = new QQuickWebEngineProfile(this);
+        auto context = m_temporaryProfileFactory ? m_temporaryProfileFactory(this) : TemporaryProfileContext{};
+        if (!m_temporaryProfileFactory) { context.profile = new QQuickWebEngineProfile(this); context.owner = context.profile; }
+        auto profile = context.profile;
+        if (!profile || !context.owner) return nullptr;
+        if (!profile->isOffTheRecord()) { context.owner->deleteLater(); return nullptr; }
         profile->setPersistentPermissionsPolicy(QQuickWebEngineProfile::PersistentPermissionsPolicy::AskEveryTime);
         configureProfile(profile);
         auto observer = observers.value(profile);
         observer->setHttpsOnly(true);
-        if (!profile->isOffTheRecord() || !observer->allowHttpNavigation(url)) { profile->deleteLater(); return nullptr; }
+        if (!observer->allowHttpNavigation(url)) { context.owner->deleteLater(); return nullptr; }
+        m_temporaryProfileOwners.insert(profile, context.owner);
         m_temporaryHttpProfiles.insert(profile);
         return profile;
     }
@@ -255,7 +267,7 @@ public:
         const bool http = m_temporaryHttpProfiles.remove(profile);
         if (!http) return;
         if (auto observer = observers.value(profile)) { observer->revokeHttpNavigation(); }
-        profile->deleteLater();
+        if (auto owner = m_temporaryProfileOwners.take(profile)) owner->deleteLater();
     }
     bool blockTrackers() const { return settings.value("preferences/blockTrackers", true).toBool(); }
     void setBlockTrackers(bool enabled) {
@@ -281,10 +293,10 @@ public:
     }
     Q_INVOKABLE QString navigationBlockReason(const QUrl &url, QObject *profile = nullptr, bool mainFrame = true) const {
         if (NetworkPolicy::hasWebCredentials(url))
-            return tr("Les adresses contenant un identifiant ou un mot de passe sont bloquées.");
+            return tr("Les adresses contenant un identifiant ou un mot de passe sont bloquÃ©es.");
         if (NetworkPolicy::blocks(url, httpsOnly())
             && !(isTemporaryHttpProfile(profile) && url.scheme() == "http" && (!mainFrame || canStartTemporaryHttp(profile, url))))
-            return tr("Mode HTTPS strict : cette connexion non chiffrée est bloquée. Utilisez une adresse HTTPS.");
+            return tr("Mode HTTPS strict : cette connexion non chiffrÃ©e est bloquÃ©e. Utilisez une adresse HTTPS.");
         return {};
     }
     QString controlBarPosition() const { return settings.value("ui/controlBar/position", "right").toString(); }
@@ -373,7 +385,7 @@ public:
         observers.insert(profile, observer);
         profile->setUrlRequestInterceptor(observer);
         emit preferencesChanged();
-        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); m_temporaryHttpProfiles.remove(profile); });
+        connect(profile, &QObject::destroyed, this, [this, profile] { observers.remove(profile); m_temporaryHttpProfiles.remove(profile); m_temporaryProfileOwners.remove(profile); });
     }
     Q_INVOKABLE bool clearCookies(QObject *object) {
         auto profile = qobject_cast<QQuickWebEngineProfile *>(object);
@@ -397,8 +409,8 @@ public:
     Q_INVOKABLE QString permissionName(int type) const {
         switch (static_cast<QWebEnginePermission::PermissionType>(type)) {
         case QWebEnginePermission::PermissionType::MediaAudioCapture: return "Microphone";
-        case QWebEnginePermission::PermissionType::MediaVideoCapture: return "Caméra";
-        case QWebEnginePermission::PermissionType::MediaAudioVideoCapture: return "Caméra et microphone";
+        case QWebEnginePermission::PermissionType::MediaVideoCapture: return "CamÃ©ra";
+        case QWebEnginePermission::PermissionType::MediaAudioVideoCapture: return "CamÃ©ra et microphone";
         case QWebEnginePermission::PermissionType::Geolocation: return "Localisation";
         case QWebEnginePermission::PermissionType::Notifications: return "Notifications";
         case QWebEnginePermission::PermissionType::MouseLock: return "Verrouillage du pointeur";
@@ -482,6 +494,8 @@ private:
         });
     }
     CloudServiceManager m_cloud;
+    TemporaryProfileFactory m_temporaryProfileFactory;
+    QHash<QQuickWebEngineProfile *, QPointer<QObject>> m_temporaryProfileOwners;
     QList<QPointer<QQuickWebEngineProfile>> profiles;
     QHash<QQuickWebEngineProfile *, RequestObserver *> observers;
     bool m_cacheBusy = false;
