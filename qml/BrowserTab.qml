@@ -52,7 +52,6 @@ WebEngineView {
     onNavigationRequested: function(request) {
         if (request.isMainFrame) {
             web.navigationEpoch++
-            browserStore.retainTrackersForOwner(web.profile, web, request.url)
             if (request.url.toString() !== web.upgradeExpectedUrl) {
                 web.upgradedFromHttpUrl = ""
                 web.upgradeExpectedUrl = ""

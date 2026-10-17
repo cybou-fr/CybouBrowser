@@ -96,16 +96,30 @@ bool ControlBarController::shouldDeny(const QWebEnginePermission &permission, co
         if (shouldDenyOrigin(key, permission.origin(), topUrl, tab)) return true;
     return false;
 }
-void ControlBarController::notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked) {
+void ControlBarController::notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked, quint64 requestId) {
     for (const auto &key : keysFor(permission.permissionType())) {
-        m_observations.append({key, tab, origin(top), origin(permission.origin()), QDateTime::currentMSecsSinceEpoch(), !blocked, blocked});
+        m_observations.append({key, tab, origin(top), origin(permission.origin()), QDateTime::currentMSecsSinceEpoch(), !blocked, blocked, requestId});
         if (m_observations.size() > 256) m_observations.removeFirst();
     }
     refresh();
 }
-void ControlBarController::finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed) {
-    for (auto &event : m_observations) if (event.pending && event.tab == tab && event.requester == origin(permission.origin()) && keysFor(permission.permissionType()).contains(event.key)) {
-        event.pending = false; event.blocked = !allowed; event.time = QDateTime::currentMSecsSinceEpoch();
+void ControlBarController::finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed, quint64 requestId) {
+    bool matched = false;
+    if (requestId != 0) {
+        for (auto &event : m_observations) {
+            if (event.pending && event.requestId == requestId) {
+                event.pending = false; event.blocked = !allowed; event.time = QDateTime::currentMSecsSinceEpoch();
+                matched = true;
+            }
+        }
+    }
+    if (!matched) {
+        for (auto &event : m_observations) {
+            if (event.pending && event.tab == tab && event.requester == origin(permission.origin()) && keysFor(permission.permissionType()).contains(event.key)) {
+                event.pending = false; event.blocked = !allowed; event.time = QDateTime::currentMSecsSinceEpoch();
+                break;
+            }
+        }
     }
     refresh();
 }

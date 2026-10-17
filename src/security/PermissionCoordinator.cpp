@@ -82,16 +82,42 @@ void PermissionCoordinator::promoteNext() {
             }
         }
         auto candidate = m_queue.takeAt(pick);
-        if (candidate.deadline.expired() || !candidate.permission.isValid()
+        if (candidate.deadline.expired()
             || !candidate.context.view || !candidate.context.profile
             || candidate.context.view->property("navigationEpoch").toULongLong() != candidate.context.navigationEpoch) {
             if (candidate.permission.isValid()) candidate.permission.deny();
-            emit decisionFinished(candidate.permission, candidate.context.tabUid, false);
+            emit decisionFinished(candidate.permission, candidate.context.tabUid, false, candidate.id);
             continue;
         }
         m_pending = candidate;
         break;
     }
+}
+
+void PermissionCoordinator::cancelMatching(const std::function<bool(const Pending &)> &predicate) {
+    // 1. Purge matching items from m_queue first so promoteNext will never see them
+    for (int i = m_queue.size() - 1; i >= 0; --i) {
+        if (predicate(m_queue[i])) {
+            auto req = m_queue.takeAt(i);
+            if (req.permission.isValid()) req.permission.deny();
+            emit decisionFinished(req.permission, req.context.tabUid, false, req.id);
+        }
+    }
+    // 2. Purge active m_pending if matching
+    bool pendingPurged = false;
+    if (m_pending && predicate(*m_pending)) {
+        auto req = *m_pending;
+        m_pending.reset();
+        if (req.permission.isValid()) req.permission.deny();
+        emit decisionFinished(req.permission, req.context.tabUid, false, req.id);
+        pendingPurged = true;
+    }
+    // 3. Promote only if m_pending was purged
+    if (pendingPurged) {
+        promoteNext();
+    }
+    notifyChanged();
+    schedule();
 }
 
 void PermissionCoordinator::watch(QObject *object) {
@@ -100,14 +126,9 @@ void PermissionCoordinator::watch(QObject *object) {
     connect(object, &QObject::destroyed, this, [this, object] {
         m_watched.remove(object);
         if (m_activeView == object) m_activeView = nullptr;
-        if (m_pending && (!m_pending->context.view || !m_pending->context.profile)) cancel();
-        for (int i = m_queue.size() - 1; i >= 0; --i) {
-            if (!m_queue[i].context.view || !m_queue[i].context.profile) {
-                auto req = m_queue.takeAt(i);
-                if (req.permission.isValid()) req.permission.deny();
-                emit decisionFinished(req.permission, req.context.tabUid, false);
-            }
-        }
+        cancelMatching([](const Pending &p) {
+            return !p.context.view || !p.context.profile;
+        });
         m_leases.removeIf([](const PermissionLease &lease) { return !lease.context.view || !lease.context.profile; });
         notifyChanged(); schedule();
     });
@@ -127,10 +148,11 @@ bool PermissionCoordinator::submit(const QWebEnginePermission &permission, QObje
         || view->property("profile").value<QObject *>() != profile
         || context.tabUid.isEmpty() || context.topOrigin.isEmpty() || context.requestingOrigin.isEmpty()
         || keysFor(permission.permissionType()).isEmpty() || m_leases.size() >= MaxLeases;
-    emit requestObserved(permission, context.tabUid, context.topOrigin, blocked);
+    const quint64 newReqId = ++m_nextRequestId;
+    emit requestObserved(permission, context.tabUid, context.topOrigin, blocked, newReqId);
     if (blocked) { permission.deny(); return false; }
     watch(view); watch(profile);
-    const Pending newReq{++m_nextRequestId, permission, context, PermissionDeadline(RequestTimeoutMs)};
+    const Pending newReq{newReqId, permission, context, PermissionDeadline(RequestTimeoutMs)};
     if (foreground) {
         m_activeView = view;
         if (!m_pending) {
@@ -182,7 +204,7 @@ bool PermissionCoordinator::resolve(bool allow, QObject *activeView, QObject *ac
     } else if (target.permission.isValid()) {
         target.permission.deny();
     }
-    emit decisionFinished(target.permission, target.context.tabUid, granted);
+    emit decisionFinished(target.permission, target.context.tabUid, granted, target.id);
     if (wasPending) {
         promoteNext();
     }
@@ -195,29 +217,17 @@ void PermissionCoordinator::cancel() {
 
 void PermissionCoordinator::forgetView(QObject *view) {
     if (m_activeView == view) m_activeView = nullptr;
-    if (m_pending && m_pending->context.view == view) cancel();
-    for (int i = m_queue.size() - 1; i >= 0; --i) {
-        if (m_queue[i].context.view == view) {
-            auto req = m_queue.takeAt(i);
-            if (req.permission.isValid()) req.permission.deny();
-            emit decisionFinished(req.permission, req.context.tabUid, false);
-        }
-    }
+    cancelMatching([view](const Pending &p) {
+        return p.context.view == view || !p.context.view;
+    });
     m_leases.removeIf([view](const PermissionLease &lease) { return lease.context.view == view; });
     notifyChanged(); schedule();
 }
 
 void PermissionCoordinator::documentLoaded(QObject *view, quint64 epoch) {
-    if (m_pending && m_pending->context.view == view && m_pending->context.navigationEpoch != epoch) {
-        cancel();
-    }
-    for (int i = m_queue.size() - 1; i >= 0; --i) {
-        if (m_queue[i].context.view == view && m_queue[i].context.navigationEpoch != epoch) {
-            auto req = m_queue.takeAt(i);
-            if (req.permission.isValid()) req.permission.deny();
-            emit decisionFinished(req.permission, req.context.tabUid, false);
-        }
-    }
+    cancelMatching([view, epoch](const Pending &p) {
+        return p.context.view == view && p.context.navigationEpoch != epoch;
+    });
     const auto removed = m_leases.removeIf([=](const PermissionLease &lease) {
         return lease.context.view == view && lease.context.navigationEpoch != epoch;
     });
@@ -240,26 +250,13 @@ bool PermissionCoordinator::hasPendingFor(const QString &tab) const {
 }
 
 void PermissionCoordinator::expire() {
-    for (int i = m_queue.size() - 1; i >= 0; --i) {
-        if (m_queue[i].deadline.expired() || !m_queue[i].permission.isValid()) {
-            auto req = m_queue.takeAt(i);
-            if (req.permission.isValid()) req.permission.deny();
-            emit decisionFinished(req.permission, req.context.tabUid, false);
-        }
-    }
-    if (m_pending && (m_pending->deadline.expired() || !m_pending->permission.isValid())) {
-        cancel();
-    }
-    schedule();
+    cancelMatching([](const Pending &p) {
+        return p.deadline.expired() || (!p.permission.isValid() && p.id == 0);
+    });
 }
 
 void PermissionCoordinator::revokeAll() {
-    cancel();
-    for (auto &req : m_queue) {
-        if (req.permission.isValid()) req.permission.deny();
-        emit decisionFinished(req.permission, req.context.tabUid, false);
-    }
-    m_queue.clear();
+    cancelMatching([](const Pending &) { return true; });
     QList<QPointer<QObject>> views;
     for (const auto &lease : m_leases) if (lease.context.view && !views.contains(lease.context.view)) views.append(lease.context.view);
     m_leases.clear(); notifyChanged(); schedule();
@@ -280,4 +277,25 @@ void PermissionCoordinator::schedule() {
     } else {
         m_timer.start(int(std::clamp<qint64>(minRemaining, 1, std::numeric_limits<int>::max())));
     }
+}
+
+bool PermissionCoordinator::enqueueTestRequest(quint64 id, QObject *view, QObject *profile, const QString &tabUid,
+                                              const QUrl &topOrigin, quint64 epoch, qint64 timeoutMs) {
+    if (!view || !profile) return false;
+    watch(view); watch(profile);
+    SiteContext context{view, profile, tabUid, SiteContext::origin(topOrigin), SiteContext::origin(topOrigin), epoch};
+    Pending req{id, QWebEnginePermission(), context, PermissionDeadline(timeoutMs)};
+    if (m_activeView && m_activeView == view && !m_pending) {
+        m_pending = req;
+    } else if (!m_pending) {
+        m_pending = req;
+    } else if (m_activeView && m_activeView == view && m_pending->context.view != view) {
+        m_queue.prepend(*m_pending);
+        m_pending = req;
+    } else {
+        m_queue.append(req);
+    }
+    notifyChanged();
+    schedule();
+    return true;
 }

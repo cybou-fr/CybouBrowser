@@ -35,6 +35,45 @@ inline bool runPermissionContextTests() {
     if (coordinator.activeView() != &view) return false;
     coordinator.setActiveView(nullptr);
     if (coordinator.activeView() != nullptr) return false;
+
+    // Multi-request queue lifecycle and atomic cancellation tests:
+    PermissionCoordinator testCoord;
+    QObject viewA, viewB, profileA;
+    viewA.setProperty("url", QUrl("https://a.test/"));
+    viewA.setProperty("tabUid", "tab-a");
+    viewA.setProperty("navigationEpoch", 1);
+    viewA.setProperty("profile", QVariant::fromValue<QObject *>(&profileA));
+
+    viewB.setProperty("url", QUrl("https://b.test/"));
+    viewB.setProperty("tabUid", "tab-b");
+    viewB.setProperty("navigationEpoch", 10);
+    viewB.setProperty("profile", QVariant::fromValue<QObject *>(&profileA));
+
+    if (!testCoord.enqueueTestRequest(101, &viewA, &profileA, "tab-a", QUrl("https://a.test"), 1)) return false;
+    if (!testCoord.enqueueTestRequest(102, &viewA, &profileA, "tab-a", QUrl("https://a.test"), 1)) return false;
+    if (!testCoord.enqueueTestRequest(201, &viewB, &profileA, "tab-b", QUrl("https://b.test"), 10)) return false;
+    if (!testCoord.enqueueTestRequest(202, &viewB, &profileA, "tab-b", QUrl("https://b.test"), 10)) return false;
+
+    if (testCoord.pendingCount() != 4 || testCoord.queuedCount() != 3) return false;
+    if (testCoord.pendingRequestId() != 101) return false;
+    if (!testCoord.hasPendingFor("tab-a") || !testCoord.hasPendingFor("tab-b")) return false;
+
+    testCoord.setActiveView(&viewB);
+    if (testCoord.pendingRequestId() != 201 || testCoord.pendingView() != &viewB) return false;
+
+    testCoord.documentLoaded(&viewB, 11);
+    if (testCoord.hasPendingFor("tab-b")) return false;
+    if (testCoord.pendingCount() != 2 || !testCoord.hasPendingFor("tab-a")) return false;
+
+    testCoord.forgetView(&viewA);
+    if (testCoord.hasPending() || testCoord.pendingCount() != 0 || testCoord.hasPendingFor("tab-a")) return false;
+
+    testCoord.enqueueTestRequest(301, &viewA, &profileA, "tab-a", QUrl("https://a.test"), 1);
+    testCoord.enqueueTestRequest(302, &viewA, &profileA, "tab-a", QUrl("https://a.test"), 1);
+    testCoord.enqueueTestRequest(303, &viewB, &profileA, "tab-b", QUrl("https://b.test"), 1);
+    if (testCoord.pendingCount() != 3) return false;
+    testCoord.revokeAll();
+    if (testCoord.hasPending() || testCoord.pendingCount() != 0 || testCoord.queuedCount() != 0) return false;
     PermissionDeadline expired(0), running(60000);
     if (!expired.expired() || running.expired()) return false;
     // Clock rollback must not extend the monotonic ceiling; forward jumps fail closed.

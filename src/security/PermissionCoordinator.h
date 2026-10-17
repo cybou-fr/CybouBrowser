@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QtQml/qqmlregistration.h>
 #include <QtWebEngineCore/QWebEnginePermission>
+#include <functional>
 #include <optional>
 
 class PermissionCoordinator : public QObject {
@@ -39,11 +40,16 @@ public:
     Q_INVOKABLE void revokeAll();
     Q_INVOKABLE QStringList grantedKeys(QObject *view, quint64 epoch) const;
     Q_INVOKABLE bool hasPendingFor(const QString &tab) const;
+
+    // Unit test helper to test queue and cancellation lifecycle without a live browser engine:
+    bool enqueueTestRequest(quint64 id, QObject *view, QObject *profile, const QString &tabUid,
+                           const QUrl &topOrigin, quint64 epoch, qint64 timeoutMs = 15000);
+
 signals:
     void changed();
     void activeViewChanged();
-    void requestObserved(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked);
-    void decisionFinished(const QWebEnginePermission &permission, const QString &tab, bool allowed);
+    void requestObserved(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked, quint64 requestId = 0);
+    void decisionFinished(const QWebEnginePermission &permission, const QString &tab, bool allowed, quint64 requestId = 0);
     void revokeDocument(QObject *view);
 private:
     struct Pending {
@@ -57,6 +63,7 @@ private:
     void schedule();
     void notifyChanged();
     void promoteNext();
+    void cancelMatching(const std::function<bool(const Pending &)> &predicate);
     std::optional<Pending> m_pending;
     QList<Pending> m_queue;
     QPointer<QObject> m_activeView;

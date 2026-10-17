@@ -10,10 +10,10 @@
 | --- | --- |
 | **Control Bar** | **implemented, tested (recorded):** 11 иконок в одной навигационной строке, адрес занимает остаток ширины, hover открывает интерактивные стеклянные карточки; test harness на четырёх размерах при DPR 1 |
 | **Browser surfaces** | **implemented, tested (recorded):** отдельные GlassToolTip для навигации, drawers под шапкой, управление вкладками и окном |
-| **Чувствительные permissions** | **implemented, tested (recorded):** C++ `PermissionCoordinator`, request ID, `SiteContext`, fail-closed ожидание, независимые leases, `AskEveryTime`; real mic/camera и cross-origin iframe **unverified** |
+| **Чувствительные permissions** | **implemented, tested (recorded):** C++ `PermissionCoordinator`, request ID, `SiteContext`, fail-closed ожидание, независимые leases, `AskEveryTime`; FIFO-очередь запросов (`MaxQueuedRequests = 16`) с приоритетом активной вкладки и атомарной отменой (`revokeAll`/`forgetView`/`documentLoaded`); real mic/camera и cross-origin iframe **unverified** |
 | **Текущий отзыв grant** | **implemented, UX gap:** отзыв реализован через завершение WebEngineView, что может оборвать пользовательскую работу; новый UX отзыва **planned** |
 | **Transport** | **implemented, tested (recorded):** production HTTPS strict; exact-address HTTP consent в отдельном off-the-record профиле, последующее завершение/отзыв без наследования обычных cookies |
-| **Tracker-only exception** | **implemented, narrow:** отдельный временный профиль для выбранной HTTPS-страницы, пропуск matching tracker-list traffic, ручной revoke и завершение по закрытию/перезагрузке/смене документа; `--tracker-test` harness присутствует; не полный adblock |
+| **Tracker-only exception** | **implemented, origin-scoped (ADR 0005):** исключение действует по top-level origin в общем профиле с сохранением сессии и cookies; владение привязано к вкладке-владельцу (`TrackerExceptionRegistry`), правдивое синхронное отображение во всех вкладках этого же origin, потокобезопасная проверка в interceptor; не полный adblock |
 | **Network events** | **implemented:** ограниченная очередь, sanitized origin, blocked reason и type, только scope профиля; нет проверенного per-tab attribution |
 | **Windows** | **tested (recorded):** C++20 Release, Qt 6.12/MSVC, security/controlbar/surface/transport suites; Linux/macOS и release qualification остаются unverified |
 
@@ -21,7 +21,7 @@
 
 | ID | Приоритет | Задача (**planned**, если не указано иное) | Критерий приёмки |
 | --- | --- | --- | --- |
-| S0.1 | P0 | Одинаковое применение explicit deny к top origin и вложенным requester iframe | Двухoriginные fixtures, stale ID/tab/profile/epoch тесты |
+| S0.1 | P0 / код есть, интеграционная проверка требуется | Одинаковое применение explicit deny к top origin и вложенным requester iframe (`ControlBarController::shouldDenyOrigin`) | Двухoriginные fixtures, stale ID/tab/profile/epoch тесты |
 | S0.2 | P0 | Достоверный и пригодный для звонков отзыв media без внезапного разрушения документа; перепроектировать жизненный цикл доступа по требованиям владельца продукта и проверить гарантии отзыва | Реальные mic/camera/combined tests, долгий звонок, revoke, sleep/resume |
 | S0.3 | P0 | Поддерживаемый патченный Qt/Chromium, sandbox/release flags и безопасная доставка обновлений | Runtime-проверка, регрессия и проверка обновлений |
 | S1.1 | P1 | Версионированный ad/tracker RuleEngine с проверкой целостности и false positives | Реальные категории, производительность, rollback, сайты login/video/payment |

@@ -269,11 +269,11 @@ ApplicationWindow {
     PermissionCoordinator {
         id: permissionCoordinator
         activeView: currentView
-        onRequestObserved: function(permission, tab, top, blocked) {
-            controlState.notePermission(permission, tab, top, blocked)
+        onRequestObserved: function(permission, tab, top, blocked, requestId) {
+            controlState.notePermission(permission, tab, top, blocked, requestId)
         }
-        onDecisionFinished: function(permission, tab, allowed) {
-            controlState.finishPermission(permission, tab, allowed)
+        onDecisionFinished: function(permission, tab, allowed, requestId) {
+            controlState.finishPermission(permission, tab, allowed, requestId)
             if (!permissionCoordinator.hasPendingFor(tab))
                 controlState.abandonPending(tab)
         }
@@ -710,7 +710,7 @@ ApplicationWindow {
         } else download.accept()
     }
     Timer { id: saveTimer; interval: 700; onTriggered: saveSession() }
-    onActiveTabChanged: { policyBanner.close(); refreshAddress(); findVisible = false; cancelPermission(); if (controlBar) controlBar.dismiss() }
+    onActiveTabChanged: { policyBanner.close(); refreshAddress(); findVisible = false; if (controlBar) controlBar.dismiss() }
     onCurrentViewChanged: { if (suggestionsPopup) suggestionsPopup.close(); if (controlBar) controlBar.dismiss(); if (address) { address.focus = false; refreshAddress() } }
     onClosing: function(event) {
         if (!closingApproved && (activeDownloads() || pdfBusy)) {

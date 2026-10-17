@@ -49,8 +49,8 @@ public:
     Q_INVOKABLE bool setPermissionPolicy(const QString &key, int mode);
     Q_INVOKABLE bool shouldDenyOrigin(const QString &key, const QUrl &requester, const QUrl &topUrl = {}, const QString &tab = {}) const;
     Q_INVOKABLE bool shouldDeny(const QWebEnginePermission &permission, const QUrl &topUrl = {}, const QString &tab = {}) const;
-    Q_INVOKABLE void notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked);
-    Q_INVOKABLE void finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed);
+    Q_INVOKABLE void notePermission(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked, quint64 requestId = 0);
+    Q_INVOKABLE void finishPermission(const QWebEnginePermission &permission, const QString &tab, bool allowed, quint64 requestId = 0);
     Q_INVOKABLE void abandonPending(const QString &tab);
     Q_INVOKABLE void clearPermissionPolicies();
     Q_INVOKABLE void expireContext(const QString &tab);
@@ -72,7 +72,7 @@ signals:
     void contextChanged();
     void policyChanged(const QString &origin, const QString &key);
 private:
-    struct Observation { QString key, tab, top, requester; qint64 time; bool pending = false, blocked = false; };
+    struct Observation { QString key, tab, top, requester; qint64 time; bool pending = false, blocked = false; quint64 requestId = 0; };
     QVariant policyValue(const QUrl &url, const QString &key, const QVariant &fallback, const QString &tab = {}) const;
     bool writePolicy(const QUrl &url, const QString &key, const QVariant &value);
     static QStringList keysFor(QWebEnginePermission::PermissionType type);

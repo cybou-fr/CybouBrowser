@@ -27,7 +27,7 @@ Test organization и fixtures должны быть отделены от обы
 | **Keyboard и accessibility** | Tab, arrows, Space/Enter, focus, accessible name/state; FR/RU, DPI 100/150/200%, reduced motion, contrast |
 | **Native permissions** | Реальный request, отказ без pregrant, подтверждение правильного ID, stale ID/tab/profile/epoch, reset создаёт view без новой вкладки, independent grants, revoke и очистка permissions |
 | **HTTP transport** | HTTPS strict, exact URL/query, single-use main navigation, same-origin/firstParty assets, cross-origin HTTP/ws deny, credential-URL deny, stale token, peer-tab isolation, reload/revoke/profile destruction |
-| **Tracker-only exception** | Реальная blocked fixture до consent, passed tracker-rule после consent, отдельный OTR профиль без обычных cookies/cache, peer-tab isolation, нет HTTP exception mixing, stale token, reload/revoke/profile teardown; факт pass не означает успешную загрузку |
+| **Tracker-only exception** | Реальная blocked fixture до consent, passed tracker-rule после consent; действие по top-level origin в общем профиле с сохранением сессии и cookies (ADR 0005); владение привязано к вкладке-владельцу (TrackerExceptionRegistry); синхронное правдивое отображение во всех вкладках этого же origin; отсутствие переноса на другие origin; снятие исключения при отзыве или закрытии/навигации вкладки-владельца; факт pass не означает успешную загрузку |
 | **Other surfaces** | Tab drag, unused strip window drag/double-click, bookmarks/history/downloads/settings drawers в workspace под header, обычный GlassToolTip у chrome, download review и PDF export |
 
 ## Новые release gates — запланированы, ещё не пройдены

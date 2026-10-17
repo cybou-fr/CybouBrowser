@@ -12,13 +12,13 @@ Windows / MSVC 2022 / Qt 6.12.0. Записанные runtime identifiers: Qt We
 | --- | --- | --- |
 | **Windows Release / C++20** | PASS, Release build и security suite | Build records предыдущего агента; нет независимой сборки в этом документальном проходе |
 | **Основная Control Bar** | PASS, размеры 820×560 / 1024×768 / 1360×900 / 1920×1080, URL editing, 11 buttons inline | [Observable browsing](design/observable-browsing/) и локальные логи; исходные версии без glass hover являются историческими |
-| **Native PermissionCoordinator** | PASS, identity checks, stale epoch/request ID, independent grants, deny без ответа, view replacement | [coordinator-controlbar-test.log](design/observable-browsing/coordinator-controlbar-test.log), [coordinator-security-test.log](design/observable-browsing/coordinator-security-test.log); действительные hardware capture и iframe не проверены |
+| **Native PermissionCoordinator** | PASS: identity checks, dual-clock monotonic deadline, request queue (`MaxQueuedRequests = 16`), active tab priority, atomic cancellation on `forgetView`/`documentLoaded`/`revokeAll`, independent grants, view replacement | Тестовые наборы `--security-test` и `--controlbar-test` пройдены на 100% локально; действительные hardware capture и iframe не проверены |
 | **Glass hover Control Bar** | PASS, карточка появляется при hover, остаётся доступной при входе курсора, меняется для соседней иконки | [glass-hover.stderr.log](design/glass-hover/glass-hover.stderr.log), [визуальные captures](design/glass-hover/); реальная DPI-интеграция требует отдельного gate |
 | **HTTP temporary context** | В прежнем отчёте PASS: exact-address consent, cross-origin rejection, отдельный off-the-record профиль, смена tab/reload/revoke в ранее проверенной реализации | Отчёт этапа `feat(transport)`, visuals в [transport](design/transport/); не доказывает proxy/process isolation |
 | **Chrome and surfaces** | PASS: tab drag, title gestures, GlassToolTip, drawers под header при тестовых размерах | [surfaces.stderr.log](design/glass-surfaces/surfaces.stderr.log) и [скриншоты](design/glass-surfaces/); Windows multi-monitor manual testing отдельно |
 | **Smoke / downloads / PDF** | PASS в соответствующих записанных integrated harness run | Статус ограничен протестированными fixtures |
 
-**Tracker-only exception:** код и `--tracker-test` harness добавлены коммитом `9f7b698`. В данном документационном проходе suite **не запускался**. Отдельный профиль, правила scoped firstParty, revoke и network decisions видны в коде; это само по себе не заменяет зафиксированный release regression.
+**Tracker-only exception (ADR 0005):** Реализовано исключение по top-level origin в общем профиле с сохранением сессионного контекста (cookies, storage); владение привязано к вкладке через потокобезопасный `TrackerExceptionRegistry`. Локальный прогон `--tracker-test` пройден со статусом PASS (exit code 0).
 
 ## Известные пробелы
 
