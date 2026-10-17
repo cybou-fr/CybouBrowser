@@ -16,6 +16,7 @@
 | **RuleEngine и независимые Ads / Trackers (S1.1 + S1.2)** | **implemented, tested (recorded):** типизированный версионированный `RuleEngine` с классификацией Ad vs Tracker, иммунитет к false-positive (критические CDN, платежи Stripe/PayPal, SSO-авторизация, CAPTCHA); независимые временные исключения для рекламы и трекеров на уровне origin в `TrackerExceptionRegistry` и карточке Network |
 | **ActivityAggregator и семантика цветов (S1.3)** | **implemented, tested (recorded):** строгое разделение `EffectivePolicy` и `ObservedEvent`, правдивый скоуп (tab vs profile), разграничение индикаторов активности от постоянных разрешений |
 | **Navigation Guard и PNA (S2.1)** | **implemented, tested (recorded):** блокировка обращений публичных страниц в локальную сеть/localhost (Private Network Access / RFC 1918) и детекция IDN-гомографических атак в `NavigationGuard` |
+| **Restricted Browsing (S2.2)** | **implemented, tested (recorded):** запуск подозрительных сайтов (IDN-гомографы, опасные сетевые порты) в защищённом режиме: JS-off до загрузки документа, автозапрет sensitive permissions, отключение localStorage и popups, предупреждающий баннер безопасности с кнопками безопасного выхода и явного включения JS |
 | **Cloud Services (ADR 0007)** | **implemented, tested (recorded):** выбираемая облачная экосистема (Proton, Google, Microsoft, Infomaniak, Zoho, Nextcloud, Apple iCloud), Nextcloud self-hosted с валидацией HTTPS, Dark Glass App Launcher 3x3 на NewTabPage, строгая валидация и восстановление настроек |
 | **Network events** | **implemented:** ограниченная очередь, sanitized origin, blocked reason и type, только scope профиля; нет проверенного per-tab attribution |
 | **Windows** | **tested (recorded):** C++20 Release, Qt 6.12/MSVC, security/controlbar/surface/transport suites; Linux/macOS и release qualification остаются unverified |
@@ -41,7 +42,7 @@
 | S1.2 | P1 | Независимые временные Ads / Trackers политики **в Network hover-карточке** | **implemented, tested** | Раздельные действия для Ads и Trackers, безопасный Undo, привязка к вкладке и origin |
 | S1.3 | P1 | Семантика policy/event и `ActivityAggregator` с правдивым scope | **implemented, tested** | Default != blocked event; grant != recording; profile != tab |
 | S2.1 | P2 | Локальный Navigation Guard: IDN/redirect/private-network (PNA) | **implemented, tested** | Блокировка публичных запросов в LAN, детекция гомографов |
-| S2.2 | P2 | Restricted Browsing: JS-off до документа и проверяемые ограничения | **planned** | Before-load tests, корректный отказ и выход |
+| S2.2 | P2 | Restricted Browsing: JS-off до документа и проверяемые ограничения | **implemented, tested** | Before-load tests, корректный отказ и выход |
 | S3 | research | Process/proxy isolation | **research** | DNS/WebRTC/route leak tests; никакого рекламного обещания заранее |
 
 ## Правила внесения изменений

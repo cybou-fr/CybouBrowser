@@ -77,6 +77,65 @@ inline bool runNavigationGuardTests() {
     if (NavigationGuard::hasSuspiciousIdn(QUrl("https://xn--e1afmkfd.xn--p1ai/"))) { qCritical() << "IDN FAIL: пример.рф"; return false; }
     if (!NavigationGuard::hasSuspiciousIdn(QUrl("https://xn--pple-43d.example/"))) { qCritical() << "IDN FAIL: аpple.example"; return false; }
 
-    qInfo() << "NAVIGATION_GUARD_TEST PASS: IPv4/IPv6 private ranges, PNA public-to-private blocking, direct/internal allow, IDN homograph checks";
+    // 7. Restricted ports (IANA / Chromium dangerous ports blocked for general web browsing)
+    const int dangerousPorts[] = { 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 77, 79, 87, 95,
+                                   101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179,
+                                   389, 445, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 556, 563, 587, 601,
+                                   636, 993, 995, 2049, 3389, 3659, 4045, 6000, 6379, 6665, 6666, 6667, 6668, 6669,
+                                   11211, 27017 };
+    for (int p : dangerousPorts) {
+        if (!NavigationGuard::isRestrictedPort(p)) {
+            qCritical() << "NAVIGATION_GUARD_TEST FAIL: dangerous port not restricted" << p;
+            return false;
+        }
+    }
+    const int standardPorts[] = { 80, 443, 8080, 8443, 3000, 5000, 8000, 9000 };
+    for (int p : standardPorts) {
+        if (NavigationGuard::isRestrictedPort(p)) {
+            qCritical() << "NAVIGATION_GUARD_TEST FAIL: safe port flagged as restricted" << p;
+            return false;
+        }
+    }
+    if (NavigationGuard::isRestrictedPort(-1) || NavigationGuard::isRestrictedPort(0) || NavigationGuard::isRestrictedPort(70000)) {
+        qCritical() << "NAVIGATION_GUARD_TEST FAIL: out of range port flagged";
+        return false;
+    }
+
+    // 8. Restricted Browsing trigger and reason
+    const QUrl homographUrl("https://xn--pple-43d.example/");
+    if (!NavigationGuard::requiresRestrictedBrowsing(homographUrl)) {
+        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: homograph URL not flagged";
+        return false;
+    }
+    const QString homographReason = NavigationGuard::restrictedBrowsingReason(homographUrl);
+    if (homographReason.isEmpty() || !homographReason.contains("homographique")) {
+        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: homograph reason unexpected" << homographReason;
+        return false;
+    }
+
+    const QUrl restrictedPortUrl("http://example.com:22/");
+    if (!NavigationGuard::requiresRestrictedBrowsing(restrictedPortUrl)) {
+        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: port 22 not flagged";
+        return false;
+    }
+    const QString portReason = NavigationGuard::restrictedBrowsingReason(restrictedPortUrl);
+    if (portReason.isEmpty() || !portReason.contains("Port réseau")) {
+        qCritical() << "RESTRICTED_BROWSING_TEST FAIL: port reason unexpected" << portReason;
+        return false;
+    }
+
+    for (const auto &urlStr : {"https://example.com/", "https://cybou.fr/", "https://example.com:443/", "http://example.com:80/", "http://example.com:8080/path"}) {
+        const QUrl safeUrl(QString::fromLatin1(urlStr));
+        if (NavigationGuard::requiresRestrictedBrowsing(safeUrl)) {
+            qCritical() << "RESTRICTED_BROWSING_TEST FAIL: safe URL flagged" << urlStr;
+            return false;
+        }
+        if (!NavigationGuard::restrictedBrowsingReason(safeUrl).isEmpty()) {
+            qCritical() << "RESTRICTED_BROWSING_TEST FAIL: safe URL has reason" << urlStr;
+            return false;
+        }
+    }
+
+    qInfo() << "NAVIGATION_GUARD_TEST PASS: IPv4/IPv6 private ranges, PNA public-to-private blocking, direct/internal allow, IDN homograph checks, restricted ports, restricted browsing mode detection";
     return true;
 }

@@ -19,6 +19,14 @@ Windows / MSVC 2022 / Qt 6.12.0. Записанные runtime identifiers: Qt We
 | **Smoke / downloads / PDF** | PASS в соответствующих записанных integrated harness run | Статус ограничен протестированными fixtures |
 | **CYBOU Cloud Hardening** | PASS: Nextcloud self-hosted, Infomaniak, Zoho, input validation, corrupted settings recovery, dynamic role filtering, keyboard nav, overflow prevention | Тестовые наборы `--security-test` (14 тестов CloudCoreTests), `--surface-test`, `--controlbar-test`, `--smoke-test` пройдены со статусом exit code 0 |
 | **RuleEngine & Ads/Trackers (S1.1 + S1.2)** | PASS: версионированный RuleEngine (версия 1), разделение Ad vs Tracker, иммунитет к CDN/платежам/SSO/CAPTCHA, независимые исключения для рекламы и трекеров в `TrackerExceptionRegistry`, Network hover-карточке и QML | Все 5 тестовых наборов `--security-test`, `--tracker-test`, `--controlbar-test`, `--surface-test`, `--smoke-test` пройдены со статусом exit code 0 |
+| **Restricted Browsing (S2.2)** | PASS: блокировка JS до загрузки HTML, запрет чувствительных permissions, блокировка localStorage/popups, стеклянный PolicyBanner предупреждения, детекция опасных портов и гомографов IDN | Все 4 тестовых набора `--security-test`, `--surface-test`, `--controlbar-test`, `--smoke-test` пройдены со статусом exit code 0 |
+
+**Restricted Browsing (S2.2):** Реализована 4-столповая модель защищённого режима для подозрительных хостов (IDN-гомографы / смешанные алфавиты в `NavigationGuard::hasSuspiciousIdn` и опасные/заблокированные IANA/Chromium порты в `NavigationGuard::isRestrictedPort`). Столпы безопасности:
+1. *JS-off до загрузки:* отключение `javascriptEnabled` до начала парсинга документа (`settings.javascriptEnabled: !restrictedMode`).
+2. *Нулевые разрешения:* немедленный отказ (`permission.deny()`) на любые попытки запроса медиа, геолокации, уведомлений, экрана.
+3. *Ограниченное хранилище и окна:* отключение `localStorageEnabled`, запрет `javascriptCanOpenWindows`.
+4. *Наблюдаемый UI и безопасный выход:* выделенный янтарный стеклянный баннер `PolicyBanner` с кнопками «Quitter le site» (возврат назад / переход на about:blank) и «Activer JavaScript» (явный оверрайд пользователем).
+Локальные тесты `runNavigationGuardTests` и `SecurityTests` пройдены на 100%.
 
 **RuleEngine и независимые Ads / Trackers (S1.1 + S1.2):** Реализован `RuleEngine` с типизацией правил (Реклама vs Трекеры), контрольной суммой целостности и иммунитетом к ложным срабатываниям (Stripe, PayPal, Cloudflare CDN, jsDelivr, unpkg, Google/Microsoft SSO, reCAPTCHA, hCaptcha). В `TrackerExceptionRegistry` и карточке Network добавлены независимые временные исключения отдельно для рекламы и трекеров с гранулярным отзывом (Undo) без закрытия вкладки и потери сессии. Локальные тесты `runTrackerLeaseTests` и `--tracker-test` пройдены на 100%.
 

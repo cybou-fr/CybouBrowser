@@ -73,6 +73,15 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
             || store.isPrivateNetwork(QUrl("https://8.8.8.8/"))
             || store.isPrivateNetwork(QUrl("https://example.com/"))) return 2;
         qInfo() << "PRIVATE_NETWORK_GUARD_TEST PASS: loopback, RFC 1918 and link-local classified as private";
+        if (!store.requiresRestrictedBrowsing(QUrl("https://xn--pple-43d.example/"))
+            || !store.requiresRestrictedBrowsing(QUrl("http://example.com:22/"))
+            || !store.requiresRestrictedBrowsing(QUrl("http://example.com:6379/"))
+            || store.requiresRestrictedBrowsing(QUrl("https://example.com/"))
+            || store.requiresRestrictedBrowsing(QUrl("http://example.com:8080/"))) return 2;
+        if (store.restrictedBrowsingReason(QUrl("https://xn--pple-43d.example/")).isEmpty()
+            || store.restrictedBrowsingReason(QUrl("http://example.com:22/")).isEmpty()
+            || !store.restrictedBrowsingReason(QUrl("https://example.com/")).isEmpty()) return 2;
+        qInfo() << "RESTRICTED_BROWSING_GUARD_TEST PASS: homographs and dangerous ports flagged with reason";
     }
     const struct { const char *url; bool blocked; } cases[] = {
         {"http://example.org/", true}, {"HTTP://example.org/", true},

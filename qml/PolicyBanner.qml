@@ -8,9 +8,10 @@ Rectangle {
     implicitHeight: bannerVisible ? 36 : 0
     visible: implicitHeight > 0
     clip: true
-    color: "#E80B1F38"
+    color: isRestricted ? "#E82A1406" : "#E80B1F38"
 
     property bool bannerVisible: false
+    property bool isRestricted: false
     property int contextEpoch: -1
     property string contextTab: ""
     property string contextUrl: ""
@@ -21,9 +22,11 @@ Rectangle {
     signal reloadRequested()
     signal undoRequested(string key, int prevMode)
     signal closeRequested()
+    signal exitSiteRequested()
+    signal enableJsRequested()
 
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: CybouTheme.borderSubtle }
-    Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: CybouTheme.glassSheenSubtle }
+    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.isRestricted ? "#80F59E0B" : CybouTheme.borderSubtle }
+    Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: root.isRestricted ? "#50F59E0B" : CybouTheme.glassSheenSubtle }
 
     Behavior on implicitHeight {
         NumberAnimation {
@@ -41,12 +44,13 @@ Rectangle {
         Label {
             id: policyBannerText
             Layout.fillWidth: true
-            color: CybouTheme.mainText
+            color: root.isRestricted ? "#FFD08A" : CybouTheme.mainText
             font.pixelSize: 12
             elide: Text.ElideRight
         }
 
         GlassButton {
+            visible: !root.isRestricted
             text: qsTr("Recharger")
             implicitHeight: 24; padding: 4
             onClicked: {
@@ -56,9 +60,28 @@ Rectangle {
         }
 
         GlassButton {
+            visible: !root.isRestricted
             text: qsTr("Annuler")
             implicitHeight: 24; padding: 4
             onClicked: root.undo()
+        }
+
+        GlassButton {
+            visible: root.isRestricted
+            text: qsTr("Quitter le site")
+            implicitHeight: 24; padding: 4
+            onClicked: {
+                root.exitSiteRequested()
+            }
+        }
+
+        GlassButton {
+            visible: root.isRestricted
+            text: qsTr("Activer JavaScript")
+            implicitHeight: 24; padding: 4
+            onClicked: {
+                root.enableJsRequested()
+            }
         }
 
         NavButton {
@@ -79,6 +102,7 @@ Rectangle {
     }
 
     function show(origin, key, mode, prevMode) {
+        isRestricted = false
         lastOrigin = origin
         lastKey = key
         lastPrevMode = prevMode
@@ -87,6 +111,16 @@ Rectangle {
         policyBannerText.text = qsTr("%1 %2 pour %3. Recharger la page pour appliquer ?").arg(name).arg(state).arg(origin)
         bannerVisible = true
         bannerTimer.restart()
+    }
+
+    function showRestricted(reason, tab, epoch, urlStr) {
+        isRestricted = true
+        bannerTimer.stop()
+        contextTab = tab
+        contextEpoch = epoch
+        contextUrl = urlStr
+        policyBannerText.text = qsTr("Mode restreint · JS désactivé · %1").arg(reason)
+        bannerVisible = true
     }
 
     function undo() {

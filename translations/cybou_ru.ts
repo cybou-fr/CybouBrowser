@@ -909,6 +909,11 @@ Passés par exception : %5</source>
         <source>Impossible d’ouvrir ce fichier en toute sécurité.</source>
         <translation>Безопасное открытие этого файла недоступно.</translation>
     </message>
+    <message>
+        <location filename="../qml/Main.qml" line="1189"/>
+        <source>JavaScript activé pour cette session.</source>
+        <translation>JavaScript включён для этой сессии.</translation>
+    </message>
 </context>
 <context>
     <name>NewTabPage</name>
@@ -951,44 +956,72 @@ Passés par exception : %5</source>
 <context>
     <name>PolicyBanner</name>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="50"/>
+        <location filename="../qml/PolicyBanner.qml" line="54"/>
         <source>Recharger</source>
         <translation>Перезагрузить</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="59"/>
+        <location filename="../qml/PolicyBanner.qml" line="64"/>
         <source>Annuler</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="67"/>
+        <location filename="../qml/PolicyBanner.qml" line="71"/>
+        <source>Quitter le site</source>
+        <translation>Покинуть сайт</translation>
+    </message>
+    <message>
+        <location filename="../qml/PolicyBanner.qml" line="80"/>
+        <source>Activer JavaScript</source>
+        <translation>Включить JavaScript</translation>
+    </message>
+    <message>
+        <location filename="../qml/PolicyBanner.qml" line="90"/>
         <source>Fermer</source>
         <translation>Закрыть</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="85"/>
+        <location filename="../qml/PolicyBanner.qml" line="109"/>
         <source>Stockage local</source>
         <translation>Локальное хранилище</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="85"/>
+        <location filename="../qml/PolicyBanner.qml" line="109"/>
         <source>Fenêtres popups</source>
         <translation>Всплывающие окна</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="86"/>
+        <location filename="../qml/PolicyBanner.qml" line="110"/>
         <source>activé</source>
         <translation>включено</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="86"/>
+        <location filename="../qml/PolicyBanner.qml" line="110"/>
         <source>bloqué</source>
         <translation>заблокировано</translation>
     </message>
     <message>
-        <location filename="../qml/PolicyBanner.qml" line="87"/>
+        <location filename="../qml/PolicyBanner.qml" line="111"/>
         <source>%1 %2 pour %3. Recharger la page pour appliquer ?</source>
         <translation>%1 — %2 для %3. Перезагрузить страницу для применения?</translation>
+    </message>
+    <message>
+        <location filename="../qml/PolicyBanner.qml" line="122"/>
+        <source>Mode restreint · JS désactivé · %1</source>
+        <translation>Ограниченный режим · JS отключён · %1</translation>
+    </message>
+</context>
+<context>
+    <name>NavigationGuard</name>
+    <message>
+        <location filename="../src/security/NavigationGuard.h" line="212"/>
+        <source>Attaque homographique IDN détectée : mélange de caractères alphabétiques suspects.</source>
+        <translation>Обнаружена IDN-гомографическая атака: подозрительное смешение алфавитов.</translation>
+    </message>
+    <message>
+        <location filename="../src/security/NavigationGuard.h" line="215"/>
+        <source>Port réseau dangereux ou restreint.</source>
+        <translation>Опасный или заблокированный сетевой порт.</translation>
     </message>
 </context>
 <context>

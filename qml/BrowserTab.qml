@@ -40,7 +40,10 @@ WebEngineView {
     signal findResultUpdated(string result)
     signal pdfFinished(string path, bool success)
     signal localLoaded()
+    signal restrictedModeTriggered(var view, string reason)
 
+    property bool restrictedMode: false
+    property string restrictedReason: ""
     property string blockedHttpUrl: ""
     property int blockedHttpEpoch: -1
     readonly property bool temporaryContext: !!temporaryProfile
@@ -72,18 +75,35 @@ WebEngineView {
     }
     audioMuted: isMuted
     onRecentlyAudibleChanged: function(value) { tabPropertyUpdate(index, "audible", value) }
-    settings.javascriptEnabled: controller ? controller.settingFor(initialUrl, "javascript", tabUid) : true
-    settings.localStorageEnabled: controller ? controller.settingFor(initialUrl, "storage", tabUid) : true
-    settings.javascriptCanOpenWindows: controller ? controller.popupMode(initialUrl, tabUid) !== 2 : true
+    settings.javascriptEnabled: !restrictedMode && (controller ? controller.settingFor(url, "javascript", tabUid) : true)
+    settings.localStorageEnabled: !restrictedMode && (controller ? controller.settingFor(url, "storage", tabUid) : true)
+    settings.javascriptCanOpenWindows: !restrictedMode && (controller ? controller.popupMode(url, tabUid) !== 2 : true)
     settings.localContentCanAccessRemoteUrls: false
     settings.localContentCanAccessFileUrls: false
     settings.allowRunningInsecureContent: false
     settings.unknownUrlSchemePolicy: WebEngineSettings.DisallowUnknownUrlSchemes
     settings.webRTCPublicInterfacesOnly: true
     settings.fullScreenSupportEnabled: true
+
+    Component.onCompleted: {
+        if (store && initialUrl !== "about:blank" && store.requiresRestrictedBrowsing(initialUrl)) {
+            web.restrictedMode = true
+            web.restrictedReason = store.restrictedBrowsingReason(initialUrl)
+            if (isCurrentTab) restrictedModeTriggered(web, web.restrictedReason)
+        }
+    }
+
     onNavigationRequested: function(request) {
         if (request.isMainFrame) {
             web.navigationEpoch++
+            if (store && store.requiresRestrictedBrowsing(request.url)) {
+                web.restrictedMode = true
+                web.restrictedReason = store.restrictedBrowsingReason(request.url)
+                if (isCurrentTab) restrictedModeTriggered(web, web.restrictedReason)
+            } else {
+                web.restrictedMode = false
+                web.restrictedReason = ""
+            }
             if (request.url.toString() !== web.upgradeExpectedUrl) {
                 web.upgradedFromHttpUrl = ""
                 web.upgradeExpectedUrl = ""
@@ -142,13 +162,24 @@ WebEngineView {
     onPdfPrintingFinished: function(filePath, success) {
         pdfFinished(filePath, success)
     }
-    onPermissionRequested: function(permission) { askPermissionRequested(permission, web) }
+    onPermissionRequested: function(permission) {
+        if (web.restrictedMode) {
+            permission.deny()
+            return
+        }
+        askPermissionRequested(permission, web)
+    }
     onFindTextFinished: function(result) { if (isCurrentTab) findResultUpdated(result.activeMatch + " / " + result.numberOfMatches) }
     onNewWindowRequested: function(request) {
         const mode = controller ? controller.popupMode(url, tabUid) : 0
         const permitted = mode !== 2 && (request.userInitiated || mode === 1) && /^https?:\/\//i.test(request.requestedUrl.toString())
         if (controller) controller.notePopup(tabUid, url, !permitted)
         if (permitted) newTabRequested(request.requestedUrl.toString())
+    }
+    onIsCurrentTabChanged: {
+        if (isCurrentTab && web.restrictedMode && url.toString() !== "about:blank") {
+            restrictedModeTriggered(web, web.restrictedReason)
+        }
     }
     onLoadingChanged: function(info) {
         if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) localLoaded()
@@ -157,6 +188,9 @@ WebEngineView {
             web.upgradedFromHttpUrl = ""
             web.upgradeExpectedUrl = ""
             if (!isPrivate && store) store.recordVisit(url.toString(), title)
+            if (web.restrictedMode && isCurrentTab) {
+                restrictedModeTriggered(web, web.restrictedReason)
+            }
         }
         if (info.status === WebEngineView.LoadFailedStatus && isCurrentTab) {
             if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && info.url.toString() === web.upgradeExpectedUrl) {

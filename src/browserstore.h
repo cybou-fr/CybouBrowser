@@ -147,6 +147,12 @@ public:
     Q_INVOKABLE bool isPrivateNetwork(const QUrl &url) const {
         return NavigationGuard::isPrivateNetwork(url);
     }
+    Q_INVOKABLE bool requiresRestrictedBrowsing(const QUrl &url) const {
+        return NavigationGuard::requiresRestrictedBrowsing(url);
+    }
+    Q_INVOKABLE QString restrictedBrowsingReason(const QUrl &url) const {
+        return NavigationGuard::restrictedBrowsingReason(url);
+    }
     Q_INVOKABLE bool shouldUpgradeToHttps(const QUrl &url) const {
         if (!httpsFirst()) return false;
         if (url.scheme().compare("http", Qt::CaseInsensitive) != 0) return false;

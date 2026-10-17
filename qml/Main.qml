@@ -1174,6 +1174,21 @@ ApplicationWindow {
                     window.applyViewPolicy(currentView, currentView.url)
                 }
             }
+            onExitSiteRequested: {
+                policyBanner.close()
+                if (currentView) {
+                    if (currentView.canGoBack) currentView.goBack()
+                    else currentView.url = "about:blank"
+                }
+            }
+            onEnableJsRequested: {
+                policyBanner.close()
+                if (currentView) {
+                    currentView.restrictedMode = false
+                    currentView.reload()
+                    window.showStatus(qsTr("JavaScript activé pour cette session."))
+                }
+            }
         }
         FindBar {
             id: findBar
@@ -1217,6 +1232,7 @@ ApplicationWindow {
             onClosePolicyBanner: if (policyBanner) policyBanner.close()
             onRestartSaveTimer: saveTimer.restart()
             onCancelPermissionRequested: window.cancelPermission()
+            onRestrictedModeTriggered: function(view, reason) { if (view === currentView) policyBanner.showRestricted(reason, view.tabUid, view.navigationEpoch, view.url.toString()) }
             onFindResultUpdated: function(res) { window.findResult = res }
             onLocalLoaded: window.smokeLocalLoaded = true
             onPdfFinished: function(filePath, success) {

@@ -4,8 +4,10 @@
 #include <QHostAddress>
 #include <QStringList>
 #include <QChar>
+#include <QCoreApplication>
 
 class NavigationGuard {
+    Q_DECLARE_TR_FUNCTIONS(NavigationGuard)
 public:
     static bool isLocalHost(const QUrl &url) {
         const QString host = url.host().toLower();
@@ -178,5 +180,42 @@ public:
             }
         }
         return false;
+    }
+
+    static bool isRestrictedPort(int port) {
+        if (port <= 0 || port > 65535) return false;
+        if (port == 80 || port == 443 || port == 8080 || port == 8443) return false;
+        switch (port) {
+        case 1: case 7: case 9: case 11: case 13: case 15: case 17: case 19:
+        case 20: case 21: case 22: case 23: case 25: case 37: case 42: case 43:
+        case 53: case 77: case 79: case 87: case 95: case 101: case 102: case 103:
+        case 104: case 109: case 110: case 111: case 113: case 115: case 117:
+        case 119: case 123: case 135: case 139: case 143: case 179: case 389:
+        case 445: case 465: case 512: case 513: case 514: case 515: case 526:
+        case 530: case 531: case 532: case 540: case 556: case 563: case 587:
+        case 601: case 636: case 993: case 995: case 2049: case 3389: case 3659:
+        case 4045: case 6000: case 6379: case 6665: case 6666: case 6667:
+        case 6668: case 6669: case 11211: case 27017:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    static bool requiresRestrictedBrowsing(const QUrl &url) {
+        if (!url.isValid() || url.host().isEmpty()) return false;
+        if (hasSuspiciousIdn(url)) return true;
+        if (url.port() != -1 && isRestrictedPort(url.port())) return true;
+        return false;
+    }
+
+    static QString restrictedBrowsingReason(const QUrl &url) {
+        if (hasSuspiciousIdn(url)) {
+            return tr("Attaque homographique IDN détectée : mélange de caractères alphabétiques suspects.");
+        }
+        if (url.port() != -1 && isRestrictedPort(url.port())) {
+            return tr("Port réseau dangereux ou restreint.");
+        }
+        return {};
     }
 };
