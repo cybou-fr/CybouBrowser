@@ -8,6 +8,7 @@
 #include <QSslSocket>
 #include <QTcpServer>
 #include <QTimer>
+#include <QtWebEngineCore/QWebEngineProfileBuilder>
 #include <QtWebEngineCore/QWebEngineCertificateError>
 #include <QtWebEngineCore/QWebEnginePage>
 #include <QtWebEngineCore/QWebEngineProfile>
@@ -18,9 +19,15 @@
 // Public, test-only key/certificate; never installed as a trust anchor.
 class BoundaryTlsServer final : public QTcpServer {
 public:
+    ~BoundaryTlsServer() override {
+        // QObject destroys socket children after derived members; detach callbacks first.
+        onSocketClosed = {};
+        for (auto socket : findChildren<QSslSocket *>()) { socket->disconnect(); socket->abort(); }
+    }
     QSslCertificate certificate;
     QSslKey key;
     int handshakes = 0;
+    int httpRequests = 0;
     int closedSockets = 0;
     QSet<QSslSocket *> activeSockets;
     std::function<void()> onSocketClosed;
@@ -66,6 +73,7 @@ protected:
                 socket->write(QByteArray::fromHex("8104") + "live");
                 return;
             }
+            ++httpRequests;
             const QByteArray body("<!doctype html><title>TLS fixture</title>");
             socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
             socket->disconnectFromHost();
@@ -168,4 +176,108 @@ inline bool runTlsBoundaryTests() {
     deadline.stop();
     tls.onSocketClosed = {};
     return passed;
+}
+
+
+inline bool runTlsCertificateMatrixTests() {
+#if QT_VERSION < QT_VERSION_CHECK(6, 10, 0)
+    qCritical() << "TLS_CERTIFICATE_MATRIX_TEST BLOCKED: profile-local CA trust requires Qt 6.10+";
+    return false;
+#else
+    QFile rootFile("tests/security/fixtures/tls/test-ca-cert.pem"), keyFile("tests/security/fixtures/tls/localhost-key.pem");
+    if (!rootFile.open(QIODevice::ReadOnly) || !keyFile.open(QIODevice::ReadOnly)) return false;
+    const QSslCertificate root(rootFile.readAll());
+    const QSslKey key(keyFile.readAll(), QSsl::Rsa);
+    if (root.isNull() || key.isNull()) return false;
+    struct Entry { const char *name; int expectedError; bool trustRoot = true; };
+    const Entry entries[] = {{"valid", 0}, {"expired", int(QWebEngineCertificateError::CertificateDateInvalid)},
+                             {"mismatch", int(QWebEngineCertificateError::CertificateCommonNameInvalid)},
+                             {"untrusted-ca", int(QWebEngineCertificateError::CertificateAuthorityInvalid), false}};
+    for (const auto &entry : entries) {
+        const auto leafName = QString(entry.name) == "untrusted-ca" ? QString("valid") : QString(entry.name);
+        QFile leafFile(QString("tests/security/fixtures/tls/%1-cert.pem").arg(leafName));
+        if (!leafFile.open(QIODevice::ReadOnly)) return false;
+        BoundaryTlsServer tls;
+        tls.certificate = QSslCertificate(leafFile.readAll()); tls.key = key;
+        if (tls.certificate.isNull() || !tls.listen(QHostAddress::LocalHost)) return false;
+        const auto now = QDateTime::currentDateTimeUtc();
+        if ((entry.expectedError == 0 && (now < tls.certificate.effectiveDate() || now > tls.certificate.expiryDate()))
+            || (QString(entry.name) == "expired" && now <= tls.certificate.expiryDate())) {
+            qCritical() << "TLS_CERTIFICATE_MATRIX_TEST FAIL: fixture date precondition" << entry.name; return false;
+        }
+        QTcpServer source;
+        if (!source.listen(QHostAddress::LocalHost)) return false;
+        QObject::connect(&source, &QTcpServer::newConnection, &source, [&] {
+            while (auto socket = source.nextPendingConnection()) {
+                QObject::connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+                QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket] {
+                    socket->readAll();
+                    const QByteArray body("<!doctype html><title>Matrix source</title>");
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+                    socket->disconnectFromHost();
+                });
+            }
+        });
+        QWebEngineProfileBuilder builder;
+        if (entry.trustRoot) builder.setAdditionalTrustedCertificates({root});
+        builder.setPersistentCookiesPolicy(QWebEngineProfile::NoPersistentCookies);
+        builder.setHttpCacheType(QWebEngineProfile::MemoryHttpCache);
+        std::unique_ptr<QWebEngineProfile> profile(builder.createProfile(QString()));
+        if (!profile || !profile->isOffTheRecord()) { qCritical() << "TLS_CERTIFICATE_MATRIX_TEST FAIL: profile must be off the record"; return false; }
+        RequestObserver observer(profile.get());
+        observer.setHttpsOnly(false); // Only to serve the loopback WSS initiator over HTTP.
+        profile->setUrlRequestInterceptor(&observer);
+        QWebEnginePage page(profile.get());
+        QEventLoop loop;
+        QTimer deadline;
+        deadline.setSingleShot(true);
+        QSet<int> errors;
+        int phase = 0;
+        bool passed = false;
+        auto fail = [&](const QString &reason) { qCritical() << "TLS_CERTIFICATE_MATRIX_TEST FAIL" << entry.name << phase << reason << errors; loop.quit(); };
+        QObject::connect(&deadline, &QTimer::timeout, &loop, [&] { fail("timeout"); });
+        QObject::connect(&page, &QWebEnginePage::certificateError, &loop, [&](QWebEngineCertificateError error) {
+            errors.insert(int(error.type()));
+            error.rejectCertificate(); // No certificate-error acceptance path in this matrix.
+        });
+        auto websocket = [&] {
+            phase = 2;
+            page.runJavaScript(QString(R"JS((()=>{window.matrixSocket=new WebSocket('wss://127.0.0.1:%1/socket');matrixSocket.onmessage=e=>{if(e.data==='live')document.title='matrix-live'};matrixSocket.onerror=()=>document.title='matrix-denied'})())JS").arg(tls.serverPort()));
+        };
+        QObject::connect(&page, &QWebEnginePage::loadFinished, &loop, [&](bool ok) {
+            if (phase == 0) {
+                if (entry.expectedError == 0) {
+                    if (!ok || !errors.isEmpty() || tls.httpRequests != 1) { fail("trusted valid leaf failed"); return; }
+                    websocket();
+                } else {
+                    if (ok || !errors.contains(entry.expectedError) || tls.httpRequests != 0 || tls.handshakes != 0) {
+                        fail("missing exact HTTPS date/name rejection or application access escaped"); return;
+                    }
+                    phase = 1;
+                    QTimer::singleShot(0, &page, [&] { page.load(QUrl(QString("http://127.0.0.1:%1/page").arg(source.serverPort()))); });
+                }
+            } else if (phase == 1) {
+                if (!ok) { fail("local source failed"); return; }
+                websocket();
+            }
+        });
+        QObject::connect(&page, &QWebEnginePage::titleChanged, &loop, [&](const QString &title) {
+            if (phase != 2 || (title != "matrix-live" && title != "matrix-denied")) return;
+            if (entry.expectedError == 0) {
+                if (title != "matrix-live" || tls.handshakes != 1 || !errors.isEmpty()) { fail("valid WSS positive control"); return; }
+            } else if (title != "matrix-denied" || tls.handshakes != 0 || tls.httpRequests != 0) {
+                fail("invalid WSS reached server HTTP layer"); return;
+            }
+            passed = true;
+            qInfo() << "TLS_CERTIFICATE_MATRIX_CASE PASS" << entry.name << "exactError" << entry.expectedError;
+            loop.quit();
+        });
+        deadline.start(15000);
+        page.load(QUrl(QString("https://127.0.0.1:%1/page").arg(tls.serverPort())));
+        loop.exec(); deadline.stop();
+        if (!passed) return false;
+    }
+    qInfo() << "TLS_CERTIFICATE_MATRIX_TEST PASS: profile-local CA, valid HTTPS/WSS, exact date/name/authority HTTPS errors, invalid WSS denied before HTTP handshake; no error bypass";
+    return true;
+#endif
 }

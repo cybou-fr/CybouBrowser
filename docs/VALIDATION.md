@@ -73,3 +73,11 @@ Artifacts: `build/http-context-connections/report.json`, `transport.log`, source
 Release `cybou_tests` rebuilt and `--security-test` exited 0. `TLS_BOUNDARY_TEST PASS` confirms self-signed HTTPS/WSS rejection; a real WSS message in an exact-pinned isolated test-only positive profile; no allowance leaking to another profile; and server-observed active WSS disconnect after destroying the owning QWebEnginePage. The existing CORS/ws and native security assertions also passed in that run.
 
 Artifacts: `build/tls-boundaries/report.json`, `security.log`, tested source/PEM snapshots and tracked patch. Expected Chromium certificate-authority handshake errors in the log are negative-test observations. No system trust store or production certificate policy changed. Cases remain in_progress and controls remain not_verified: the full TLS matrix, production temporary-profile/UI revoke and public/private DNS boundaries are still open. Only the affected security suite was rerun.
+
+## Precise TLS certificate matrix — 2026-10-18
+
+The final Release security run exited 0. All four cases passed: valid private-CA HTTPS/WSS; expired leaf (-201); hostname mismatch (-200); and no test-CA trust in a fresh profile (-202). Invalid WSS cases reached no HTTP upgrade handler. The positive uses native certificate validation with profile-local CA trust and no certificate-error acceptance callback. Existing CORS/ws, untrusted TLS/WSS, live page teardown and security regressions also passed.
+
+The first matrix attempt exposed a test-server teardown crash after the positive case. Socket callbacks are now disconnected before server member destruction, and profiles are off-the-record. The failing log is retained as `build/tls-certificate-matrix/security-before-cleanup-fix.log`; final evidence is `report.json`, `security.log`, source/fixture snapshots and patch in that directory. The report fingerprints current source files, binary, log and fixture bytes. No production policy changed, and cases/controls remain in_progress/not_verified for the broader open requirements.
+
+This matrix needs Qt 6.10+ profile-local trust; the source retains the Qt 6.9 compilation baseline but reports the unavailable verification as BLOCKED there. No OS trust store was modified.

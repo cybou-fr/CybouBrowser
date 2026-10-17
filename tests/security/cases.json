@@ -72,12 +72,13 @@
       "coveredScenarios": [
         "strict HTTP/credential denial and existing-document subresource policy regression",
         "self-signed HTTPS and WSS rejected before application/WebSocket access",
-        "separate test-only TLS allowance limited to exact leaf and endpoint"
+        "separate test-only TLS allowance limited to exact leaf and endpoint",
+        "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake"
       ],
       "remainingScenarios": [
-        "trusted CA, expiry, hostname mismatch and revocation matrix",
-        "TLS protocol/cipher qualification",
-        "production redirect/downgrade adversarial matrix"
+        "OCSP/CRL revocation and TLS protocol/cipher matrix",
+        "production profile/UI redirect, downgrade and WSS revoke regression",
+        "public/private routing and DNS changes"
       ]
     },
     {
@@ -645,12 +646,13 @@
         "untrusted self-signed WSS rejected with no server handshake",
         "separate exact-leaf test-only allowance enables real WSS handshake and message",
         "test-only certificate exception does not affect another isolated profile",
-        "destroying an owning QWebEnginePage disconnects a live WSS socket on the server"
+        "destroying an owning QWebEnginePage disconnects a live WSS socket on the server",
+        "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake"
       ],
       "remainingScenarios": [
-        "trusted CA, expiry, hostname mismatch and revocation TLS matrix",
-        "public-to-private routing and DNS changes",
-        "WSS in production temporary HTTP profiles and UI revoke teardown"
+        "OCSP/CRL revocation and TLS protocol/cipher matrix",
+        "production profile/UI redirect, downgrade and WSS revoke regression",
+        "public/private routing and DNS changes"
       ],
       "additionalSuites": [
         "transport"

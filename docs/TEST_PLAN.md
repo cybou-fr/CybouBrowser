@@ -79,3 +79,11 @@ This tests real temporary-profile HTTP connection teardown and plain-ws denial, 
 A separate positive-control page accepts only the exact fixture leaf fingerprint at the server's loopback address/port, loads HTTPS and receives an actual WSS message. The negative profile must still reject WSS after that exception. The test then destroys the owning positive page without calling WebSocket.close; the server must observe the live socket disconnect. The entire fixture has a 25-second deadline and fails without a working TLS backend.
 
 This proves the engine/page lifecycle subset. The fixture is not a trusted public-CA handshake, expired/hostname/revocation matrix, protocol/cipher qualification or a production temporary-profile UI revoke test. The positive certificate handler exists only in the test header. Run tests from the repository root; OpenSSL is not a runtime dependency.
+
+## Precise TLS validity / hostname matrix
+
+The security suite now additionally calls `runTlsCertificateMatrixTests()`. Each case uses a fresh off-the-record WebEngine profile. A committed public test CA is trusted only in the applicable profile via Qt 6.10+ additional certificate trust. Unlike the earlier isolated leaf positive control, this matrix never accepts certificate errors.
+
+The valid leaf must load HTTPS without any certificate-error callback and deliver an actual WSS message. Expired and wrong-SAN leaves must fail HTTPS with CertificateDateInvalid (-201) and CertificateCommonNameInvalid (-200), and reach neither the HTTPS handler nor the WSS upgrade endpoint. A final fresh profile without the test CA must reject the otherwise valid leaf with CertificateAuthorityInvalid (-202), proving prior profile-local trust was not inherited. Each case has a 15-second deadline; validity preconditions are checked against current UTC.
+
+The test TLS server explicitly detaches socket callbacks before derived state is destroyed. This fixes the teardown crash exposed by moving between matrix cases. Public fixture regeneration is documented under `tests/security/fixtures/tls/README.md`; no OpenSSL runtime, system CA install or global TLS bypass is used. OCSP/CRL, protocol/cipher, public-CA interoperability and production UI revoke remain separate qualification work.

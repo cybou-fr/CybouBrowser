@@ -2430,8 +2430,8 @@
         "src/security/TlsBoundaryTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Self-signed rejection now exercised at runtime. Add expired, hostname-mismatch, revocation and redirect-chain TLS fixtures plus packaged production-profile checks.",
-      "partialVerification": "2026-10-18 local security suite PASS: self-signed HTTPS/WSS rejection, pinned test-only positive message, isolated exception and owning page teardown. See build/tls-boundaries/report.json; broader control remains not_verified."
+      "remainingWork": "Add OCSP/CRL revocation, TLS protocol/cipher and redirects/downgrade matrix, production temporary-profile/UI WSS revoke and public/private DNS scenarios. Private test CA is not public-CA service qualification.",
+      "partialVerification": "2026-10-18 security PASS: valid private-CA HTTPS/WSS, expired (-201), mismatch (-200), authority (-202); invalid WSS never reaches HTTP handler. See build/tls-certificate-matrix/report.json. Broader control remains not_verified."
     },
     {
       "id": "ASVS:v5.0.0-12.3.3",
@@ -3751,8 +3751,8 @@
         "src/security/TlsBoundaryTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Controlled TLS protocol/cipher/certificate endpoint matrix remains missing.",
-      "partialVerification": "2026-10-18 local security suite PASS: self-signed HTTPS/WSS rejection, pinned test-only positive message, isolated exception and owning page teardown. See build/tls-boundaries/report.json; broader control remains not_verified."
+      "remainingWork": "Add OCSP/CRL revocation, TLS protocol/cipher and redirects/downgrade matrix, production temporary-profile/UI WSS revoke and public/private DNS scenarios. Private test CA is not public-CA service qualification.",
+      "partialVerification": "2026-10-18 security PASS: valid private-CA HTTPS/WSS, expired (-201), mismatch (-200), authority (-202); invalid WSS never reaches HTTP handler. See build/tls-certificate-matrix/report.json. Broader control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CRYP-02",
@@ -3955,8 +3955,8 @@
         "src/security/TlsBoundaryTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "ws policy and temporary HTTP ws-denial pass. WSS self-signed rejection, isolated pinned positive message and owner-page teardown pass. Still require full TLS validity matrix, production temporary-profile UI revoke and public-to-private/DNS checks.",
-      "partialVerification": "2026-10-18 local security suite PASS: self-signed HTTPS/WSS rejection, pinned test-only positive message, isolated exception and owning page teardown. See build/tls-boundaries/report.json; broader control remains not_verified."
+      "remainingWork": "Add OCSP/CRL revocation, TLS protocol/cipher and redirects/downgrade matrix, production temporary-profile/UI WSS revoke and public/private DNS scenarios. Private test CA is not public-CA service qualification.",
+      "partialVerification": "2026-10-18 security PASS: valid private-CA HTTPS/WSS, expired (-201), mismatch (-200), authority (-202); invalid WSS never reaches HTTP handler. See build/tls-certificate-matrix/report.json. Broader control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CLNT-11",
