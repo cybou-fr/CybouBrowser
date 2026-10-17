@@ -9,6 +9,19 @@ Item {
     property bool privateMode: false
     signal navigateRequested(string text)
     signal libraryRequested(string section)
+    signal settingsRequested()
+
+    // Cloud Services Launcher (Mail button + 3x3 App Launcher) in top-right corner
+    CloudAppLauncher {
+        id: cloudLauncher
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 20
+        anchors.topMargin: 16
+        z: 10
+        onNavigateRequested: function(url) { root.navigateRequested(url) }
+        onSettingsRequested: root.settingsRequested()
+    }
 
     // Wallpaper source resolution
     readonly property string wallpaperSource: {

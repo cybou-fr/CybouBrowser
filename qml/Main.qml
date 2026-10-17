@@ -1291,6 +1291,7 @@ ApplicationWindow {
         privateMode: window.privateMode
         onNavigateRequested: function(text) { window.navigate(text) }
         onLibraryRequested: function(section) { window.showLibrary(section) }
+        onSettingsRequested: settingsPanel.open()
     }
     Dialog {
         id: behaviorDialog

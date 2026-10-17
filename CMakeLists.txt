@@ -49,6 +49,8 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         qml/GlassToolTip.qml
         qml/SettingsPanel.qml
         qml/CloudSettingsSection.qml
+        qml/CloudAppTile.qml
+        qml/CloudAppLauncher.qml
         qml/AdaptiveAddress.qml
         qml/ControlBarInline.qml
         qml/ControlBarOverflow.qml
