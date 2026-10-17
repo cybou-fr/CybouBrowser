@@ -9,7 +9,7 @@
 #include "../security/NetworkPolicy.h"
 #include "../security/TrackerBlocker.h"
 #include "../security/HttpNavigationLease.h"
-#include "../security/TrackerExceptionLease.h"
+#include "../security/TrackerExceptionRegistry.h"
 
 // A bounded metadata sample, profile scope only. Never reads headers or bodies.
 class RequestObserver final : public QWebEngineUrlRequestInterceptor {
@@ -22,13 +22,17 @@ public:
     bool allowHttpNavigation(const QUrl &url) { return httpLease.start(url); }
     bool canStartHttpNavigation(const QUrl &url) const { return httpLease.canStart(url); }
     void revokeHttpNavigation() { httpLease.revoke(); }
-    bool allowTrackersForDocument(const QUrl &url, bool testHttp = false, bool isolatedProfile = false) {
-        const bool started = trackerLease.start(url, testHttp);
-        trackerProfile.store(started && isolatedProfile);
-        return started;
+    bool allowTrackersForOrigin(const QUrl &url, QObject *owner, bool testHttp = false) {
+        return trackerRegistry.grant(url, owner, testHttp);
     }
-    bool canStartTrackerDocument(const QUrl &url) const { return trackerLease.canStart(url); }
-    void revokeTrackers() { trackerProfile.store(false); trackerLease.revoke(); }
+    bool isTrackerAllowed(const QUrl &url) const { return trackerRegistry.allows(url); }
+    bool revokeTrackersForOrigin(const QUrl &url) { return trackerRegistry.revoke(url); }
+    void retainTrackersForOwner(const QObject *owner, const QUrl &currentUrl) {
+        trackerRegistry.retainForOwner(owner, currentUrl);
+    }
+    void releaseTrackerOwner(const QObject *owner) {
+        trackerRegistry.releaseOwner(owner);
+    }
     struct Event { QString origin; QString firstParty; int type; qint64 time; bool blocked; QString reason; QString decision; };
     void interceptRequest(QWebEngineUrlRequestInfo &info) override {
         const auto url = info.requestUrl();
@@ -36,10 +40,9 @@ public:
         if (NetworkPolicy::hasWebCredentials(url)) reason = "embedded-credentials";
         else if (NetworkPolicy::blocks(url, strictHttps.load())
                  && !httpLease.allows(url, info.firstPartyUrl(), info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame)) reason = "insecure-transport";
-        else if (info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame && !trackerLease.consume(url) && trackerProfile.load()) reason = "temporary-navigation";
         else if (blockTrackers.load() && info.resourceType() != QWebEngineUrlRequestInfo::ResourceTypeMainFrame
                  && TrackerBlocker::isTracker(url, info.firstPartyUrl())) {
-            if (trackerLease.allows(info.firstPartyUrl())) decision = "tracker-exception";
+            if (trackerRegistry.allows(info.firstPartyUrl())) decision = "tracker-exception";
             else { reason = "tracker-rule"; blockedTrackersCount.fetch_add(1, std::memory_order_relaxed); }
         }
         const bool blocked = !reason.isEmpty();
@@ -102,6 +105,5 @@ private:
     mutable QMutex mutex;
     QQueue<Event> events;
     HttpNavigationLease httpLease;
-    std::atomic_bool trackerProfile{false};
-    TrackerExceptionLease trackerLease;
+    TrackerExceptionRegistry trackerRegistry;
 };

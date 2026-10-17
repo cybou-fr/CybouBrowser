@@ -204,37 +204,32 @@ ApplicationWindow {
     readonly property var activeProfile: privateMode ? privateProfile : persistentProfile
     readonly property var currentProfile: currentView ? currentView.profile : activeProfile
     property var temporaryProfiles: ({})
+    property int trackerExceptionRevision: 0
+    Connections {
+        target: browserStore
+        function onTrackerExceptionsChanged() { window.trackerExceptionRevision++ }
+    }
     readonly property var transportState: {
+        window.trackerExceptionRevision
         const view = currentView
         const pending = !!view && view.blockedHttpUrl.length > 0 && view.blockedHttpEpoch === view.navigationEpoch
+        const trackerActive = !!view && browserStore.isTrackerAllowedInProfile(view.profile, view.url)
         return {httpPending:pending, httpOrigin:pending ? browserStore.origin(view.blockedHttpUrl) : "",
             httpToken:view ? view.tabUid + "@" + view.navigationEpoch : "",
             httpTemporary:!!view && view.temporaryTransport,
-            trackerTemporary:!!view && (view.temporaryTrackers || view.inPlaceTrackerException),
-            trackerCanAllow:!!view && !view.loading && !view.temporaryContext && !view.inPlaceTrackerException && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
+            trackerTemporary:trackerActive,
+            trackerCanAllow:!!view && !view.loading && !view.temporaryContext && !trackerActive && browserStore.blockTrackers && browserStore.canRequestTemporaryTrackers(view.url)}
     }
     function allowTemporaryTrackers(token) {
         if (!currentView || !transportState.trackerCanAllow || token !== transportState.httpToken) return false
-        if (trackerTestMode) {
-            const profile = browserStore.createTemporaryTrackerProfile(currentView.url)
-            if (!profile) return false
-            window.replaceGrantedView(currentView, currentView.url.toString(), profile)
-            return true
-        }
-        if (!browserStore.allowTrackersInProfile(currentView.profile, currentView.url)) return false
-        currentView.inPlaceTrackerException = true
+        if (!browserStore.allowTrackersInProfile(currentView.profile, currentView.url, currentView)) return false
         currentView.reload()
         return true
     }
     function revokeTemporaryTrackers(token) {
-        if (!currentView || (!currentView.temporaryTrackers && !currentView.inPlaceTrackerException) || token !== transportState.httpToken) return false
-        if (currentView.inPlaceTrackerException) {
-            browserStore.revokeTrackersInProfile(currentView.profile)
-            currentView.inPlaceTrackerException = false
-            currentView.reload()
-            return true
-        }
-        window.replaceGrantedView(currentView)
+        if (!currentView || !transportState.trackerTemporary || token !== transportState.httpToken) return false
+        browserStore.revokeTrackersForOrigin(currentView.profile, currentView.url)
+        currentView.reload()
         return true
     }
     function offerHttp(view, url) {
@@ -1151,8 +1146,6 @@ ApplicationWindow {
             property int blockedHttpEpoch: -1
             readonly property bool temporaryContext: !!window.temporaryProfiles[tabUid]
             readonly property bool temporaryTransport: browserStore.isTemporaryHttpProfile(window.temporaryProfiles[tabUid] || null)
-            readonly property bool temporaryTrackers: browserStore.isTemporaryTrackerProfile(window.temporaryProfiles[tabUid] || null)
-            property bool inPlaceTrackerException: false
             property string policyOrigin: initialUrl !== "about:blank" ? browserStore.origin(initialUrl) : ""
             property int navigationEpoch: 0
             readonly property var grantedKeys: {
@@ -1163,7 +1156,7 @@ ApplicationWindow {
             Component.onDestruction: {
                 if (permissionCoordinator) permissionCoordinator.forgetView(web)
                 if (controlState) controlState.expireContext(tabUid)
-                if (inPlaceTrackerException) browserStore.revokeTrackersInProfile(web.profile)
+                browserStore.releaseTrackerOwner(web.profile, web)
                 window.releaseTemporaryView(tabUid)
             }
             property bool policyNeedsReload: false
@@ -1192,6 +1185,7 @@ ApplicationWindow {
             onNavigationRequested: function(request) {
                 if (request.isMainFrame) {
                     web.navigationEpoch++
+                    browserStore.retainTrackersForOwner(web.profile, web, request.url)
                     if (request.url.toString() !== web.upgradeExpectedUrl) {
                         web.upgradedFromHttpUrl = ""
                         web.upgradeExpectedUrl = ""
@@ -1201,15 +1195,6 @@ ApplicationWindow {
                     web.blockedHttpEpoch = -1
                     if (web === currentView) { policyBanner.close(); controlBar.dismiss() }
                     if (pendingPermissionView === web) window.cancelPermission()
-                    if (web.inPlaceTrackerException && !browserStore.canStartTrackerDocument(web.profile, request.url)) {
-                        browserStore.revokeTrackersInProfile(web.profile)
-                        web.inPlaceTrackerException = false
-                    }
-                    if (web.temporaryTrackers && !browserStore.canStartTrackerDocument(web.profile, request.url)) {
-                        request.reject()
-                        window.endTemporaryNavigation(web, request.url.toString())
-                        return
-                    }
                     if (web.temporaryTransport && !browserStore.canStartTemporaryHttp(web.profile, request.url)) {
                         request.reject()
                         window.endTemporaryNavigation(web, request.url.toString())
@@ -1242,7 +1227,14 @@ ApplicationWindow {
             onFullScreenRequested: function(request) { request.accept(); request.toggleOn ? window.showFullScreen() : window.showNormal() }
             onTitleChanged: if (index < tabs.count) tabs.setProperty(index, "label", url.toString() === "about:blank" ? "Nouvel onglet" : title || "Nouvel onglet")
             onIconChanged: if (index < tabs.count) tabs.setProperty(index, "favicon", icon.toString())
-            onUrlChanged: { if (browserStore.origin(web.url.toString()).length === 0) { permissionCoordinator.forgetView(web); controlState.expireContext(web.tabUid); web.policyOrigin = "" }; if (web === currentView) policyBanner.close(); if (pendingPermissionView === web) cancelPermission(); if (index === activeTab) refreshAddress(); saveTimer.restart() }
+            onUrlChanged: {
+                browserStore.retainTrackersForOwner(web.profile, web, web.url)
+                if (browserStore.origin(web.url.toString()).length === 0) { permissionCoordinator.forgetView(web); controlState.expireContext(web.tabUid); web.policyOrigin = "" };
+                if (web === currentView) policyBanner.close();
+                if (pendingPermissionView === web) cancelPermission();
+                if (index === activeTab) refreshAddress();
+                saveTimer.restart()
+            }
             onCertificateError: function(error) {
                 error.rejectCertificate()
                 if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && web.url.toString() === web.upgradeExpectedUrl && web === currentView) window.offerHttp(web, web.upgradedFromHttpUrl)

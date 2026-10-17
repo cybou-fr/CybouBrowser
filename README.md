@@ -102,11 +102,11 @@ The static tracker suffix list is a limited network filter. Risk-adaptive restri
 
 The connection indicator becomes an HTTP consent/revoke button when applicable. A vertical separator divides the capability controls from downloads. Drag the unused tab-strip area to move the window; double-click it to maximize or restore the previous size.
 
-### Trackers: dedicated temporary context
+### Trackers: origin-scoped temporary exception
 
 The Network glass panel groups HTTP, tracker and other events, using resource names and clear explanations. Passing a filter is not proof of a successful load. Counts are scoped to the current profile's recent sample.
 
-If filtering breaks a loaded HTTPS page, explicit consent recreates that exact page in a separate off-the-record profile without ordinary cookies/cache. Tracker-list requests with matching firstParty origin can pass while that temporary document remains active. Existing behavior restrictions are inherited, while device grants are not copied. The panel provides immediate revocation of the temporary exception. Reload, later navigation, tab closure or manual revoke end the temporary context; other tabs retain tracker filtering. This mode does not combine with HTTP exceptions. See [ADR 0004](docs/ADR/0004-temporary-tracker-exceptions.md).
+If filtering breaks a loaded HTTPS page, explicit consent grants a temporary tracker exception for that origin in the profile without losing login state, cookies, or session storage. The exception belongs to the tab that requested it and stays active while that tab remains on the origin. Tabs showing the same origin share and truthfully reflect this active exception in the Network panel. Navigating the owner tab away, closing it, or manually revoking from the panel immediately clears the exception. This mode does not combine with HTTP exceptions. See [ADR 0005](docs/ADR/0005-origin-scoped-tracker-exceptions.md).
 
 ## Security and UX: what we are building next
 

@@ -193,7 +193,7 @@ void ControlBarController::refresh() {
         if (key == "network") {
             state = m_profile ? PolicyState::Ask : PolicyState::Unavailable; canAct = false;
             scope = tr("Profil entier · observation seulement");
-            if (m_store && (m_store->isTemporaryHttpProfile(m_profile) || m_store->isTemporaryTrackerProfile(m_profile))) scope = tr("Profil temporaire réservé à cet onglet");
+            if (m_store && m_store->isTemporaryHttpProfile(m_profile)) scope = tr("Profil temporaire réservé à cet onglet");
             reason = tr("Échantillon des décisions du filtre, pas une preuve de chargement réussi. Origines et types uniquement, sans contenu ni chemin d’adresse. Dans un profil partagé, ces événements ne sont pas attribuables à un onglet.");
             eventRows.clear();
             QHash<QString,int> categoryRows;

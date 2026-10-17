@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     }
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
-        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest, transportTest, surfaceTest] {
+        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, controlBarTest, transportTest, trackerTest, surfaceTest] {
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->requestActivate(); QCoreApplication::processEvents();
             QTest::mouseMove(dragWindow, QPoint(80, 300));
@@ -273,11 +273,11 @@ int main(int argc, char *argv[])
             auto attempts = std::make_shared<int>(0);
             auto controlStarted = std::make_shared<bool>(false);
             auto retiredHttpProfile = std::make_shared<QPointer<QObject>>();
-            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, controlStarted, retiredHttpProfile] {
+            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, trackerTest, controlStarted, retiredHttpProfile] {
                 QVariant state;
                 if (*controlStarted) {
                     QMetaObject::invokeMethod(root, transportTest ? "pollTransportTest" : "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
-                    if (transportTest) {
+                    if (transportTest && !trackerTest) {
                         const auto value = root->property("transportTestProfile");
                         QObject *profile = value.value<QObject *>();
                         if (!profile) profile = value.value<QJSValue>().toQObject();
