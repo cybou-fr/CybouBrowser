@@ -31,6 +31,7 @@ public:
     qsizetype pendingCount() const { return (m_pending ? 1 : 0) + m_queue.size(); }
     qsizetype queuedCount() const { return m_queue.size(); }
     static QStringList keysFor(QWebEnginePermission::PermissionType type);
+    static QWebEnginePermission::PermissionType typeFor(const QString &key);
     Q_INVOKABLE bool submit(const QWebEnginePermission &permission, QObject *view, QObject *profile,
                             bool foreground, bool policyDenied);
     Q_INVOKABLE bool resolve(bool allow, QObject *activeView, QObject *activeProfile, quint64 requestId);
@@ -38,12 +39,15 @@ public:
     Q_INVOKABLE void forgetView(QObject *view);
     Q_INVOKABLE void documentLoaded(QObject *view, quint64 epoch);
     Q_INVOKABLE void revokeAll();
+    Q_INVOKABLE bool revokeLease(QObject *view, const QString &key = QString(), bool deny = false);
     Q_INVOKABLE QStringList grantedKeys(QObject *view, quint64 epoch) const;
     Q_INVOKABLE bool hasPendingFor(const QString &tab) const;
 
-    // Unit test helper to test queue and cancellation lifecycle without a live browser engine:
+    // Unit test helpers to test queue, lease lifecycle and cancellation without a live browser engine:
     bool enqueueTestRequest(quint64 id, QObject *view, QObject *profile, const QString &tabUid,
                            const QUrl &topOrigin, quint64 epoch, qint64 timeoutMs = 15000);
+    bool grantTestLease(quint64 id, QObject *view, QObject *profile, const QString &tabUid,
+                        const QUrl &topOrigin, quint64 epoch, const QStringList &keys);
 
 signals:
     void changed();
@@ -51,6 +55,7 @@ signals:
     void requestObserved(const QWebEnginePermission &permission, const QString &tab, const QUrl &top, bool blocked, quint64 requestId = 0);
     void decisionFinished(const QWebEnginePermission &permission, const QString &tab, bool allowed, quint64 requestId = 0);
     void revokeDocument(QObject *view);
+    void permissionRevoked(QObject *view, const QString &key);
 private:
     struct Pending {
         quint64 id = 0;

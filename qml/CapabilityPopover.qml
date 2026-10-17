@@ -140,7 +140,10 @@ Popup {
         Flow {
             Layout.fillWidth: true; spacing: 5
             visible: !!card.capability.canAct && ["camera", "mic", "location", "notifications", "clipboard"].includes(card.capability.key)
-            GlassBtn { text: qsTr("Réinitialiser et recharger"); onClicked: card.permissionRequested(card.capability.key, 0) }
+            GlassBtn {
+                text: ["camera", "mic"].includes(card.capability.key) ? qsTr("Révoquer l’accès") : qsTr("Réinitialiser")
+                onClicked: card.permissionRequested(card.capability.key, 0)
+            }
             GlassBtn { text: qsTr("Bloquer"); onClicked: card.permissionRequested(card.capability.key, 2) }
         }
         Flow {
@@ -150,7 +153,11 @@ Popup {
             GlassBtn { text: qsTr("Bloquer"); onClicked: card.policyRequested(card.capability.key, 2) }
             GlassBtn { visible: card.capability.key === "popups"; text: qsTr("Gestes explicites"); onClicked: card.policyRequested(card.capability.key, 0) }
         }
-        Label { visible: ["camera", "mic"].includes(card.capability.key); Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#C4D6EB"; font.pixelSize: 11; text: qsTr("Pour interrompre un flux déjà accordé, rechargez ou fermez l’onglet. L’arrêt n’est pas vérifiable ici.") }
+        Label {
+            visible: ["camera", "mic"].includes(card.capability.key)
+            Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#C4D6EB"; font.pixelSize: 11
+            text: qsTr("La révocation coupe immédiatement les flux média sans détruire la page ni recharger l’onglet.")
+        }
         GlassBtn { visible: card.capability.policy === 4 || (!!card.capability.canAct && ["camera", "mic"].includes(card.capability.key)); text: qsTr("Recharger l’onglet"); onClicked: card.reloadRequested() }
         GlassBtn { visible: card.capability.key === "cookies"; text: browserStore.blockThirdPartyCookies ? qsTr("Autoriser les cookies tiers du profil") : qsTr("Bloquer les cookies tiers du profil"); onClicked: card.cookieRequested() }
         ColumnLayout {

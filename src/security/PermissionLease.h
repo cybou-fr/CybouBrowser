@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDeadlineTimer>
 #include <QStringList>
+#include <QtWebEngineCore/QWebEnginePermission>
 #include <algorithm>
 
 // Both clocks bound the grant: a wall-clock jump backwards cannot extend it.
@@ -18,8 +19,10 @@ struct PermissionDeadline {
 };
 
 struct PermissionLease {
-    quint64 requestId;
+    quint64 requestId = 0;
     SiteContext context;
     QStringList keys;
+    QWebEnginePermission permission;
 };
+
 

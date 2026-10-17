@@ -38,8 +38,19 @@ QStringList PermissionCoordinator::keysFor(Type type) {
     case Type::Geolocation: return {"location"};
     case Type::Notifications: return {"notifications"};
     case Type::ClipboardReadWrite: return {"clipboard"};
+    case Type::DesktopVideoCapture: case Type::DesktopAudioVideoCapture: return {"screen"};
     default: return {};
     }
+}
+
+Type PermissionCoordinator::typeFor(const QString &key) {
+    if (key == QStringLiteral("camera")) return Type::MediaVideoCapture;
+    if (key == QStringLiteral("mic")) return Type::MediaAudioCapture;
+    if (key == QStringLiteral("location")) return Type::Geolocation;
+    if (key == QStringLiteral("notifications")) return Type::Notifications;
+    if (key == QStringLiteral("clipboard")) return Type::ClipboardReadWrite;
+    if (key == QStringLiteral("screen")) return Type::DesktopVideoCapture;
+    return Type::Unsupported;
 }
 
 void PermissionCoordinator::notifyChanged() {
@@ -199,7 +210,7 @@ bool PermissionCoordinator::resolve(bool allow, QObject *activeView, QObject *ac
         && SiteContext::origin(target.permission.origin()) == target.context.requestingOrigin
         && m_leases.size() < MaxLeases;
     if (granted) {
-        m_leases.append({target.id, target.context, keysFor(target.permission.permissionType())});
+        m_leases.append({target.id, target.context, keysFor(target.permission.permissionType()), target.permission});
         target.permission.grant();
     } else if (target.permission.isValid()) {
         target.permission.deny();
@@ -258,9 +269,92 @@ void PermissionCoordinator::expire() {
 void PermissionCoordinator::revokeAll() {
     cancelMatching([](const Pending &) { return true; });
     QList<QPointer<QObject>> views;
-    for (const auto &lease : m_leases) if (lease.context.view && !views.contains(lease.context.view)) views.append(lease.context.view);
+    for (const auto &lease : m_leases) {
+        if (lease.permission.isValid()) lease.permission.reset();
+        if (lease.context.view && !views.contains(lease.context.view)) views.append(lease.context.view);
+    }
     m_leases.clear(); notifyChanged(); schedule();
-    for (const auto &view : views) if (view) emit revokeDocument(view);
+    for (const auto &view : views) {
+        if (view) {
+            emit permissionRevoked(view, QString());
+            emit revokeDocument(view);
+        }
+    }
+}
+
+bool PermissionCoordinator::revokeLease(QObject *view, const QString &key, bool deny) {
+    bool anyRevoked = false;
+    QList<QPointer<QObject>> affectedViews;
+
+    for (int i = m_leases.size() - 1; i >= 0; --i) {
+        auto &lease = m_leases[i];
+        if (view && lease.context.view != view) continue;
+
+        const bool matchAll = key.isEmpty() || key == QStringLiteral("all");
+        if (!matchAll && !lease.keys.contains(key)) continue;
+
+        if (lease.permission.isValid()) {
+            if (deny) lease.permission.deny();
+            else lease.permission.reset();
+        }
+
+        if (auto profile = qobject_cast<QQuickWebEngineProfile *>(lease.context.profile)) {
+            const auto targetKeys = matchAll ? lease.keys : QStringList{key};
+            for (const auto &k : targetKeys) {
+                Type t = typeFor(k);
+                if (t != Type::Unsupported && !lease.context.requestingOrigin.isEmpty()) {
+                    auto p = profile->queryPermission(lease.context.requestingOrigin, t);
+                    if (p.isValid()) {
+                        if (deny) p.deny();
+                        else p.reset();
+                    }
+                }
+            }
+        }
+
+        if (lease.context.view && !affectedViews.contains(lease.context.view)) {
+            affectedViews.append(lease.context.view);
+        }
+
+        if (matchAll) {
+            m_leases.removeAt(i);
+        } else {
+            lease.keys.removeAll(key);
+            if (lease.keys.isEmpty()) {
+                m_leases.removeAt(i);
+            }
+        }
+        anyRevoked = true;
+    }
+
+    if (view && !key.isEmpty() && key != QStringLiteral("all")) {
+        auto profileObj = view->property("profile").value<QObject *>();
+        auto qprofile = qobject_cast<QQuickWebEngineProfile *>(profileObj);
+        auto originUrl = SiteContext::origin(view->property("url").toUrl());
+        if (qprofile && !originUrl.isEmpty()) {
+            Type t = typeFor(key);
+            if (t != Type::Unsupported) {
+                auto p = qprofile->queryPermission(originUrl, t);
+                if (p.isValid()) {
+                    if (deny) p.deny();
+                    else p.reset();
+                    anyRevoked = true;
+                    if (!affectedViews.contains(view)) affectedViews.append(view);
+                }
+            }
+        }
+    }
+
+    if (anyRevoked) {
+        notifyChanged();
+        schedule();
+    }
+
+    for (const auto &v : affectedViews) {
+        if (v) emit permissionRevoked(v, key);
+    }
+
+    return anyRevoked;
 }
 
 void PermissionCoordinator::schedule() {
@@ -299,3 +393,14 @@ bool PermissionCoordinator::enqueueTestRequest(quint64 id, QObject *view, QObjec
     schedule();
     return true;
 }
+
+bool PermissionCoordinator::grantTestLease(quint64 id, QObject *view, QObject *profile, const QString &tabUid,
+                                          const QUrl &topOrigin, quint64 epoch, const QStringList &keys) {
+    if (!view || !profile) return false;
+    watch(view); watch(profile);
+    SiteContext context{view, profile, tabUid, SiteContext::origin(topOrigin), SiteContext::origin(topOrigin), epoch};
+    m_leases.append({id, context, keys, QWebEnginePermission()});
+    notifyChanged();
+    return true;
+}
+

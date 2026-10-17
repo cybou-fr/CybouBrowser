@@ -74,6 +74,49 @@ inline bool runPermissionContextTests() {
     if (testCoord.pendingCount() != 3) return false;
     testCoord.revokeAll();
     if (testCoord.hasPending() || testCoord.pendingCount() != 0 || testCoord.queuedCount() != 0) return false;
+
+    // Test lease granting and soft revocation (preserving view):
+    int revokedSignalCount = 0;
+    QString lastRevokedKey;
+    QObject::connect(&testCoord, &PermissionCoordinator::permissionRevoked, [&](QObject *v, const QString &k) {
+        if (v == &viewA) {
+            revokedSignalCount++;
+            lastRevokedKey = k;
+        }
+    });
+
+    if (!testCoord.grantTestLease(401, &viewA, &profileA, "tab-a", QUrl("https://a.test"), 1, {"camera", "mic"})) return false;
+    if (!testCoord.grantTestLease(402, &viewB, &profileA, "tab-b", QUrl("https://b.test"), 10, {"camera", "notifications"})) return false;
+
+    auto keysA = testCoord.grantedKeys(&viewA, 1);
+    if (!keysA.contains("camera") || !keysA.contains("mic") || keysA.size() != 2) return false;
+    auto keysB = testCoord.grantedKeys(&viewB, 10);
+    if (!keysB.contains("camera") || !keysB.contains("notifications") || keysB.size() != 2) return false;
+
+    // Soft revoke only "camera" on viewA: document and other keys are preserved
+    if (!testCoord.revokeLease(&viewA, "camera")) return false;
+    if (revokedSignalCount != 1 || lastRevokedKey != "camera") return false;
+    keysA = testCoord.grantedKeys(&viewA, 1);
+    if (keysA.contains("camera") || !keysA.contains("mic") || keysA.size() != 1) return false;
+
+    // ViewB still has both camera and notifications
+    keysB = testCoord.grantedKeys(&viewB, 10);
+    if (!keysB.contains("camera") || !keysB.contains("notifications")) return false;
+
+    // Revoke "camera" globally across all views
+    testCoord.revokeLease(nullptr, "camera");
+    keysB = testCoord.grantedKeys(&viewB, 10);
+    if (keysB.contains("camera") || !keysB.contains("notifications") || keysB.size() != 1) return false;
+
+    // Revoke remaining "mic" on viewA
+    if (!testCoord.revokeLease(&viewA, "mic")) return false;
+    if (revokedSignalCount != 2 || lastRevokedKey != "mic") return false;
+    if (!testCoord.grantedKeys(&viewA, 1).isEmpty()) return false;
+
+    // Revoke all remaining leases
+    testCoord.revokeAll();
+    if (!testCoord.grantedKeys(&viewB, 10).isEmpty()) return false;
+
     PermissionDeadline expired(0), running(60000);
     if (!expired.expired() || running.expired()) return false;
     // Clock rollback must not extend the monotonic ceiling; forward jumps fail closed.

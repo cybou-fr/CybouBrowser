@@ -278,7 +278,48 @@ ApplicationWindow {
             if (!permissionCoordinator.hasPendingFor(tab))
                 controlState.abandonPending(tab)
         }
+        onPermissionRevoked: function(view, key) {
+            window.stopMediaTracks(view, key)
+        }
         onRevokeDocument: function(view) { window.replaceGrantedView(view) }
+    }
+    function stopMediaTracks(view, key) {
+        if (!view || typeof view.runJavaScript !== "function") return
+        const targetKey = key || "all"
+        const script = "(function(targetKey) {" +
+            "try {" +
+                "var stopTrack = function(t) {" +
+                    "if (!t) return;" +
+                    "if (!targetKey || targetKey === 'all' || " +
+                        "(targetKey === 'camera' && t.kind === 'video') || " +
+                        "(targetKey === 'mic' && t.kind === 'audio') || " +
+                        "(targetKey === 'screen')) {" +
+                        "t.stop();" +
+                    "}" +
+                "};" +
+                "var els = document.querySelectorAll('video, audio');" +
+                "for (var i = 0; i < els.length; i++) {" +
+                    "var el = els[i];" +
+                    "if (el && el.srcObject && el.srcObject.getTracks) {" +
+                        "var tracks = el.srcObject.getTracks();" +
+                        "for (var j = 0; j < tracks.length; j++) stopTrack(tracks[j]);" +
+                    "}" +
+                "}" +
+            "} catch(e) {}" +
+        "})('" + targetKey + "');"
+        view.runJavaScript(script)
+    }
+    function revokePermissionGracefully(view, key, targetMode) {
+        if (!view) return
+        const isDeny = (targetMode === 2)
+        if (controlState) {
+            controlState.setPermissionPolicy(key, targetMode)
+        }
+        if (permissionCoordinator) {
+            permissionCoordinator.revokeLease(view, key, isDeny)
+        }
+        stopMediaTracks(view, key)
+        window.showStatus(isDeny ? qsTr("Accès bloqué.") : qsTr("Accès révoqué."))
     }
     function replaceGrantedView(view, replacementUrl, transportProfile) {
         const targetUrl = replacementUrl === undefined ? "about:blank" : replacementUrl
@@ -1018,8 +1059,13 @@ ApplicationWindow {
                     }
                     onPermissionResetRequested: function(key, mode) {
                         const targetMode = mode === undefined ? 0 : mode
-                        if (currentView && controlState.setPermissionPolicy(key, targetMode))
-                            window.replaceGrantedView(currentView, currentView.url.toString())
+                        if (!currentView) return
+                        if (["camera", "mic", "screen"].includes(key)) {
+                            window.revokePermissionGracefully(currentView, key, targetMode)
+                        } else {
+                            if (controlState.setPermissionPolicy(key, targetMode))
+                                window.replaceGrantedView(currentView, currentView.url.toString())
+                        }
                     }
                     onDecisionRequested: function(allow, requestId) { window.resolvePermission(allow, requestId) }
                     onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
