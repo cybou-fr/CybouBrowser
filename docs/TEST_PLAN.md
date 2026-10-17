@@ -101,3 +101,11 @@ The transport TLS fixture now deliberately ignores WebSocket close frames, sends
 `src/security/HttpRedirectTests.h`, included in the security suite, runs two direct positive controls and five actual HTTP 302 negatives: same-origin path change, changed query, loop to the exact URL, cross-origin port change and embedded credentials. Each isolated WebEngine profile uses strict HTTPS plus one exact HTTP navigation lease. Server counters require one initial redirect request and no redirected landing/repeated-start request. Native deny metadata is required and target origins must exclude credentials/query values. Favicon requests are served separately and never counted as target navigation. Every case has a ten-second timeout.
 
 This qualifies the native interceptor/lease subset for 302 GET navigation. Other status codes/methods, HTTPS downgrade, UI redirect presentation and DNS/CNAME transitions remain open.
+
+## GET/POST and HTTPS downgrade redirect matrix
+
+`runHttpRedirectTests()` now covers status codes 301, 302, 303, 307 and 308 with GET and POST: 50 denied path/query/loop/cross-origin/credential cases plus four live direct endpoint controls (54 total). The HTTP fixture buffers the full request body and checks that the original method and synthetic POST body actually arrived before issuing the redirect. It requires no redirected landing/repeated-start request, regardless of redirect method conversion or preservation. This does not claim to qualify successful redirected POST body semantics; the security boundary forbids the destination request.
+
+`runHttpsDowngradeRedirectTests()` adds ten GET/POST cases for the same codes. A fresh off-the-record profile trusts only the local private test CA; its HTTPS positive control must succeed without certificate-error acceptance. The TLS server then issues a real redirect to an independently proven live HTTP endpoint. The test requires one TLS redirect response, a native insecure-transport block and zero HTTP landing requests. Target counters exclude unrelated favicon traffic. Each navigation has a ten-second timeout.
+
+This is the native WebEngine/interceptor boundary. Multi-hop/UI consent presentation, DNS/CNAME changes and public/private network transitions remain separate work.

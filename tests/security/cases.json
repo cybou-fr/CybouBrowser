@@ -67,18 +67,20 @@
       "testSources": [
         "src/security/NetworkPolicy.h",
         "src/security/SecurityTests.h",
-        "src/security/TlsBoundaryTests.h"
+        "src/security/TlsBoundaryTests.h",
+        "src/security/HttpRedirectTests.h"
       ],
       "coveredScenarios": [
         "strict HTTP/credential denial and existing-document subresource policy regression",
         "self-signed HTTPS and WSS rejected before application/WebSocket access",
         "separate test-only TLS allowance limited to exact leaf and endpoint",
-        "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake"
+        "private-CA matrix: valid HTTPS/WSS accepted; expired/name-mismatch/unknown-CA rejected, with exact HTTPS error types and no invalid WSS handshake",
+        "ten real HTTPS-to-HTTP redirects across 301/302/303/307/308 and GET/POST are denied before HTTP endpoint; live HTTPS and HTTP positive controls"
       ],
       "remainingScenarios": [
         "OCSP/CRL revocation and TLS protocol/cipher matrix",
-        "production profile/UI redirect, downgrade and WSS revoke regression",
-        "public/private routing and DNS changes"
+        "multi-hop downgrade chains, UI presentation and DNS/network boundary changes",
+        "public-service and packaged-distribution qualification"
       ]
     },
     {
@@ -98,12 +100,12 @@
         "real HTTP 302 path/query/loop/cross-origin/credential redirects cannot inherit consumed HTTP consent",
         "both endpoint servers pass independent direct HTTP navigation controls",
         "native interceptor deny observations and sanitized target origin are asserted",
-        "actual UI HTTP consent, same-origin resources and ws denial"
+        "actual UI HTTP consent, same-origin resources and ws denial",
+        "54 real GET/POST cases across 301/302/303/307/308; initial POST method/body observed and redirected targets never receive inherited HTTP consent"
       ],
       "remainingScenarios": [
-        "301/303/307/308 and method-preserving request matrix",
-        "HTTPS-to-HTTP downgrade and redirect-chain UI consent behavior",
-        "DNS/CNAME and network boundary changes"
+        "multi-hop chains and UI redirect-consent presentation",
+        "DNS/CNAME, public/private address transitions and renderer/download stress"
       ]
     },
     {

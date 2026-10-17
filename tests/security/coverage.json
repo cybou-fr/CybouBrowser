@@ -2394,8 +2394,8 @@
         "src/security/HttpRedirectTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "The explicit temporary HTTP exception conflicts with an unconditional all-TLS interpretation; review product scope and exception policy, not a PASS waiver.",
-      "partialVerification": "2026-10-18 Release security PASS: two live positive endpoints and five denied HTTP 302 redirect variants through production HTTP lease/interceptor. See build/adversarial-transport/report.json; control remains not_verified."
+      "remainingWork": "Multi-hop/UI redirect consent, DNS/CNAME and public/private transitions, TLS revocation/protocol/cipher and public-service qualification remain open. The explicit HTTP product exception still requires scope review for unconditional TLS requirements.",
+      "partialVerification": "2026-10-18 security PASS: 54 HTTP GET/POST consent-boundary cases plus ten HTTPS-to-HTTP downgrade cases for 301/302/303/307/308, with live endpoints and no insecure landing. See build/redirect-method-matrix/report.json; broader control remains not_verified."
     },
     {
       "id": "ASVS:v5.0.0-12.2.2",
@@ -3776,10 +3776,12 @@
       "rationale": "Check cleartext transport and sensitive data crossing temporary HTTP contexts.",
       "sourceRefs": [
         "src/security/NetworkPolicy.h",
-        "src/security/HttpNavigationLease.h"
+        "src/security/HttpNavigationLease.h",
+        "src/security/HttpRedirectTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Verify no unintended downgrade or secret transfer, including redirects and WebSocket resources."
+      "remainingWork": "Multi-hop/UI redirect consent, DNS/CNAME and public/private transitions, TLS revocation/protocol/cipher and public-service qualification remain open. The explicit HTTP product exception still requires scope review for unconditional TLS requirements.",
+      "partialVerification": "2026-10-18 security PASS: 54 HTTP GET/POST consent-boundary cases plus ten HTTPS-to-HTTP downgrade cases for 301/302/303/307/308, with live endpoints and no insecure landing. See build/redirect-method-matrix/report.json; broader control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CRYP-04",
@@ -3888,8 +3890,8 @@
         "src/security/HttpRedirectTests.h"
       ],
       "verificationStatus": "not_verified",
-      "remainingWork": "Add script/meta/HTTP redirect chains and IDN/trailing-dot variants; parser assertions do not prove navigation behavior.",
-      "partialVerification": "2026-10-18 Release security PASS: two live positive endpoints and five denied HTTP 302 redirect variants through production HTTP lease/interceptor. See build/adversarial-transport/report.json; control remains not_verified."
+      "remainingWork": "Multi-hop/UI redirect consent, DNS/CNAME and public/private transitions, TLS revocation/protocol/cipher and public-service qualification remain open. The explicit HTTP product exception still requires scope review for unconditional TLS requirements.",
+      "partialVerification": "2026-10-18 security PASS: 54 HTTP GET/POST consent-boundary cases plus ten HTTPS-to-HTTP downgrade cases for 301/302/303/307/308, with live endpoints and no insecure landing. See build/redirect-method-matrix/report.json; broader control remains not_verified."
     },
     {
       "id": "WSTG:v4.2-CLNT-05",

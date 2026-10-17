@@ -28,6 +28,9 @@ public:
     QSslKey key;
     int handshakes = 0;
     int httpRequests = 0;
+    QByteArray redirectLocation;
+    int redirectStatus = 302;
+    int redirectRequests = 0;
     int closedSockets = 0;
     bool ignoreWebSocketCloseFrames = false;
     int peerCloseFrames = 0;
@@ -80,6 +83,11 @@ protected:
                 return;
             }
             ++httpRequests;
+            if (!redirectLocation.isEmpty() && (request.startsWith("GET /redirect ") || request.startsWith("POST /redirect "))) {
+                ++redirectRequests;
+                socket->write("HTTP/1.1 " + QByteArray::number(redirectStatus) + " Redirect\r\nConnection: close\r\nLocation: " + redirectLocation + "\r\nContent-Length: 0\r\n\r\n");
+                socket->disconnectFromHost(); return;
+            }
             const QByteArray body("<!doctype html><title>TLS fixture</title>");
             socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
             socket->disconnectFromHost();
