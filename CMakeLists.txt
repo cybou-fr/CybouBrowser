@@ -37,6 +37,10 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         src/activity/ActivityEvent.h
         src/activity/ActivityAggregator.h
         src/activity/ActivityAggregator.cpp
+        src/cloud/CloudProviderCatalog.h
+        src/cloud/CloudProviderCatalog.cpp
+        src/cloud/CloudServiceManager.h
+        src/cloud/CloudServiceManager.cpp
     QML_FILES
         qml/CybouTheme.qml
         qml/NewTabPage.qml
@@ -67,6 +71,8 @@ target_include_directories(cybou_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/controlbar"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/security"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/activity"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cloud"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ui"
 )
 
