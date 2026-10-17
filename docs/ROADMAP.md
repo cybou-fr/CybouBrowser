@@ -17,6 +17,12 @@
 | **Network events** | **implemented:** ограниченная очередь, sanitized origin, blocked reason и type, только scope профиля; нет проверенного per-tab attribution |
 | **Windows** | **tested (recorded):** C++20 Release, Qt 6.12/MSVC, security/controlbar/surface/transport suites; Linux/macOS и release qualification остаются unverified |
 
+## Постоянное архитектурное ограничение — ПРИНЯТО
+
+**Никаких сторонних расширений.** Отсутствие Chrome/WebExtensions/CRX, магазина, side-loading и privileged third-party userscripts — принципиальная спецификация продукта, а не незавершённая функция. Сильные возможности популярных расширений можно изучать и реализовывать собственным C++/Qt/QML-кодом. Партнёрства (в том числе Proton) не дают исключений. Внешние executables, CLI и фоновые компоненты минимизируются, а обязательные Qt/Chromium зависимости учитываются и поддерживаются. Нормативное решение: [ADR 0006](ADR/0006-no-third-party-extensions.md).
+
+**Release gate (план проверки):** инвентаризация исполняемых зависимостей и подтверждение отсутствия extension loader/store/install/update, privileged userscripts и внешних executable helpers в обязательной поставке. Пока не отмечено `tested`.
+
 ## Далее — приоритетный порядок
 
 | ID | Приоритет | Задача (**planned**, если не указано иное) | Критерий приёмки |
