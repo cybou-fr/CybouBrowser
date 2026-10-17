@@ -13,7 +13,7 @@
 <p align="center">
   <img src="docs/screenshots/cybou-current-ui.webp" alt="CYBOU Browser on Windows: Alpine Dawn new-tab page with floating search, 11 capability controls, and a cloud app launcher in the top-right corner" width="1120" />
 </p>
-<p align="center"><sub>CYBOU on Windows · Alpine Dawn new tab · Actual application screenshot (2048 × 1220)</sub></p>
+<p align="center"><sub>CYBOU on Windows · Alpine Dawn new tab · Actual application screenshot (1360 × 900)</sub></p>
 
 ## Current implementation
 
