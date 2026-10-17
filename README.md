@@ -8,11 +8,18 @@
 <p align="center">A native C++20 / Qt Quick / Qt WebEngine browser for visible, direct control over website capabilities.</p>
 <p align="center"><strong>Current source: 0.3.0-alpha.1 · Development only · No public release yet</strong></p>
 
+## Current interface
+
+<p align="center">
+  <img src="docs/screenshots/cybou-current-ui.webp" alt="CYBOU Browser on Windows: Alpine Dawn new-tab page with floating search, 11 capability controls, and a cloud app launcher in the top-right corner" width="1120" />
+</p>
+<p align="center"><sub>CYBOU on Windows · Alpine Dawn new tab · Actual application screenshot (2048 × 1220)</sub></p>
+
 ## Current implementation
 
 CYBOU runs as a Windows desktop browser with a two-row window header (tabs and navigation). The navigation row contains a URL field plus **11 permanently visible, individual capability controls**: Camera, Microphone, Screen, Location, Notifications, Clipboard, JavaScript, Popups, Cookies, Site Storage and Network. Glass hover cards provide context and relevant actions. A policy state, observed request, granted permission, confirmed block and actual hardware use are **different facts**.
 
-**Alpine Dawn (new tab)** currently uses the mountain wallpaper, a compact floating brand/title, a separate glass search input, Favorites/History actions, and a top-right **Mail + nine-dot Cloud App Launcher**. The launcher uses Cloud Glass 2.0, local SVG icons and a provider-neutral catalog. It shows the selected cloud apps and opens their official websites as ordinary tabs. A verified screenshot of the latest UI is not yet stored in this repository; the README intentionally does not display an outdated image.
+**Alpine Dawn (new tab)** currently uses the mountain wallpaper, a compact floating brand/title, a separate glass search input, Favorites/History actions, and a top-right **Mail + nine-dot Cloud App Launcher**. The launcher uses Cloud Glass 2.0, local SVG icons and a provider-neutral catalog. It shows the selected cloud apps and opens their official websites as ordinary tabs. The screenshot above shows the current Windows new-tab UI with the cloud launcher closed.
 
 **Cloud services** have a C++ catalog/manager, QML settings, default Proton suite, per-service provider overrides, Google, Microsoft 365, Infomaniak, Zoho, Nextcloud and additional web shortcuts. Proton Pass, Lumo and Wallet are **web shortcuts only**: there is no password-manager integration or privileged API access. Self-hosted Nextcloud needs a user-supplied HTTPS URL. Cloud-account login/2FA and cross-provider interoperability are **not fully qualified** on this build.
 
