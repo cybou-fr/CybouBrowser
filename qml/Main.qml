@@ -831,11 +831,23 @@ ApplicationWindow {
                     spacing: 3; clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     model: tabs
+                    NavButton {
+                        id: newTabBtn
+                        parent: tabStrip.contentItem
+                        z: 3
+                        text: "+"
+                        hint: qsTr("Nouvel onglet · Ctrl+T")
+                        implicitWidth: 28
+                        implicitHeight: chromeControlHeight
+                        x: Math.max(0, tabStrip.contentWidth + 4)
+                        anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                        onClicked: addTab("")
+                    }
                     WindowDragArea {
                         id: emptyTabDrag
                         parent: tabStrip
-                        // Flickable owns the unused strip too; provide an explicit title hit area there.
-                        x: Math.max(0, Math.min(tabStrip.width, tabStrip.contentWidth - tabStrip.contentX))
+                        // Flickable owns the unused strip too; provide an explicit title hit area to the right of tabs and new tab button.
+                        x: Math.max(0, Math.min(tabStrip.width, (newTabBtn.x + newTabBtn.width + 4) - tabStrip.contentX))
                         width: Math.max(0, tabStrip.width - x); height: tabStrip.height
                         z: 2
                     }
@@ -847,7 +859,7 @@ ApplicationWindow {
                         required property bool isPinned
                         required property bool isMuted
                         required property bool audible
-                        width: isPinned ? (isMuted || audible ? 66 : 42) : Math.max(112, Math.min(200, tabStrip.width / Math.min(tabs.count, 5)))
+                        width: isPinned ? (isMuted || audible ? 66 : 42) : Math.max(112, Math.min(200, (tabStrip.width - 34) / Math.min(tabs.count, 5)))
                         height: chromeControlHeight; radius: 7
                         gradient: Gradient {
                             GradientStop { position: 0.0; color: activeTab === index ? "#E0183A68" : tabMouse.containsMouse ? "#701D3D6A" : "#200E223D" }
@@ -936,7 +948,6 @@ ApplicationWindow {
                         }
                     }
                 }
-                NavButton { text: "+"; hint: qsTr("Nouvel onglet · Ctrl+T"); onClicked: addTab("") }
                 Label { visible: privateMode; text: qsTr("PRIVÉ"); color: "#8FA3BF"; font.pixelSize: 10; padding: 8 }
                 Item { Layout.preferredWidth: 18 }
                 NavButton { text: "−"; hint: qsTr("Réduire"); implicitWidth: 38; implicitHeight: chromeRowHeight; onClicked: window.showMinimized() }
