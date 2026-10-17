@@ -9,6 +9,7 @@
 #include "PermissionTests.h"
 #include "HttpLeaseTests.h"
 #include "TrackerLeaseTests.h"
+#include "NavigationGuardTests.h"
 #include "../activity/ActivityTests.h"
 #include "../browserstore.h"
 #include <QTemporaryDir>
@@ -19,6 +20,7 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
     if (!runHttpLeaseTests()) { qCritical() << "HTTP_LEASE_TEST FAIL"; return 2; }
     if (!runPermissionContextTests()) { qCritical() << "PERMISSION_CONTEXT_TEST FAIL"; return 2; }
     if (!runActivityAggregatorTests()) { qCritical() << "ACTIVITY_AGGREGATOR_TEST FAIL"; return 2; }
+    if (!runNavigationGuardTests()) { qCritical() << "NAVIGATION_GUARD_TEST FAIL"; return 2; }
     const struct { const char *url; const char *host; } addresses[] = {
         {"https://a.b.example.org/long/path?q=full", "a.b.example.org"},
         {"http://user:secret@example.org:8080/path", "example.org:8080"},

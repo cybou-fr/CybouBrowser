@@ -10,6 +10,7 @@
 #include "../security/TrackerBlocker.h"
 #include "../security/HttpNavigationLease.h"
 #include "../security/TrackerExceptionRegistry.h"
+#include "../security/NavigationGuard.h"
 
 // A bounded metadata sample, profile scope only. Never reads headers or bodies.
 class RequestObserver final : public QWebEngineUrlRequestInterceptor {
@@ -36,13 +37,16 @@ public:
     struct Event { QString origin; QString firstParty; int type; qint64 time; bool blocked; QString reason; QString decision; };
     void interceptRequest(QWebEngineUrlRequestInfo &info) override {
         const auto url = info.requestUrl();
+        const auto firstParty = info.firstPartyUrl();
+        const bool isMainFrame = (info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame);
         QString reason, decision;
         if (NetworkPolicy::hasWebCredentials(url)) reason = "embedded-credentials";
         else if (NetworkPolicy::blocks(url, strictHttps.load())
-                 && !httpLease.allows(url, info.firstPartyUrl(), info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeMainFrame)) reason = "insecure-transport";
-        else if (blockTrackers.load() && info.resourceType() != QWebEngineUrlRequestInfo::ResourceTypeMainFrame
-                 && TrackerBlocker::isTracker(url, info.firstPartyUrl())) {
-            if (trackerRegistry.allows(info.firstPartyUrl())) decision = "tracker-exception";
+                 && !httpLease.allows(url, firstParty, isMainFrame)) reason = "insecure-transport";
+        else if (NavigationGuard::blocksPrivateNetworkAccess(url, firstParty, isMainFrame)) reason = "private-network-access";
+        else if (blockTrackers.load() && !isMainFrame
+                 && TrackerBlocker::isTracker(url, firstParty)) {
+            if (trackerRegistry.allows(firstParty)) decision = "tracker-exception";
             else { reason = "tracker-rule"; blockedTrackersCount.fetch_add(1, std::memory_order_relaxed); }
         }
         const bool blocked = !reason.isEmpty();
@@ -64,8 +68,9 @@ public:
         QMutexLocker lock(&mutex);
         QVariantList result;
         for (const auto &event : events) if (event.time >= cutoff) {
-            const QString category = event.reason == "insecure-transport" ? "transport" : event.reason == "tracker-rule" || event.decision == "tracker-exception" ? "trackers" : "other";
+            const QString category = (event.reason == "insecure-transport" || event.reason == "private-network-access") ? "transport" : event.reason == "tracker-rule" || event.decision == "tracker-exception" ? "trackers" : "other";
             const QString explanation = event.reason == "insecure-transport" ? tr("Connexion HTTP ou WebSocket non chiffrée")
+                : event.reason == "private-network-access" ? tr("Requête d’un site public vers le réseau local bloquée (Navigation Guard)")
                 : event.reason == "tracker-rule" ? tr("Domaine tiers présent dans la liste de traqueurs")
                 : event.reason == "embedded-credentials" ? tr("Identifiants intégrés à l’adresse")
                 : event.reason == "temporary-navigation" ? tr("Nouvelle navigation : l’exception a pris fin")

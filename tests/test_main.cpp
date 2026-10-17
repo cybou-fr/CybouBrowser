@@ -23,6 +23,16 @@
 
 int main(int argc, char *argv[])
 {
+    qInstallMessageHandler([](QtMsgType, const QMessageLogContext &, const QString &msg) {
+        static QFile logFile("build/test_log.txt");
+        if (!logFile.isOpen()) {
+            QDir().mkpath(QStringLiteral("build"));
+            std::ignore = logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+        }
+        QTextStream out(&logFile);
+        out << msg << "\n";
+        out.flush();
+    });
     bool trackerTest = false;
     for (int i = 1; i < argc; ++i) trackerTest |= QByteArray(argv[i]) == "--tracker-test";
     if (trackerTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP google-analytics.com 127.0.0.1\" --no-proxy-server");

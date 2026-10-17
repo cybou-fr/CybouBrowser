@@ -23,6 +23,7 @@
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include "controlbar/RequestObserver.h"
+#include "security/NavigationGuard.h"
 #include "security/DownloadPolicy.h"
 #include "ui/AddressDisplay.h"
 
@@ -139,25 +140,10 @@ public:
         emit preferencesChanged();
     }
     Q_INVOKABLE bool isLocalHost(const QUrl &url) const {
-        const auto host = url.host().toLower();
-        if (host.isEmpty() || host == "localhost" || host.endsWith(".local") || host.endsWith(".localhost"))
-            return true;
-        const QHostAddress addr(host);
-        if (!addr.isNull() && addr.isLoopback())
-            return true;
-        return false;
+        return NavigationGuard::isLocalHost(url);
     }
     Q_INVOKABLE bool isPrivateNetwork(const QUrl &url) const {
-        if (isLocalHost(url)) return true;
-        const auto host = url.host().toLower();
-        const QHostAddress addr(host);
-        if (addr.isNull()) return false;
-        return addr.isInSubnet(QHostAddress(QStringLiteral("10.0.0.0")), 8)
-            || addr.isInSubnet(QHostAddress(QStringLiteral("172.16.0.0")), 12)
-            || addr.isInSubnet(QHostAddress(QStringLiteral("192.168.0.0")), 16)
-            || addr.isInSubnet(QHostAddress(QStringLiteral("169.254.0.0")), 16)
-            || addr.isInSubnet(QHostAddress(QStringLiteral("fc00::")), 7)
-            || addr.isInSubnet(QHostAddress(QStringLiteral("fe80::")), 10);
+        return NavigationGuard::isPrivateNetwork(url);
     }
     Q_INVOKABLE bool shouldUpgradeToHttps(const QUrl &url) const {
         if (!httpsFirst()) return false;
