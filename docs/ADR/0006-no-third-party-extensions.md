@@ -37,4 +37,6 @@ CYBOU **не устанавливает, не загружает, не испо�
 3. Любую заимствованную **идею** реализовывать и тестировать собственным кодом, без стороннего исполняемого extension package.
 4. Если предложение противоречит запрету, отклонять его. Изменить правило может только **новое прямое решение владельца проекта**.
 
+Выбираемый cloud provider не отменяет это решение: [ADR 0007 — Cloud Services](0007-selectable-cloud-services.md).
+
 Связанные правила: [PRODUCT_VISION](../PRODUCT_VISION.md), [SECURITY_MODEL](../SECURITY_MODEL.md), [ARCHITECTURE](../ARCHITECTURE.md), [ROADMAP](../ROADMAP.md), [TEST_PLAN](../TEST_PLAN.md).
