@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
     bool privateNetworkProbe = false;
     for (int i = 1; i < argc; ++i) privateNetworkProbe |= QByteArray(argv[i]) == "--private-network-probe";
     if (privateNetworkProbe) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server");
+    bool enginePnaProbe = false;
+    for (int i = 1; i < argc; ++i) enginePnaProbe |= QByteArray(argv[i]) == "--engine-pna-probe";
+    if (enginePnaProbe) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server --ip-address-space-overrides=127.0.0.1:38471=public");
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
@@ -70,6 +73,7 @@ int main(int argc, char *argv[])
     qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
 
     if (privateNetworkProbe) return runPrivateNetworkProbe();
+    if (enginePnaProbe) return runEnginePnaProbe();
 
     BoundaryTlsServer transportTls;
     QString transportWssUrl;

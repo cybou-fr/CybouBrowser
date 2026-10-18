@@ -92,3 +92,65 @@ inline int runPrivateNetworkProbe() {
     qWarning() << "PRIVATE_NETWORK_ALIAS_INCONCLUSIVE: alias fetch did not reach endpoint; requires engine reason and true public/private fixture";
     return 4;
 }
+
+// Engine-only experiment (no app interceptor): which loopback fetches does Chromium itself
+// block when the page's server is overridden to the public address space? Fixed ports are
+// required because --ip-address-space-overrides is set before engine initialisation.
+inline constexpr quint16 kEngineProbeSourcePort = 38471;
+inline constexpr quint16 kEngineProbeTargetPort = 38472;
+
+inline int runEnginePnaProbe() {
+    QMap<QByteArray, int> hits;
+    auto serve = [&](QTcpServer &server, quint16 port) {
+        if (!server.listen(QHostAddress::LocalHost, port)) return false;
+        QObject::connect(&server, &QTcpServer::newConnection, &server, [&server, &hits] {
+            while (auto socket = server.nextPendingConnection()) {
+                QObject::connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+                QObject::connect(socket, &QTcpSocket::readyRead, socket, [&hits, socket] {
+                    const auto data = socket->property("headers").toByteArray() + socket->readAll();
+                    socket->setProperty("headers", data);
+                    if (socket->property("handled").toBool() || !data.contains("\r\n\r\n")) return;
+                    socket->setProperty("handled", true);
+                    const auto parts = data.left(data.indexOf("\r\n")).split(' ');
+                    if (parts.size() < 2) { socket->abort(); return; }
+                    const bool preflight = parts[0] == "OPTIONS";
+                    if (!preflight) ++hits[parts[1]];
+                    else ++hits["OPTIONS " + parts[1]];
+                    const QByteArray body("<!doctype html><title>Probe ready</title>");
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Private-Network: true\r\nCache-Control: no-store\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+                    socket->disconnectFromHost();
+                });
+            }
+        });
+        return true;
+    };
+    QTcpServer source, target;
+    if (!serve(source, kEngineProbeSourcePort) || !serve(target, kEngineProbeTargetPort)) {
+        qCritical() << "ENGINE_PNA_PROBE FAIL: ports busy"; return 2;
+    }
+    QWebEngineProfile profile; // deliberately no RequestObserver: engine decision only
+    QWebEnginePage page(&profile);
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    QObject::connect(&page, &QWebEnginePage::titleChanged, &loop, [&](const QString &t) { if (t == "Probe complete") loop.quit(); });
+    QObject::connect(&page, &QWebEnginePage::loadFinished, &loop, [&](bool ok) {
+        if (!ok) { qCritical() << "ENGINE_PNA_PROBE FAIL: source load"; loop.quit(); return; }
+        page.runJavaScript(QString(R"JS((async()=>{
+            const out={};
+            for(const [k,u] of Object.entries({literal:'http://127.0.0.1:%1/literal',alias:'http://cybou-alias.test:%1/alias'})){
+                try{await fetch(u,{mode:'no-cors',cache:'no-store'});out[k]='ok'}catch(e){out[k]='blocked:'+e.message}
+            }
+            window.__r=JSON.stringify(out);document.title='Probe complete';
+        })())JS").arg(kEngineProbeTargetPort));
+    });
+    timeout.start(20000);
+    page.load(QUrl(QString("http://cybou-source.test:%1/source").arg(kEngineProbeSourcePort)));
+    loop.exec();
+    QString result;
+    QEventLoop get; page.runJavaScript("window.__r", [&](const QVariant &v) { result = v.toString(); get.quit(); });
+    QTimer::singleShot(3000, &get, &QEventLoop::quit); get.exec();
+    qInfo() << "ENGINE_PNA_RESULT" << result << "serverHits" << hits;
+    return result.isEmpty() ? 2 : 0;
+}

@@ -126,3 +126,16 @@ The opt-in `cybou_tests.exe --private-network-probe` diagnostic was added and ru
 - `PRIVATE_NETWORK_ALIAS_GAP`: a URL-public hostname (`cybou-alias.test`) resolved to loopback by test-process resolver rules reached the endpoint. The app classifies URLs only; no runtime DNS/connected-address enforcement is demonstrated.
 
 The six-suite baseline was rerun afterwards: gate **PASS, 0 issues** (`build/probe-baseline/`, local, ignored). The probe is deliberately outside the baseline. The source connection is loopback, so this does not model Chromium's public address space, real DNS changes, CNAME chains, HTTPS or WebRTC. CYB-PNA-001/002 and the DNS-rebinding gate stay open.
+
+## Engine-level private-network experiment — 2026-10-18
+
+New opt-in `cybou_tests.exe --engine-pna-probe` (no app interceptor; engine decision only). Resolver rules map `cybou-source.test`/`cybou-alias.test` to loopback and `--ip-address-space-overrides=127.0.0.1:38471=public` makes the source server a public-space origin; the target (port 38472) stays local. Extra Chromium flags are supplied via `QTWEBENGINE_CHROMIUM_FLAGS`. Qt 6.12 / Chromium 140.0.7339.225, Windows, development tree.
+
+| Chromium flags | literal 127.0.0.1 | alias hostname→loopback | target hits |
+| --- | --- | --- | --- |
+| none | reached | reached | 2 |
+| `LocalNetworkAccessChecks` | reached | reached | 2 |
+| `PrivateNetworkAccessSendPreflights,…RespectPreflightResults` (± `PermissionPrompt`) | reached | reached | 2 |
+| `BlockInsecurePrivateNetworkRequests` | **blocked** | **blocked** | 0 |
+
+Finding: the engine, not URL classification, can block a hostname that resolves to a private address when the **insecure-context** source is in public space (`BlockInsecurePrivateNetworkRequests`; zero target hits, no preflight sent). This is a connected-address boundary, closing the alias gap for HTTP sources only. Not proven: HTTPS public sources (preflight features did not block in this build), real public IPs/DNS changes/CNAME chains, WebRTC, workers. Production does **not** yet set this flag; enabling it is a compatibility decision (HTTP pages calling local services). CYB-PNA-001/002 remain open.
