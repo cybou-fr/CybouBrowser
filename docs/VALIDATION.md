@@ -197,3 +197,17 @@ New opt-in diagnostic `cybou_tests.exe --webrtc-probe` (`WebRtcProbe.h`; raw eng
 | STUN connectivity checks received on a UDP socket at `127.0.0.1` after the page injected a remote loopback candidate | **87** | **91** |
 
 Findings: (1) the page does not learn private IPs without a media permission (mDNS masking); with `PublicInterfacesOnly` it gets no candidates at all. Behaviour with a granted camera/microphone permission is untested and is when Chromium exposes real addresses. (2) **Open gap:** a page can make the browser send UDP STUN binding requests to an arbitrary loopback address by injecting a remote ICE candidate, and `WebRTCPublicInterfacesOnly` does not stop it - that setting limits exposed local candidates, not connection targets. The traffic is UDP, so neither Chromium's private-network protections nor the URL interceptor see it. Impact is limited to STUN-format datagrams (a fixed small request, rate of roughly 17 per second here), a local-network probing and reflection primitive rather than arbitrary UDP; reading responses is limited to ICE state. Not tested: private-range LAN targets, TCP candidates, TURN-relayed paths, an HTTPS public page, any Chromium flag or policy that filters remote candidates. The probe exits 0 whenever the experiment ran; it is not a PASS. CYB-PNA-001/002 and ASVS 17.1.1 stay open.
+
+### WebRTC mitigation search - 2026-10-18
+
+Candidates tried with `--webrtc-probe` (injected remote loopback candidate; STUN checks counted at a test-owned UDP socket, setting `WebRTCPublicInterfacesOnly` off/on):
+
+| Chromium switch | STUN checks at loopback (off / on) | Two-peer data channel without TURN (off / on) |
+| --- | --- | --- |
+| none | 77-85 / 85-87 | opens / **does not open** |
+| `--force-webrtc-ip-handling-policy=default_public_interface_only` | 85 / 81 | not measured |
+| `--enable-features=LocalNetworkAccessChecks,LocalNetworkAccessChecksWebRTC` | 84 / 82 | not measured |
+| `LocalNetworkAccessChecks` + the two PNA preflight features | 85 / 86 | not measured |
+| `--force-webrtc-ip-handling-policy=disable_non_proxied_udp` | **0 / 0** | does not open / does not open |
+
+Findings: only `disable_non_proxied_udp` stops the probing, by forbidding direct UDP altogether. A WebRTC-specific Local Network Access check exists upstream only from Chrome 142 (public Chrome documentation and a WebRTC commit "LNA: Request LNA permission for local/loopback ICE candidates"; tracking crbug 421223919). The embedded engine is Chromium 140.0.7339.225 (security patch level 152), where the guessed feature name has no effect, so the real fix is a Qt WebEngine with that check plus an application handler for the permission. Side observation: with the application's current `WebRTCPublicInterfacesOnly` setting two peers on the same machine cannot connect without STUN/TURN, so serverless local P2P is already unavailable. The real cost of `disable_non_proxied_udp` for calls through public relays is **not measured**: it needs a TURN/STUN-capable endpoint or real provider accounts; calls would have to fall back to TCP/TLS relays. Therefore the flag is NOT enabled in production; the choice (default on, opt-in setting, or wait for an engine with LNA for WebRTC) is a product decision. Gap remains open: CYB-PNA-001/002, ASVS 17.1.1.

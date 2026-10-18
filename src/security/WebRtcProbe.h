@@ -69,10 +69,23 @@ inline int runWebRtcProbe() {
                     await new Promise(r=>setTimeout(r,5000));
                     out.remoteInjected=true;a.close();b.close();
                 }catch(e){out.injectError=String(e)}
+                try{
+                    // Functional cost: can two peers in this page open a data channel with no TURN?
+                    const p1=new RTCPeerConnection({iceServers:[]}), p2=new RTCPeerConnection({iceServers:[]});
+                    p1.onicecandidate=e=>{if(e.candidate)p2.addIceCandidate(e.candidate).catch(()=>{})};
+                    p2.onicecandidate=e=>{if(e.candidate)p1.addIceCandidate(e.candidate).catch(()=>{})};
+                    const ch=p1.createDataChannel('c');
+                    const opened=new Promise(r=>{ch.onopen=()=>r(true);setTimeout(()=>r(false),8000)});
+                    await p1.setLocalDescription(await p1.createOffer());
+                    await p2.setRemoteDescription(p1.localDescription);
+                    await p2.setLocalDescription(await p2.createAnswer());
+                    await p1.setRemoteDescription(p2.localDescription);
+                    out.peerChannelOpen=await opened;p1.close();p2.close();
+                }catch(e){out.peerError=String(e)}
                 window.__r=JSON.stringify(out);document.title='done';
             })())JS").arg(udp.localPort()));
         });
-        timeout.start(20000);
+        timeout.start(40000);
         page.load(QUrl(QString("http://127.0.0.1:%1/").arg(server.serverPort())));
         loop.exec();
         QString result; QEventLoop get;
