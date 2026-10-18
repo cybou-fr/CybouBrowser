@@ -1,4 +1,5 @@
 #pragma once
+#include "../security/BrowserSettings.h"
 #include "CloudProviderCatalog.h"
 #include "CloudServiceManager.h"
 #include <QDebug>
@@ -65,7 +66,7 @@ inline bool runCloudCoreTests() {
     // 3. CloudServiceManager state, validation, Nextcloud resolution & resilience
     {
         // Clean test environment
-        QSettings settings;
+        BrowserSettings settings;
         const auto backup = settings.value("cloud/configuration");
         settings.remove("cloud/configuration");
 

@@ -7,6 +7,7 @@
 #include "../controlbar/RequestObserver.h"
 #include "DownloadPolicy.h"
 #include "StoredUrl.h"
+#include "BrowserSettings.h"
 #include <QSettings>
 #include "NetworkBoundaryTests.h"
 #include "TlsBoundaryTests.h"
@@ -61,6 +62,41 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
     }
     qInfo() << "DOWNLOAD_POLICY_TEST PASS";
     {
+        // Migration of the browser's keys out of a store shared with another application.
+        QTemporaryDir dir;
+        if (!dir.isValid()) return 2;
+        QSettings shared(dir.filePath("shared.ini"), QSettings::IniFormat), target(dir.filePath("target.ini"), QSettings::IniFormat);
+        const QVariantList history{QVariantMap{{"url", "https://example.org/a"}, {"title", "A"}}};
+        shared.setValue("MainWindowGeometry", QByteArray("geometry-bytes"));
+        shared.setValue("strDataDir", "C:/node-data");
+        shared.setValue("ui/otherAppSetting", 7);
+        shared.setValue("privacy/otherAppSetting", 8);
+        shared.setValue("preferences/foreignGroupMember", 9);
+        shared.setValue("history", history);
+        shared.setValue("session", QVariantList{QVariantMap{{"url", "https://example.org/s"}, {"pinned", true}}});
+        shared.setValue("bookmarks", history);
+        shared.setValue("cloud/configuration", "{\"v\":1}");
+        shared.setValue("preferences/searchEngine", "Brave");
+        shared.setValue("ui/controlBar/language", "ru");
+        shared.setValue("privacy/storedUrlsSanitized1", true);
+        shared.setValue("controlPolicies", "retired");
+        shared.sync();
+        target.setValue("preferences/searchEngine", "DuckDuckGo"); // newer data in the target must win
+        if (!BrowserSettings::migrate(shared, target)) { qCritical() << "BROWSER_SETTINGS_TEST FAIL: migration did not complete"; return 2; }
+        for (const char *key : {"history", "session", "bookmarks", "cloud/configuration", "ui/controlBar/language", "privacy/storedUrlsSanitized1"}) {
+            if (!target.contains(key) || shared.contains(key)) { qCritical() << "BROWSER_SETTINGS_TEST FAIL: key not moved" << key; return 2; }
+        }
+        if (target.value("history") != history || target.value("ui/controlBar/language") != "ru") { qCritical() << "BROWSER_SETTINGS_TEST FAIL: values changed in transit"; return 2; }
+        if (target.value("preferences/searchEngine") != "DuckDuckGo" || shared.contains("preferences/searchEngine")) { qCritical() << "BROWSER_SETTINGS_TEST FAIL: newer target value overwritten or old copy left"; return 2; }
+        if (shared.contains("controlPolicies")) { qCritical() << "BROWSER_SETTINGS_TEST FAIL: retired key kept"; return 2; }
+        for (const char *key : {"MainWindowGeometry", "strDataDir", "ui/otherAppSetting", "privacy/otherAppSetting", "preferences/foreignGroupMember"}) {
+            if (!shared.contains(key) || target.contains(key)) { qCritical() << "BROWSER_SETTINGS_TEST FAIL: foreign value touched" << key; return 2; }
+        }
+        shared.setValue("history", QVariantList{});
+        if (BrowserSettings::migrate(shared, target) || !shared.contains("history")) { qCritical() << "BROWSER_SETTINGS_TEST FAIL: migration is not one-shot"; return 2; }
+        qInfo() << "BROWSER_SETTINGS_TEST PASS: browser keys moved with values intact, newer data kept, retired keys dropped, foreign values untouched, one-shot";
+    }
+    {
         // Secrets that sites put in URLs must not reach the persistent history and bookmark stores.
         struct { const char *input, *expected; } urls[] = {
             {"https://example.org/a?b=1&c=2", "https://example.org/a?b=1&c=2"},              // unchanged, same string
@@ -99,7 +135,7 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         if (!wasBookmarked) store.toggleBookmark(leaky, leaky);
         store.clearHistory();
         // Migration: entries written by earlier versions are cleaned once.
-        QSettings legacy;
+        BrowserSettings legacy;
         const QVariant keepHistory = legacy.value("history"), keepBookmarks = legacy.value("bookmarks");
         legacy.setValue("history", QVariantList{QVariantMap{{"url", leaky}, {"title", leaky}, {"time", "2026-01-01T00:00:00"}}});
         legacy.setValue("bookmarks", QVariantList{QVariantMap{{"url", leaky}, {"title", "kept title"}}});

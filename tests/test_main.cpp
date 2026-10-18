@@ -26,6 +26,7 @@
 #include "security/SecurityTests.h"
 #include "security/PrivateNetworkProbe.h"
 #include "security/EngineHardening.h"
+#include "security/BrowserSettings.h"
 #include "security/HttpsPnaProbe.h"
 #include "security/WebRtcProbe.h"
 #include "security/StrictWebRtcTests.h"
@@ -89,6 +90,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
     app.setOrganizationName("CYBOU-Tests");
+    BrowserSettings::migrate(); // tests exercise the same storage layout as the product
     app.setApplicationVersion(QStringLiteral(CYBOU_PRODUCT_VERSION));
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");

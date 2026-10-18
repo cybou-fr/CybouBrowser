@@ -3758,7 +3758,7 @@
         "src/browserstore.h"
       ],
       "rationale": "The product stores browsing history, bookmarks, session URLs, cloud endpoint settings, permission leases, downloads and logs; none are classified.",
-      "remainingWork": "Draft inventory and proposed levels written (docs/DATA_CLASSIFICATION.md), not approved by a named reviewer; verify it against a real session (registry versus engine profile) and resolve the five owner decisions listed there."
+      "remainingWork": "Draft inventory and proposed levels written (docs/DATA_CLASSIFICATION.md), not approved by a named reviewer; verify it against a real session (registry versus engine profile) and resolve the five owner decisions listed there. Storage now uses a dedicated registry key with a tested migration."
     },
     {
       "id": "ASVS:v5.0.0-14.1.2",
@@ -3942,7 +3942,7 @@
         "src/browserstore.h"
       ],
       "rationale": "The application's own persistent store (QSettings: history, bookmarks, session, preferences) lives in plaintext in the user profile and may contain sensitive URLs.",
-      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented. Also: visited URLs persist in the engine HTTP cache (measured), and a possibly shared registry key (see docs/DATA_CLASSIFICATION.md). History and bookmarks are now sanitised (StoredUrl); session, engine databases and at-rest protection remain open."
+      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented. Also: visited URLs persist in the engine HTTP cache (measured), and the registry key shared with another application (separated and migrated in code, first production start pending; see docs/DATA_CLASSIFICATION.md). History and bookmarks are now sanitised (StoredUrl); session, engine databases and at-rest protection remain open."
     },
     {
       "id": "ASVS:v5.0.0-15.1.1",

@@ -9,6 +9,7 @@
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 #include "browserstore.h"
 #include "security/EngineHardening.h"
+#include "security/BrowserSettings.h"
 #include <QSettings>
 #include <QCoreApplication>
 
@@ -17,7 +18,8 @@ int main(int argc, char *argv[])
     // The preference is read before the engine starts (the WebRTC policy is a process-wide switch).
     QCoreApplication::setOrganizationName("CYBOU");
     QCoreApplication::setApplicationName("CYBOU");
-    const bool strictWebRtc = QSettings().value("preferences/strictWebRtc", false).toBool();
+    BrowserSettings::migrate();
+    const bool strictWebRtc = BrowserSettings().value("preferences/strictWebRtc", false).toBool();
     applyEngineHardening(strictWebRtc);
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);

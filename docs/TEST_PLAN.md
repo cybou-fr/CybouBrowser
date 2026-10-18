@@ -157,3 +157,5 @@ The `pna` suite additionally covers a secure public source (ports 38476-38479, p
 `--url-parser-test` (gate suite `url-parser`) navigates the engine to 17 spellings of the loopback address and compares what the engine reaches with `NavigationGuard`'s classification of the same string; any spelling that reaches loopback but is not private fails the suite. The two control spellings must reach the fixture and be classified private so an empty table cannot pass.
 
 `--fuzz-test` (gate suite `fuzz`) uses a fixed seed so failures reproduce. Part A checks robustness and properties of URL-handling code on 20 000 generated strings and 8 pathological ones; part B compares 250 random loopback spellings with the engine. Increase the iteration counts locally when investigating; do not weaken the property checks to make a run pass.
+
+`BROWSER_SETTINGS_TEST` (inside `--security-test`) exercises `BrowserSettings::migrate(shared, target)` on two temporary INI files: moved keys must compare equal, foreign keys must stay, newer target data must win, and the second run must be a no-op.

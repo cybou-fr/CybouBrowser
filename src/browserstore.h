@@ -26,6 +26,7 @@
 #include "controlbar/RequestObserver.h"
 #include "security/NavigationGuard.h"
 #include "security/StoredUrl.h"
+#include "security/BrowserSettings.h"
 #include "security/DownloadPolicy.h"
 #include "cloud/CloudServiceManager.h"
 #include "ui/AddressDisplay.h"
@@ -544,7 +545,7 @@ private:
     bool m_testHttp = false;
     bool m_strictWebRtcActive = false;
     QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
-    mutable QSettings settings;
+    mutable BrowserSettings settings;
     mutable std::optional<QVariantList> m_historyCache;
     mutable bool m_historyDirty = false;
     QTimer m_historySaveTimer;

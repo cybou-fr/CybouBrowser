@@ -1,3 +1,4 @@
+#include "../security/BrowserSettings.h"
 #include "CloudServiceManager.h"
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -318,7 +319,7 @@ QVariantMap CloudServiceManager::roleOverrides() const {
 }
 
 void CloudServiceManager::loadSettings() {
-    QSettings settings;
+    BrowserSettings settings;
     const QString rawJson = settings.value(kSettingsKey).toString();
     if (rawJson.isEmpty()) {
         // Defaults to proton
@@ -391,6 +392,6 @@ void CloudServiceManager::saveSettings() {
     }
     obj.insert(QStringLiteral("roleOverrides"), overrides);
 
-    QSettings settings;
+    BrowserSettings settings;
     settings.setValue(kSettingsKey, QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 }

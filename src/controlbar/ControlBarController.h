@@ -1,4 +1,5 @@
 #pragma once
+#include "../security/BrowserSettings.h"
 #include <QObject>
 #include <QPointer>
 #include <QSettings>
@@ -82,7 +83,7 @@ private:
     QUrl m_url;
     QString m_tabId;
     CapabilityModel m_model;
-    QSettings m_settings;
+    BrowserSettings m_settings;
     QHash<QString, QVariant> m_privatePolicies;
     ActivityAggregator m_aggregator;
     QTimer m_timer;
