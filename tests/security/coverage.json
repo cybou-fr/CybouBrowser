@@ -2793,11 +2793,11 @@
       ],
       "verificationStatus": "not_verified",
       "sourceRefs": [
-        "src/browserstore.h",
-        "docs/SECURITY_MODEL.md"
+        "docs/DATA_CLASSIFICATION.md",
+        "src/browserstore.h"
       ],
       "rationale": "The product stores browsing history, bookmarks, session URLs, cloud endpoint settings, permission leases, downloads and logs; none are classified.",
-      "remainingWork": "Create a data inventory with protection levels (history, session, cookies/cache in engine profiles, downloads, logs, QSettings in the registry)."
+      "remainingWork": "Draft inventory and proposed levels written (docs/DATA_CLASSIFICATION.md), not approved by a named reviewer; verify it against a real session (registry versus engine profile) and resolve the five owner decisions listed there."
     },
     {
       "id": "ASVS:v5.0.0-14.1.2",
@@ -2811,10 +2811,11 @@
       ],
       "verificationStatus": "not_verified",
       "sourceRefs": [
+        "docs/DATA_CLASSIFICATION.md",
         "src/browserstore.h"
       ],
       "rationale": "Each protection level needs documented encryption, retention, logging and access requirements.",
-      "remainingWork": "Write the requirements per level after the inventory exists; currently QSettings holds history and session in plaintext under the user profile."
+      "remainingWork": "Draft per-level protection requirements written (docs/DATA_CLASSIFICATION.md), unapproved. Current state conflicts with them: P1 stores keep full URLs in plaintext and engine history is a second copy."
     },
     {
       "id": "ASVS:v5.0.0-14.2.1",
@@ -2964,7 +2965,7 @@
         "src/browserstore.h"
       ],
       "rationale": "The application's own persistent store (QSettings: history, bookmarks, session, preferences) lives in plaintext in the user profile and may contain sensitive URLs.",
-      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented."
+      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented. Also: engine History/Favicons databases and a possibly shared registry key (see docs/DATA_CLASSIFICATION.md)."
     },
     {
       "id": "ASVS:v5.0.0-15.1.1",

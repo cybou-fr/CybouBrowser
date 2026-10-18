@@ -24,3 +24,4 @@
 | [ADR 0008](ADR/0008-evidence-driven-versioning.md) | Mandatory evidence-driven release decision |
 
 **Source code is authoritative for what exists. Executed, accessible test artifacts are authoritative for what passed.** Unimplemented or unverified functionality must be explicitly labelled.
+- [DATA_CLASSIFICATION](DATA_CLASSIFICATION.md) - draft data inventory and proposed protection levels (unapproved).
