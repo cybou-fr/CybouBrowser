@@ -13,7 +13,7 @@
 // Diagnostic only (ASVS 17.1.1 browser analogue): which ICE candidates does a page obtain from
 // RTCPeerConnection without any STUN/TURN server, with WebRTCPublicInterfacesOnly on and off?
 // Prints WEBRTC_PROBE_RESULT lines; exit 0 means the experiment ran, not that a boundary holds.
-inline int runWebRtcProbe() {
+inline int runWebRtcProbe(bool quick = false) {
     QTcpServer server;
     if (!server.listen(QHostAddress::LocalHost)) return 2;
     QObject::connect(&server, &QTcpServer::newConnection, &server, [&server] {
@@ -40,7 +40,8 @@ inline int runWebRtcProbe() {
             if (d.size() >= 20 && d[0] == 0 && d[1] == 1) ++stunChecks; else ++otherDatagrams;
         }
     });
-    for (const bool publicOnly : {false, true}) {
+    const QList<bool> modes = quick ? QList<bool>{false} : QList<bool>{false, true};
+    for (const bool publicOnly : modes) {
         QWebEnginePage page(&profile);
         page.settings()->setAttribute(QWebEngineSettings::WebRTCPublicInterfacesOnly, publicOnly);
         QEventLoop loop; QTimer timeout; timeout.setSingleShot(true);
@@ -49,8 +50,9 @@ inline int runWebRtcProbe() {
         QObject::connect(&page, &QWebEnginePage::loadFinished, &loop, [&](bool ok) {
             if (!ok) { loop.quit(); return; }
             page.runJavaScript(QStringLiteral(R"JS((async()=>{
+                const quick=%2;
                 const out={candidates:[],error:null};
-                try{
+                if(!quick) try{
                     const pc=new RTCPeerConnection({iceServers:[]});
                     pc.createDataChannel('probe');
                     pc.onicecandidate=e=>{if(e.candidate)out.candidates.push(e.candidate.candidate)};
@@ -69,7 +71,7 @@ inline int runWebRtcProbe() {
                     await new Promise(r=>setTimeout(r,5000));
                     out.remoteInjected=true;a.close();b.close();
                 }catch(e){out.injectError=String(e)}
-                try{
+                if(!quick) try{
                     // Functional cost: can two peers in this page open a data channel with no TURN?
                     const p1=new RTCPeerConnection({iceServers:[]}), p2=new RTCPeerConnection({iceServers:[]});
                     p1.onicecandidate=e=>{if(e.candidate)p2.addIceCandidate(e.candidate).catch(()=>{})};
@@ -83,7 +85,7 @@ inline int runWebRtcProbe() {
                     out.peerChannelOpen=await opened;p1.close();p2.close();
                 }catch(e){out.peerError=String(e)}
                 window.__r=JSON.stringify(out);document.title='done';
-            })())JS").arg(udp.localPort()));
+            })())JS").arg(udp.localPort()).arg(quick ? "true" : "false"));
         });
         timeout.start(40000);
         page.load(QUrl(QString("http://127.0.0.1:%1/").arg(server.serverPort())));

@@ -23,3 +23,5 @@ History, session URLs, cookies и site storage могут сохраняться
 ## Не доказано
 
 Все применимые OWASP ASVS/WSTG требования, runtime sandbox, WebRTC/DNS leaks, hardware revoke, полный adblock, release signing/update, безопасность реальных облачных SSO. [THREAT_MODEL](THREAT_MODEL.md) · [TEST_PLAN](TEST_PLAN.md) · [RELEASE_CRITERIA](RELEASE_CRITERIA.md).
+
+**WebRTC strict (opt-in).** По умолчанию WebRTC разрешён, локальные кандидаты скрыты через mDNS, но страница всё равно может заставить браузер слать STUN-проверки на loopback и приватные адреса. Настройка «WebRTC strict» в разделе безопасности отключает прямой UDP и закрывает этот вектор ценой звонков, которым нужен peer-to-peer UDP; применяется после перезапуска. Подробности: [VALIDATION](VALIDATION.md).

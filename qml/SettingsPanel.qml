@@ -159,6 +159,12 @@ Drawer {
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Tente HTTPS pour les adresses HTTP publiques. En cas d’échec, le panneau Réseau peut proposer une exception HTTP explicite et temporaire, sans chiffrement.") }
                 CheckBox { text: qsTr("HTTPS par défaut · exceptions HTTP temporaires dans Réseau"); checked: browserStore.httpsOnly; enabled: false }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Bloque HTTP et les WebSocket non chiffrés dans tous les profils, y compris sur le réseau local. Une exception HTTP exige une action dans le panneau Réseau, pour une seule navigation dans un profil temporaire de l’onglet. Rechargez les onglets pour interrompre les connexions déjà ouvertes. Les protocoles externes sont désactivés et WebRTC utilise uniquement les interfaces publiques.") }
+                CheckBox { text: qsTr("WebRTC strict · aucun UDP direct"); checked: browserStore.strictWebRtc; onToggled: browserStore.strictWebRtc = checked }
+                Label {
+                    Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12
+                    text: qsTr("Empêche une page de se servir de WebRTC pour sonder le réseau local (paquets STUN vers des adresses locales). Désactive aussi l’UDP direct : les appels vidéo peuvent se dégrader ou échouer sans relais TCP. Désactivé par défaut.")
+                          + (browserStore.strictWebRtc !== browserStore.strictWebRtcActive ? " " + qsTr("Redémarrez CYBOU pour appliquer ce changement.") : "")
+                }
                 Label { text: qsTr("CONFIDENTIALITÉ"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Switch {
                     id: trackerSwitch

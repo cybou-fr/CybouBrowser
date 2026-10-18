@@ -137,3 +137,7 @@ The `pna` suite additionally covers a secure public source (ports 38476-38479, p
 `pna` app-layer cases install `RequestObserver` with a stub host resolver and load a public-source page over HTTP: `ws://` to a loopback literal and to a loopback-resolving alias must show zero target hits; a public-resolving name must still connect. A real resolver (CNAME chain, changing answers) is not covered.
 
 `--webrtc-probe` is a raw-engine diagnostic for ICE behaviour: local candidates with and without `WebRTCPublicInterfacesOnly`, and STUN checks that reach a test-owned UDP socket at loopback after a remote candidate is injected. It reports observations and exits 0 when the experiment ran; interpret the counts, not the exit code.
+
+## Strict WebRTC suite
+
+`cybou_tests.exe --webrtc-test` (gate suite `webrtc`) composes engine flags without touching the environment and then starts two child runs of itself (`--webrtc-strict-child=0|1`) because the policy is a process-wide Chromium switch. Each child loads a page, injects a loopback ICE candidate and reports `stunChecksAtLoopback`. Pass requires control >= 10 and strict == 0. The suite needs a free loopback UDP port and about a minute.

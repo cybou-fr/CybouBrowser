@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[2]
-SUITES=("security","controlbar","transport","tracker","surface","smoke","pna")
+SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc")
 ASVS_ID=re.compile(r"(?:v5\.0\.0-|V)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
 WSTG_ID=re.compile(r"WSTG-(?:v42-)?([A-Z]{4}-\d{2})")
 

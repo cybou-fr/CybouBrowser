@@ -3191,7 +3191,7 @@
         "qml/BrowserTab.qml",
         "src/security/EngineHardening.h"
       ],
-      "remainingWork": "Probe now exists (--webrtc-probe): mDNS-masked candidates and none with WebRTCPublicInterfacesOnly, but injected remote loopback candidates still receive STUN checks (87-91 in 5 s) with the setting on or off - open gap. Still needed: LAN-range targets, granted-media-permission behaviour, a mitigation (filter or policy) and its test. Adapted requirement, not a literal TURN server check. Mitigation search done: only force-webrtc-ip-handling-policy=disable_non_proxied_udp stops it (all direct UDP lost, not enabled); upstream LNA-for-WebRTC arrives in Chromium 142+. Needs a product decision or an engine upgrade."
+      "remainingWork": "Probe now exists (--webrtc-probe): mDNS-masked candidates and none with WebRTCPublicInterfacesOnly, but injected remote loopback candidates still receive STUN checks (87-91 in 5 s) with the setting on or off - open gap. Still needed: LAN-range targets, granted-media-permission behaviour, a mitigation (filter or policy) and its test. Adapted requirement, not a literal TURN server check. Mitigation search done: only force-webrtc-ip-handling-policy=disable_non_proxied_udp stops it (all direct UDP lost, not enabled); upstream LNA-for-WebRTC arrives in Chromium 142+. Needs a product decision or an engine upgrade. Opt-in 'WebRTC strict' setting now exists (default off) with a passing 'webrtc' suite (control 91 STUN checks, strict 0); still open: default exposure, real-call impact, LAN-range targets, engine upgrade."
     },
     {
       "id": "ASVS:v5.0.0-17.1.2",

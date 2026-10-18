@@ -41,6 +41,8 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool cacheBusy READ cacheBusy NOTIFY cacheBusyChanged)
     Q_PROPERTY(bool httpsOnly READ httpsOnly WRITE setHttpsOnly NOTIFY preferencesChanged)
     Q_PROPERTY(bool httpsFirst READ httpsFirst WRITE setHttpsFirst NOTIFY preferencesChanged)
+    Q_PROPERTY(bool strictWebRtc READ strictWebRtc WRITE setStrictWebRtc NOTIFY preferencesChanged)
+    Q_PROPERTY(bool strictWebRtcActive READ strictWebRtcActive NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
     Q_PROPERTY(bool highContrast READ highContrast NOTIFY preferencesChanged)
@@ -142,6 +144,16 @@ public:
         for (auto observer : observers) observer->setHttpsOnly(enabled);
         emit preferencesChanged();
     }
+    // Opt-in, off by default. The Chromium switch is process-wide and read before the engine starts,
+    // so the saved preference applies after a restart; strictWebRtcActive reports what this process runs with.
+    bool strictWebRtc() const { return settings.value("preferences/strictWebRtc", false).toBool(); }
+    void setStrictWebRtc(bool enabled) {
+        if (enabled == strictWebRtc()) return;
+        settings.setValue("preferences/strictWebRtc", enabled);
+        emit preferencesChanged();
+    }
+    bool strictWebRtcActive() const { return m_strictWebRtcActive; }
+    void setStrictWebRtcActive(bool active) { m_strictWebRtcActive = active; emit preferencesChanged(); }
     bool httpsFirst() const { return settings.value("preferences/httpsFirst", true).toBool(); }
     void setHttpsFirst(bool enabled) {
         if (enabled == httpsFirst()) return;
@@ -505,6 +517,7 @@ private:
     }
     bool m_allowTestHttp = false;
     bool m_testHttp = false;
+    bool m_strictWebRtcActive = false;
     QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
     mutable QSettings settings;
     mutable std::optional<QVariantList> m_historyCache;
