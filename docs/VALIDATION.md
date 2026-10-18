@@ -155,3 +155,16 @@ New diagnostic `cybou_tests.exe --https-pna-probe` (`HttpsPnaProbe.h`, raw engin
 | same | no | all six blocked; only OPTIONS reached targets, zero GET |
 
 Finding: secure public pages were unrestricted until preflights were enabled; with them the engine enforces on the connected address, including hostname aliases. `applyEngineHardening()` now enables all three features. The `pna` suite grew to ten fetch cases plus a direct-navigation control, adding HTTPS public->local with preflight allowed (reaches target), denied (zero GET), alias denied, and HTTPS local->local (no preflight). Gate: **7/7 PASS, 0 issues** (`build/pna-https/`, local). Compatibility consequence: a public HTTPS site can use a local service only if that service answers the preflight with `Access-Control-Allow-Private-Network: true`. Not proven: real public IPs, DNS/CNAME changes, WebRTC, workers, WebSocket, redirects between address spaces. CYB-PNA-001/002 remain open.
+
+## PNA redirects and WebSocket — 2026-10-18
+
+The `pna` suite (engine decision only, hardened flags) gained redirect and WebSocket cases. Results on Qt 6.12 / Chromium 140.0.7339.225:
+
+| Case | Result |
+| --- | --- |
+| public -> public target that 302-redirects to local (literal and hostname alias) | blocked, zero hits on the local target |
+| local -> public target that 302-redirects to local | allowed (the client address space is local) |
+| public page opens `ws://` to local literal / hostname alias | **reaches the target (1 handshake request each)** |
+| local page opens `ws://` to local | reaches the target (expected control) |
+
+**Known gap, not a PASS:** Chromium's private-network protections do not cover WebSocket connections, so a public page can open a WebSocket to a local service through the engine alone. The suite logs `PNA_COMPAT_KNOWN_GAP` for the two public-source cases and still exits 0 so the baseline keeps running; the final line reports the gap count. Whether the application's URL interceptor stops the literal `ws://127.0.0.1` form is not covered by a test yet, and the hostname alias cannot be stopped by URL classification at all. A fix needs an enforceable connected-address check for WebSockets, or an explicit policy that blocks public-page WebSockets to resolved private addresses. CYB-PNA-001/002 and CYB-WS-001 remain open. Not covered: WebRTC, workers, real public IPs, DNS/CNAME changes.

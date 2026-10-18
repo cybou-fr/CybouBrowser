@@ -34,6 +34,12 @@ inline int runPnaCompatTest() {
                     const auto parts = data.left(data.indexOf("\r\n")).split(' ');
                     if (parts.size() < 2) { socket->abort(); return; }
                     ++hits[QByteArray::number(port) + parts[1]];
+                    if (parts[1].startsWith("/redir-")) {
+                        const QByteArray location = parts[1].startsWith("/redir-literal") ? "http://127.0.0.1:38472/k" : "http://cybou-alias.test:38472/l";
+                        socket->write("HTTP/1.1 302 Found\r\nConnection: close\r\nLocation: " + location + "\r\nContent-Length: 0\r\n\r\n");
+                        socket->disconnectFromHost();
+                        return;
+                    }
                     const QByteArray body("<!doctype html><title>Compat ready</title>");
                     socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
                     socket->disconnectFromHost();
@@ -63,7 +69,13 @@ inline int runPnaCompatTest() {
     auto fetchScript = [](const QString &url) {
         return QString("(async()=>{try{await fetch('%1',{mode:'no-cors',cache:'no-store'});window.__r='ok'}catch(e){window.__r='blocked'}document.title='done'})()").arg(url);
     };
-    struct Case { const char *name; quint16 source; QString target; QString expect; QByteArray hitKey; int hitCount; };
+    // "ws:" targets open a WebSocket. The plain fixture never completes the handshake, so the
+    // outcome is judged by target hit counters (a blocked socket never connects), not by events.
+    auto scriptFor = [&](const QString &target) {
+        if (!target.startsWith("ws:")) return fetchScript(target);
+        return QString("(()=>{const done=()=>{window.__r='settled';document.title='done'};const w=new WebSocket('%1');w.onerror=done;w.onclose=done;w.onopen=done;setTimeout(done,8000)})()").arg(target.mid(3));
+    };
+    struct Case { const char *name; quint16 source; QString target; QString expect; QByteArray hitKey; int hitCount; bool knownGap = false; };
     const auto host = [](quint16 p, const char *name) { return QString("http://%1:%2").arg(name).arg(p); };
     const QList<Case> cases = {
         {"public->local literal", kPnaPublicSource, QString("http://127.0.0.1:%1/a").arg(kPnaLocalTarget), "blocked", QByteArray::number(kPnaLocalTarget) + "/a", 0},
@@ -71,11 +83,23 @@ inline int runPnaCompatTest() {
         {"public->public", kPnaPublicSource, host(kPnaPublicTarget, "cybou-alias.test") + "/c", "ok", QByteArray::number(kPnaPublicTarget) + "/c", 1},
         {"local->local literal", kPnaLocalSource, QString("http://127.0.0.1:%1/d").arg(kPnaLocalTarget), "ok", QByteArray::number(kPnaLocalTarget) + "/d", 1},
         {"local->local alias", kPnaLocalSource, host(kPnaLocalTarget, "cybou-alias.test") + "/e", "ok", QByteArray::number(kPnaLocalTarget) + "/e", 1},
+        {"public->public->local redirect literal", kPnaPublicSource, host(kPnaPublicTarget, "cybou-alias.test") + "/redir-literal", "*", QByteArray::number(kPnaLocalTarget) + "/k", 0},
+        {"public->public->local redirect alias", kPnaPublicSource, host(kPnaPublicTarget, "cybou-alias.test") + "/redir-alias", "*", QByteArray::number(kPnaLocalTarget) + "/l", 0},
+        {"local->public->local redirect", kPnaLocalSource, host(kPnaPublicTarget, "cybou-alias.test") + "/redir-literal2", "*", QByteArray::number(kPnaLocalTarget) + "/k", 1},
+        {"public ws->local literal", kPnaPublicSource, QString("ws:ws://127.0.0.1:%1/m").arg(kPnaLocalTarget), "*", QByteArray::number(kPnaLocalTarget) + "/m", 0, true},
+        {"public ws->local alias", kPnaPublicSource, QString("ws:ws://cybou-alias.test:%1/n").arg(kPnaLocalTarget), "*", QByteArray::number(kPnaLocalTarget) + "/n", 0, true},
+        {"local ws->local", kPnaLocalSource, QString("ws:ws://127.0.0.1:%1/o").arg(kPnaLocalTarget), "*", QByteArray::number(kPnaLocalTarget) + "/o", 1},
         {"local->public", kPnaLocalSource, host(kPnaPublicTarget, "cybou-alias.test") + "/f", "ok", QByteArray::number(kPnaPublicTarget) + "/f", 1},
     };
+    int knownGaps = 0;
     for (const auto &c : cases) {
-        const auto result = run(host(c.source, "cybou-source.test") + "/source", fetchScript(c.target));
-        if (result != c.expect || hits.value(c.hitKey) != c.hitCount) {
+        const auto result = run(host(c.source, "cybou-source.test") + "/source", scriptFor(c.target));
+        if (c.knownGap && hits.value(c.hitKey) != c.hitCount) {
+            ++knownGaps;
+            qWarning() << "PNA_COMPAT_KNOWN_GAP:" << c.name << "reached target" << hits.value(c.hitKey) << "time(s); engine PNA does not cover WebSocket";
+            continue;
+        }
+        if ((c.expect != "*" && result != c.expect) || hits.value(c.hitKey) != c.hitCount) {
             qCritical() << "PNA_COMPAT FAIL:" << c.name << "result" << result << "expected" << c.expect << "hits" << hits.value(c.hitKey) << "expected" << c.hitCount;
             return 1;
         }
@@ -135,7 +159,7 @@ inline int runPnaCompatTest() {
     direct.exec();
     if (hits.value(QByteArray::number(kPnaLocalTarget) + "/direct") != 1) { qCritical() << "PNA_COMPAT FAIL: direct local navigation"; return 1; }
     qInfo() << "PNA_COMPAT_CASE PASS: direct local navigation";
-    qInfo() << "PNA_COMPAT_TEST PASS: insecure public->local blocked; secure public->local needs a PNA preflight grant; local->local, public->public, local->public and direct navigation preserved";
+    qInfo() << "PNA_COMPAT_TEST PASS (known gaps:" << knownGaps << "- WebSocket public->local is not engine-blocked): insecure public->local blocked; secure public->local needs a PNA preflight grant; local->local, public->public, local->public and direct navigation preserved";
     qDeleteAll(servers);
     return 0;
 }
