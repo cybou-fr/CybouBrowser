@@ -4035,9 +4035,18 @@
     {
       "id": "WSTG:v4.2-CONF-05",
       "title": "Enumerate Infrastructure and Application Admin Interfaces",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/main.cpp",
+        "qml/Main.qml"
+      ],
+      "rationale": "Browser analogue of admin interfaces: debug and remote-debugging entry points (QTWEBENGINE_REMOTE_DEBUGGING, test hooks) reachable in a shipped build.",
+      "remainingWork": "Verify on the packaged binary; shared with ASVS 13.4.2."
     },
     {
       "id": "WSTG:v4.2-CONF-06",
@@ -4049,9 +4058,17 @@
     {
       "id": "WSTG:v4.2-CONF-07",
       "title": "Test HTTP Strict Transport Security",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/HstsTests.h"
+      ],
+      "rationale": "The engine must enforce Strict-Transport-Security for later http:// navigations; engine-level suite 'hsts' passes.",
+      "remainingWork": "Persistence across restarts, includeSubDomains, preload and the interaction with the single-navigation HTTP exception."
     },
     {
       "id": "WSTG:v4.2-CONF-08",
@@ -4063,9 +4080,17 @@
     {
       "id": "WSTG:v4.2-CONF-09",
       "title": "Test File Permission",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "docs/DATA_CLASSIFICATION.md"
+      ],
+      "rationale": "Permissions on the application's own data: registry key and profile directories under the user profile.",
+      "remainingWork": "Inspect ACLs of the profile and cache directories and the registry key; the registry key may be shared with another application."
     },
     {
       "id": "WSTG:v4.2-CONF-10",
@@ -4119,9 +4144,19 @@
     {
       "id": "WSTG:v4.2-ATHN-01",
       "title": "Testing for Credentials Transported over an Encrypted Channel",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001",
+        "CYB-HTTP-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/NetworkPolicy.h",
+        "src/security/HttpNavigationLease.h"
+      ],
+      "rationale": "Credentials must not travel over cleartext: strict HTTPS by default, per-address single-navigation exception, insecure ws blocked.",
+      "remainingWork": "Form submission over HTTP and mixed-content forms are not tested at the UI level."
     },
     {
       "id": "WSTG:v4.2-ATHN-02",
@@ -4154,9 +4189,18 @@
     {
       "id": "WSTG:v4.2-ATHN-06",
       "title": "Testing for Browser Cache Weakness",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "qml/SettingsPanel.qml"
+      ],
+      "rationale": "Browser cache and history after sign-out: no-store handling and back/forward restoration are the engine's; visited URLs persist in the HTTP cache until it is cleared (measured).",
+      "remainingWork": "Fixture for Cache-Control: no-store pages in cache and back-forward cache after clear and private-window close."
     },
     {
       "id": "WSTG:v4.2-ATHN-07",
@@ -4189,9 +4233,18 @@
     {
       "id": "WSTG:v4.2-ATHZ-01",
       "title": "Testing Directory Traversal File Include",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/DownloadPolicy.h",
+        "src/security/DownloadFileTests.h"
+      ],
+      "rationale": "Path traversal through attacker-supplied download names and file URLs; the engine fixture passes for eight hostile Content-Disposition cases.",
+      "remainingWork": "Page-initiated navigation to file: URLs and drag-and-drop paths; application accept/rename path."
     },
     {
       "id": "WSTG:v4.2-ATHZ-02",
@@ -4224,9 +4277,17 @@
     {
       "id": "WSTG:v4.2-SESS-02",
       "title": "Testing for Cookies Attributes",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "Cookie attribute enforcement is the engine's; the application sets third-party cookie blocking (default on).",
+      "remainingWork": "Fixture for Secure/HttpOnly/SameSite handling and for the third-party cookie filter in persistent and private profiles."
     },
     {
       "id": "WSTG:v4.2-SESS-03",
@@ -4350,9 +4411,18 @@
     {
       "id": "WSTG:v4.2-INPV-11",
       "title": "Testing for Code Injection",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/Main.qml",
+        "tools/security/test_qml_policies.py"
+      ],
+      "rationale": "Code injection into the application: JavaScript injected into pages is built from values (fixed to JSON.stringify and linted); no eval/createQmlObject exists.",
+      "remainingWork": "Periodic audit of runJavaScript call sites."
     },
     {
       "id": "WSTG:v4.2-INPV-12",
@@ -4406,23 +4476,50 @@
     {
       "id": "WSTG:v4.2-INPV-19",
       "title": "Testing for Server-Side Request Forgery",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-PNA-001",
+        "CYB-PNA-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/EngineHardening.h",
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "The browser analogue of SSRF is a page reaching loopback or private services: engine PNA features, URL classification (differential and fuzz suites) and a WebSocket resolver are in place; WebRTC STUN to loopback remains open.",
+      "remainingWork": "WebRTC mitigation, connection-bound DNS enforcement, redirect-time re-checks."
     },
     {
       "id": "WSTG:v4.2-ERRH-01",
       "title": "Testing for Improper Error Handling",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/BrowserTab.qml",
+        "qml/Main.qml"
+      ],
+      "rationale": "Error pages and dialogs shown for network, certificate and download failures.",
+      "remainingWork": "Review every user-visible error string; fault-injection checks."
     },
     {
       "id": "WSTG:v4.2-ERRH-02",
       "title": "Testing for Stack Traces",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/main.cpp"
+      ],
+      "rationale": "Stack traces or internal paths must not reach the user or a page; Qt/QML error output goes to the console only.",
+      "remainingWork": "Confirm no QML error text or paths are shown in the UI; no crash handler exists."
     },
     {
       "id": "WSTG:v4.2-CRYP-01",
@@ -4508,37 +4605,79 @@
     {
       "id": "WSTG:v4.2-BUSL-05",
       "title": "Test Number of Times a Function Can be Used Limits",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/PermissionCoordinator.cpp"
+      ],
+      "rationale": "Limits on how often a hostile page can trigger permission requests, popups or downloads.",
+      "remainingWork": "High-rate request, popup and download flood cases are planned, not written."
     },
     {
       "id": "WSTG:v4.2-BUSL-06",
       "title": "Testing for the Circumvention of Work Flows",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/HttpNavigationLease.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "Circumvention of the HTTP consent workflow: stale and cross-tab tokens, redirect chains requiring separate consent.",
+      "remainingWork": "UI suites tested this; they are blocked here, re-run when possible; add rapid repeated consent and tab close/reopen."
     },
     {
       "id": "WSTG:v4.2-BUSL-07",
       "title": "Test Defenses Against Application Misuse",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/PermissionCoordinator.cpp",
+        "qml/BrowserTab.qml"
+      ],
+      "rationale": "Defences against application misuse by hostile pages: single pending permission request, timeouts, popup mode, restricted mode.",
+      "remainingWork": "Misuse stress cases are planned, not written."
     },
     {
       "id": "WSTG:v4.2-BUSL-08",
       "title": "Test Upload of Unexpected File Types",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "Unexpected file types chosen as wallpaper are accepted by extension only.",
+      "remainingWork": "Fixture with mismatched content; decision on content sniffing."
     },
     {
       "id": "WSTG:v4.2-BUSL-09",
       "title": "Test Upload of Malicious Files",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/DownloadPolicy.h"
+      ],
+      "rationale": "Malicious downloaded files: external open allowlist, reserved-name and stream rejection, Mark-of-the-Web for the OS to scan.",
+      "remainingWork": "ZoneId content, PDF export path, trailing-dot anomaly."
     },
     {
       "id": "WSTG:v4.2-CLNT-01",
@@ -4557,9 +4696,18 @@
     {
       "id": "WSTG:v4.2-CLNT-03",
       "title": "Testing for HTML Injection",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UI-004"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "tools/security/qml_text_lint.py",
+        "src/security/TextInjectionProbe.h"
+      ],
+      "rationale": "HTML injection into the native UI: a defect was found (rich text in Labels) and fixed with a lint and a probe.",
+      "remainingWork": "Live end-to-end hostile-title test; text outside QML."
     },
     {
       "id": "WSTG:v4.2-CLNT-04",
@@ -4590,9 +4738,18 @@
     {
       "id": "WSTG:v4.2-CLNT-06",
       "title": "Testing for Client-side Resource Manipulation",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UI-004"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/NewTabPage.qml",
+        "qml/Main.qml"
+      ],
+      "rationale": "Client-side resource manipulation: attacker-influenced strings used as resource sources (favicons, wallpaper paths).",
+      "remainingWork": "Review every Image/source binding that takes page-provided or stored data."
     },
     {
       "id": "WSTG:v4.2-CLNT-07",
@@ -4624,9 +4781,18 @@
     {
       "id": "WSTG:v4.2-CLNT-09",
       "title": "Testing for Clickjacking",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UI-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/CapabilityPopover.qml",
+        "qml/Main.qml"
+      ],
+      "rationale": "UI redress against native prompts and the hover card: a page must not be able to overlay, time or spoof the consent UI.",
+      "remainingWork": "Live UI test with a hostile fullscreen or popup page over the hover card; blocked here with the UI suites."
     },
     {
       "id": "WSTG:v4.2-CLNT-10",
