@@ -8,9 +8,11 @@
 #include <QTranslator>
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 #include "browserstore.h"
+#include "security/EngineHardening.h"
 
 int main(int argc, char *argv[])
 {
+    applyEngineHardening();
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU");
