@@ -24,6 +24,7 @@
 #include <cstdio>
 #include "browserstore.h"
 #include "security/SecurityTests.h"
+#include "security/PrivateNetworkProbe.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 
@@ -45,6 +46,9 @@ int main(int argc, char *argv[])
     bool trackerTest = false;
     for (int i = 1; i < argc; ++i) trackerTest |= QByteArray(argv[i]) == "--tracker-test";
     if (trackerTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP google-analytics.com 127.0.0.1\" --no-proxy-server");
+    bool privateNetworkProbe = false;
+    for (int i = 1; i < argc; ++i) privateNetworkProbe |= QByteArray(argv[i]) == "--private-network-probe";
+    if (privateNetworkProbe) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server");
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
@@ -64,6 +68,8 @@ int main(int argc, char *argv[])
     const bool smokeTest = explicitSmoke || controlBarTest || transportTest || surfaceTest || runAll;
 
     qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
+
+    if (privateNetworkProbe) return runPrivateNetworkProbe();
 
     BoundaryTlsServer transportTls;
     QString transportWssUrl;
