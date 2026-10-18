@@ -26,6 +26,7 @@
 #include "security/SecurityTests.h"
 #include "security/PrivateNetworkProbe.h"
 #include "security/EngineHardening.h"
+#include "security/HttpsPnaProbe.h"
 #include "security/PnaCompatTests.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
@@ -56,9 +57,12 @@ int main(int argc, char *argv[])
     if (enginePnaProbe) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server --ip-address-space-overrides=127.0.0.1:38471=public");
     bool pnaCompat = false;
     for (int i = 1; i < argc; ++i) pnaCompat |= QByteArray(argv[i]) == "--pna-test";
-    if (pnaCompat) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server --ip-address-space-overrides=127.0.0.1:38471=public,127.0.0.1:38474=public");
+    if (pnaCompat) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server --ip-address-space-overrides=127.0.0.1:38471=public,127.0.0.1:38474=public,127.0.0.1:38476=public");
+    bool httpsPnaProbe = false;
+    for (int i = 1; i < argc; ++i) httpsPnaProbe |= QByteArray(argv[i]) == "--https-pna-probe";
+    if (httpsPnaProbe) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server --ip-address-space-overrides=127.0.0.1:38471=public");
     // Probes measure the raw engine; every other mode runs the shipped engine configuration.
-    if (!privateNetworkProbe && !enginePnaProbe) applyEngineHardening();
+    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe) applyEngineHardening();
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
@@ -82,6 +86,7 @@ int main(int argc, char *argv[])
     if (privateNetworkProbe) return runPrivateNetworkProbe();
     if (enginePnaProbe) return runEnginePnaProbe();
     if (pnaCompat) return runPnaCompatTest();
+    if (httpsPnaProbe) return runHttpsPnaProbe();
 
     BoundaryTlsServer transportTls;
     QString transportWssUrl;

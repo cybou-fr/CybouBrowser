@@ -143,3 +143,15 @@ Finding: the engine, not URL classification, can block a hostname that resolves 
 ## Engine PNA hardening enabled — 2026-10-18
 
 `applyEngineHardening()` (`src/security/EngineHardening.h`) now adds `--enable-features=BlockInsecurePrivateNetworkRequests` before engine initialisation in both `cybou.exe` and `cybou_tests.exe`; only the raw-engine probes opt out. New seventh gate suite `--pna-test` (`PnaCompatTests.h`) uses engine decisions only, with fixed-port `--ip-address-space-overrides`: public->local (literal and hostname alias) is blocked with zero target hits; public->public, local->local (literal and alias), local->public and direct navigation to a local address all still work. Gate: **7/7 PASS, 0 issues** (`build/pna-hardening/`, local). Scope: insecure-context sources only; HTTPS public sources, real DNS/CNAME changes, WebRTC and workers remain unproven. CYB-PNA-001/002 stay open.
+
+## HTTPS public-source PNA and preflight enforcement — 2026-10-18
+
+New diagnostic `cybou_tests.exe --https-pna-probe` (`HttpsPnaProbe.h`, raw engine, no app interceptor): HTTPS source `cybou-source.test:38471` (profile-local test CA, new public leaf `tests/security/fixtures/tls/pna-cert.pem` with SAN for the two test hostnames, issued by `generate_tls_matrix.py --pna-leaf-only`; existing fixtures untouched) overridden to the public address space; local HTTPS literal, HTTPS hostname alias and HTTP literal targets, each fetched in no-cors and cors mode. Qt 6.12 / Chromium 140.0.7339.225.
+
+| Chromium features | Target grants private network | Result |
+| --- | --- | --- |
+| none, `BlockInsecurePrivateNetworkRequests`, or `LocalNetworkAccessChecks` | n/a | all six fetches reached the targets (no block for secure public sources) |
+| `PrivateNetworkAccessSendPreflights` + `PrivateNetworkAccessRespectPreflightResults` | yes | preflight sent (also for the hostname alias), all reached |
+| same | no | all six blocked; only OPTIONS reached targets, zero GET |
+
+Finding: secure public pages were unrestricted until preflights were enabled; with them the engine enforces on the connected address, including hostname aliases. `applyEngineHardening()` now enables all three features. The `pna` suite grew to ten fetch cases plus a direct-navigation control, adding HTTPS public->local with preflight allowed (reaches target), denied (zero GET), alias denied, and HTTPS local->local (no preflight). Gate: **7/7 PASS, 0 issues** (`build/pna-https/`, local). Compatibility consequence: a public HTTPS site can use a local service only if that service answers the preflight with `Access-Control-Allow-Private-Network: true`. Not proven: real public IPs, DNS/CNAME changes, WebRTC, workers, WebSocket, redirects between address spaces. CYB-PNA-001/002 remain open.

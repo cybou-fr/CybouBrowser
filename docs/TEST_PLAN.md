@@ -129,3 +129,5 @@ Exit 2 means broken controls/assertions. Exit 3 records that the alias request a
 ## PNA compatibility suite
 
 `cybou_tests.exe --pna-test` (gate suite `pna`) guards the production engine flag `BlockInsecurePrivateNetworkRequests`. Four loopback servers on fixed ports are assigned public/local address spaces via `--ip-address-space-overrides`; hostnames map to loopback through test-process resolver rules. Six fetch cases assert exact outcomes and target hit counters (only public->local blocked), plus a direct local navigation control. No app interceptor is installed, so only the engine decides. Fixed ports 38471-38474 must be free.
+
+The `pna` suite additionally covers a secure public source (ports 38476-38479, profile-local test CA): local HTTPS target granting the PNA preflight is reachable; a denying target (literal and hostname alias) sees only OPTIONS and zero GET; local->local needs no preflight. `--https-pna-probe` is the raw-engine diagnostic (set `CYBOU_PROBE_DENY_PNA=1` for denying targets and supply features via `QTWEBENGINE_CHROMIUM_FLAGS`). Ports 38471-38479 must be free.
