@@ -2,6 +2,9 @@
 #include <QtWebEngineCore/QWebEngineUrlRequestInterceptor>
 #include <QtWebEngineCore/QWebEngineUrlRequestInfo>
 #include <QMutex>
+#include <QHostAddress>
+#include <QHostInfo>
+#include <functional>
 #include <QDateTime>
 #include <QQueue>
 #include <QVariantList>
@@ -18,6 +21,10 @@ class RequestObserver final : public QWebEngineUrlRequestInterceptor {
     Q_OBJECT
 public:
     explicit RequestObserver(QObject *parent) : QWebEngineUrlRequestInterceptor(parent) {}
+    // Best-effort name resolution for WebSocket targets from public pages (engine PNA does not
+    // cover WebSocket). Not bound to the later connection, so it is no DNS-rebinding defence.
+    using HostResolver = std::function<QList<QHostAddress>(const QString &)>;
+    void setHostResolver(HostResolver resolver) { QMutexLocker locker(&resolverMutex); hostResolver = std::move(resolver); }
     void setHttpsOnly(bool enabled) { strictHttps.store(enabled); }
     void setBlockTrackers(bool enabled) { blockTrackers.store(enabled); }
     int blockedCount() const { return blockedTrackersCount.load() + blockedAdsCount.load(); }
@@ -53,6 +60,18 @@ public:
 
     struct Event { QString origin; QString firstParty; int type; qint64 time; bool blocked; QString reason; QString decision; };
 
+    bool webSocketResolvesPrivate(const QUrl &url, const QUrl &firstParty) {
+        const QString host = url.host();
+        QHostAddress literal;
+        if (host.isEmpty() || firstParty.isEmpty() || !firstParty.isValid() || NavigationGuard::isPrivateNetwork(firstParty) || literal.setAddress(host)) return false;
+        HostResolver resolver;
+        { QMutexLocker locker(&resolverMutex); resolver = hostResolver; }
+        const auto addresses = resolver ? resolver(host) : QHostInfo::fromName(host).addresses();
+        for (const auto &address : addresses)
+            if (NavigationGuard::isPrivateNetworkAddress(address)) return true;
+        return false;
+    }
+
     void interceptRequest(QWebEngineUrlRequestInfo &info) override {
         const auto url = info.requestUrl();
         const auto firstParty = info.firstPartyUrl();
@@ -65,6 +84,8 @@ public:
                  && !httpLease.allows(url, firstParty, isMainFrame)) {
             reason = "insecure-transport";
         } else if (NavigationGuard::blocksPrivateNetworkAccess(url, firstParty, isMainFrame)) {
+            reason = "private-network-access";
+        } else if (info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeWebSocket && webSocketResolvesPrivate(url, firstParty)) {
             reason = "private-network-access";
         } else if (blockTrackers.load() && !isMainFrame) {
             const auto match = RuleEngine::classify(url, firstParty);
@@ -156,6 +177,8 @@ private:
     std::atomic_bool blockTrackers{true};
     std::atomic_int blockedTrackersCount{0};
     std::atomic_int blockedAdsCount{0};
+    QMutex resolverMutex;
+    HostResolver hostResolver;
     mutable QMutex mutex;
     QQueue<Event> events;
     HttpNavigationLease httpLease;

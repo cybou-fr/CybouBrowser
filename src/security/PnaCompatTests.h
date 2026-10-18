@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QtWebEngineCore/QWebEnginePage>
 #include <QtWebEngineCore/QWebEngineProfile>
+#include "../controlbar/RequestObserver.h"
 #include <QtWebEngineCore/QWebEngineProfileBuilder>
 #include <QFile>
 #include "HttpsPnaProbe.h"
@@ -49,20 +50,21 @@ inline int runPnaCompatTest() {
     }
     QWebEngineProfile profile; // engine decision only
     QWebEnginePage page(&profile);
+    QWebEnginePage *current = &page; // page the run() helper drives
     auto run = [&](const QString &sourceUrl, const QString &script) {
         QEventLoop loop; QTimer timeout; timeout.setSingleShot(true);
         QString title; bool loaded = false;
         QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-        auto c1 = QObject::connect(&page, &QWebEnginePage::titleChanged, &loop, [&](const QString &t) { if (t == "done") { title = t; loop.quit(); } });
-        auto c2 = QObject::connect(&page, &QWebEnginePage::loadFinished, &loop, [&](bool ok) {
+        auto c1 = QObject::connect(current, &QWebEnginePage::titleChanged, &loop, [&](const QString &t) { if (t == "done") { title = t; loop.quit(); } });
+        auto c2 = QObject::connect(current, &QWebEnginePage::loadFinished, &loop, [&](bool ok) {
             loaded = ok;
-            if (!ok) loop.quit(); else page.runJavaScript(script);
+            if (!ok) loop.quit(); else current->runJavaScript(script);
         });
-        timeout.start(20000); page.load(QUrl(sourceUrl)); loop.exec();
+        timeout.start(20000); current->load(QUrl(sourceUrl)); loop.exec();
         QObject::disconnect(c1); QObject::disconnect(c2);
         if (!loaded || title != "done") return QString("LOAD_FAIL");
         QString result; QEventLoop get;
-        page.runJavaScript("window.__r", [&](const QVariant &v) { result = v.toString(); get.quit(); });
+        current->runJavaScript("window.__r", [&](const QVariant &v) { result = v.toString(); get.quit(); });
         QTimer::singleShot(3000, &get, &QEventLoop::quit); get.exec();
         return result;
     };
@@ -152,6 +154,46 @@ inline int runPnaCompatTest() {
         }
     }
 #endif
+    // Application layer: RequestObserver on a public-source page. Source loads over HTTP only so
+    // the WebSocket policy, not strict-HTTPS denial of the source, decides the outcome.
+    {
+        QWebEngineProfile appProfile;
+        RequestObserver observer(&appProfile);
+        observer.setHttpsOnly(false);
+        // Stub resolver: the engine resolves test hostnames with --host-resolver-rules, which the OS
+        // resolver cannot see. The alias is answered as loopback; the other name as a public address.
+        observer.setHostResolver([](const QString &host) {
+            if (host == "cybou-alias.test") return QList<QHostAddress>{QHostAddress(QHostAddress::LocalHost)};
+            return QList<QHostAddress>{QHostAddress("203.0.113.9")};
+        });
+        appProfile.setUrlRequestInterceptor(&observer);
+        QWebEnginePage appPage(&appProfile);
+        current = &appPage;
+        const auto before = knownGaps;
+        const struct { const char *name; QString target; QByteArray hitKey; bool knownGap; } appCases[] = {
+            {"app interceptor public ws->local literal", QString("ws:ws://127.0.0.1:%1/p").arg(kPnaLocalTarget), QByteArray::number(kPnaLocalTarget) + "/p", false},
+            {"app interceptor public ws->local alias", QString("ws:ws://cybou-alias.test:%1/q").arg(kPnaLocalTarget), QByteArray::number(kPnaLocalTarget) + "/q", false},
+        };
+        for (const auto &c : appCases) {
+            const auto result = run(host(kPnaPublicSource, "cybou-source.test") + "/source", scriptFor(c.target));
+            const int reached = hits.value(c.hitKey);
+            if (reached != 0 && c.knownGap) {
+                ++knownGaps;
+                qWarning() << "PNA_COMPAT_KNOWN_GAP:" << c.name << "reached target" << reached << "time(s); URL classification cannot see the resolved address";
+            } else if (reached != 0 || result == "LOAD_FAIL") {
+                qCritical() << "PNA_COMPAT FAIL:" << c.name << "result" << result << "target hits" << reached;
+                return 1;
+            } else {
+                qInfo() << "PNA_COMPAT_CASE PASS:" << c.name << "blocked before the target";
+            }
+        }
+        Q_UNUSED(before);
+        // Control: a WebSocket whose name resolves to a public address is not blocked.
+        run(host(kPnaPublicSource, "cybou-source.test") + "/source", scriptFor(QString("ws:ws://cybou-source.test:%1/r").arg(kPnaPublicTarget)));
+        if (hits.value(QByteArray::number(kPnaPublicTarget) + "/r") != 1) { qCritical() << "PNA_COMPAT FAIL: public-resolving ws wrongly blocked"; return 1; }
+        qInfo() << "PNA_COMPAT_CASE PASS: app interceptor public ws->public name allowed";
+        current = &page;
+    }
     // Direct user navigation to a local address is never a PNA request.
     QEventLoop direct; QTimer::singleShot(5000, &direct, &QEventLoop::quit);
     QObject::connect(&page, &QWebEnginePage::loadFinished, &direct, &QEventLoop::quit);
@@ -159,7 +201,7 @@ inline int runPnaCompatTest() {
     direct.exec();
     if (hits.value(QByteArray::number(kPnaLocalTarget) + "/direct") != 1) { qCritical() << "PNA_COMPAT FAIL: direct local navigation"; return 1; }
     qInfo() << "PNA_COMPAT_CASE PASS: direct local navigation";
-    qInfo() << "PNA_COMPAT_TEST PASS (known gaps:" << knownGaps << "- WebSocket public->local is not engine-blocked): insecure public->local blocked; secure public->local needs a PNA preflight grant; local->local, public->public, local->public and direct navigation preserved";
+    qInfo() << "PNA_COMPAT_TEST PASS (known gaps:" << knownGaps << "- engine PNA does not cover WebSocket; app resolver is best-effort): insecure public->local blocked; secure public->local needs a PNA preflight grant; local->local, public->public, local->public and direct navigation preserved";
     qDeleteAll(servers);
     return 0;
 }
