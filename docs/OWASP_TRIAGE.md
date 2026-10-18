@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 44 are classified applicable and 398 remain untriaged (fourth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 45 are classified applicable and 397 remain untriaged (fourth batch below; ASVS 3.7.3 added afterwards, see VALIDATION). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -76,7 +76,7 @@ Date: 2026-10-18. The 31 untriaged controls of this chapter describe the securit
 
 ### Proposed not-applicable (NOT approved)
 
-Server-set headers, cookies and hosting practices that CYBOU does not serve; the browser merely enforces some of them through the engine, and enforcement is covered by existing cases (CORS, transport, redirects) rather than by these controls: ASVS 3.1.1, 3.2.1, 3.2.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 3.3.5, 3.4.2, 3.4.3, 3.4.4, 3.4.5, 3.4.6, 3.4.7, 3.4.8, 3.5.1, 3.5.2, 3.5.3, 3.5.4, 3.5.5, 3.5.6, 3.5.7, 3.5.8, 3.6.1, 3.7.2, 3.7.3, 3.7.4, 3.7.5. Two deserve explicit reviewer attention before N/A: 3.4.5 (browser default referrer policy is a CYBOU privacy decision) and 3.7.3 (external-protocol navigation confirmation; the settings state external protocols are disabled but no test exists). They remain `untriaged`; no N/A is recorded.
+Server-set headers, cookies and hosting practices that CYBOU does not serve; the browser merely enforces some of them through the engine, and enforcement is covered by existing cases (CORS, transport, redirects) rather than by these controls: ASVS 3.1.1, 3.2.1, 3.2.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 3.3.5, 3.4.2, 3.4.3, 3.4.4, 3.4.5, 3.4.6, 3.4.7, 3.4.8, 3.5.1, 3.5.2, 3.5.3, 3.5.4, 3.5.5, 3.5.6, 3.5.7, 3.5.8, 3.6.1, 3.7.2, 3.7.4, 3.7.5. 3.4.5 (browser default referrer policy is a CYBOU privacy decision) deserves explicit reviewer attention before N/A. ASVS 3.7.3 was removed from this list and classified applicable after the external-protocol suite was written. The rest remain `untriaged`; no N/A is recorded.
 
 ## Fourth batch - File Handling and Data Protection
 

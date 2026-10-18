@@ -676,9 +676,19 @@
       "title": "Verify that the application shows a notification when the user is being redirected to a URL outside of the application's control, with an option to cancel the navigation.",
       "domain": "Web Frontend Security",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/BrowserTab.qml",
+        "src/security/ExternalProtocolTests.h",
+        "tools/security/test_qml_policies.py"
+      ],
+      "rationale": "Browser analogue: a page must not be able to hand a URL to an external application. The product disallows unknown URL schemes outright, so there is no notification-with-cancel flow; the requirement's intent (no silent launch) is what is checked.",
+      "remainingWork": "Engine fixture passes (suite 'protocol': 6 of 7 script triggers launch an external handler under AllowAll, none under DisallowUnknownUrlSchemes) and a static test ties it to BrowserTab.qml. Open: typed-in and user-gesture navigations, registered OS handlers for real schemes, drag and drop, file:/view-source:/chrome: pages, and the product decision that legitimate mailto:/tel: links simply do nothing (no confirmation UI exists)."
     },
     {
       "id": "ASVS:v5.0.0-3.7.4",

@@ -273,3 +273,15 @@ New diagnostic `cybou_tests.exe --engine-history-probe` (`EngineHistoryProbe.h`;
 
 **Correction to the data-inventory draft:** the claim that the engine's `History`/`Favicons` files are a second copy of browsing history was an inference from file names and is not supported by this measurement; it is replaced by "the HTTP cache keeps visited URLs". Consequences: (1) clearing history alone leaves visited URLs recoverable from the cache files; (2) the clear-data dialog already ticks both "history" and "page cache" by default, so the normal path is covered, but unticking the cache leaves them; (3) the Qt Quick profile used by the application has no `clearAllVisitedLinks()` (only `QWebEngineProfile` has it), so the engine's visited-link state cannot be cleared through the supported Quick API. The application still calls only `BrowserStore::clearHistory()` for the history option. Not tested: a real `History` database in the production profile after long use (the probe profile is fresh), the application's own clear flow end to end, favicon database content with a real icon.
 
+## External protocol launches - 2026-10-18
+
+New gate suite `protocol` (`cybou_tests.exe --protocol-test`, `ExternalProtocolTests.h`; Qt 6.12 / Chromium 140.0.7339.225). Two fabricated schemes (`cybou-ext-a`, `cybou-ext-b`) have `QDesktopServices` handlers that only count calls, so no real application can start even if a policy fails. A loopback page fires seven script triggers; the suite counts handler calls per trigger under two page policies.
+
+| Policy | Triggers that reached the external handler |
+| --- | --- |
+| `AllowAllUnknownUrlSchemes` (control) | `location.href`, `location.assign`, `iframe.src`, `anchor.click`, `form.submit`, `meta-refresh` (`window.open` produced none, likely the popup blocker) |
+| `DisallowUnknownUrlSchemes` (the product's setting in `BrowserTab.qml`) | none |
+
+The control proves a launch attempt is observable, so the zero is meaningful. `tools/security/test_qml_policies.py` (3 tests) additionally checks that every QML file declaring a `WebEngineView` sets `DisallowUnknownUrlSchemes`, that nothing loosens it, and that every `QDesktopServices::openUrl` call site in application code passes a local file. Both pass; gate self-tests 12/12 with eleven suites listed.
+
+Consequence stated plainly: with the strict policy a legitimate `mailto:` or `tel:` link does nothing and the user gets no explanation or choice - there is no confirmation dialog. Not covered: user-gesture and address-bar navigations, real registered OS schemes (deliberately avoided), drag and drop, `file:`/`view-source:`/internal `chrome:` pages, schemes already known to Chromium. ASVS 3.7.3 is `applicable`, `not_verified`.
