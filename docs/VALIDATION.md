@@ -239,3 +239,18 @@ New gate suite `hsts` (`cybou_tests.exe --hsts-test`, `HstsTests.h`; Qt 6.12 / C
 | Control: HTTPS visit without the header, then `http://` | not upgraded, zero server requests |
 
 So the upgrade comes from the header and is scoped to the profile. Not covered: HSTS persistence across restarts for persistent profiles, `includeSubDomains`, the preload list, interaction with the application's single-navigation HTTP exception (the engine would upgrade before the application sees an http:// request for an HSTS host), cleared-site-data behaviour, and ports other than the fixture's. ASVS 3.4.1 stays `not_verified`; this is one engine-level fixture. Gate self-tests 12/12 with nine suites listed; only `--hsts-test`, `--pna-test` were run for this addition, the full gate is still blocked by the stale-process cache lock.
+
+## Download name handling and Mark-of-the-Web - 2026-10-18
+
+New gate suite `download` (`cybou_tests.exe --download-test`; `--download-probe` prints observations only; `DownloadFileTests.h`). A loopback HTTP fixture answers eight hostile `Content-Disposition` headers; the engine downloads into a per-case directory with no application handler. Qt 6.12 / Chromium 140.0.7339.225, Windows 11.
+
+| Case | Observed |
+| --- | --- |
+| plain, `..\..\x`, `../../x`, RFC 6266 `filename*=..%2F..%2Fx`, absolute `C:\...` path | saved inside the directory under the basename; Mark-of-the-Web (`Zone.Identifier`) present |
+| `CON.txt` | saved as `CON.txt` with Mark-of-the-Web |
+| `stream.txt:hidden` | download interrupted, no file written |
+| `trailing. ` (dot and space) | **anomaly:** reported name `trailing. ` while the directory holds two files (`trailing`, `trailing. `); Mark-of-the-Web absent on the first |
+
+**Defect found and fixed.** `DownloadPolicy::allowsExternalOpen` allowed `CON.txt` because `txt` is allowlisted, although Windows reserves device names with any extension. It now rejects CON, PRN, AUX, NUL, CONIN$, CONOUT$ and COM/LPT 1-9 (including superscript digits) with any extension; `--security-test` covers 11 denied names and 6 near-miss names that must still open (`console.txt`, `com10.txt`, `lpt0.txt`, ...). The engine itself still saves such names. Suite result: PASS, exit 0 (security suite also PASS); the trailing-dot case is logged as `DOWNLOAD_KNOWN_ANOMALY`, not asserted. Gate self-tests 12/12 with ten suites listed.
+
+Not covered: the application's own accept/rename path (QML handler), name collisions, very long and Unicode/bidi names, `Zone.Identifier` content, PDF export, non-NTFS targets, the full gate (UI suites still blocked by the stale-process cache lock). Wallpaper intake checks the extension only; its size and pixel limits are untested.

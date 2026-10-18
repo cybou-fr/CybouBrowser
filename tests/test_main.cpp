@@ -31,6 +31,7 @@
 #include "security/StrictWebRtcTests.h"
 #include "security/TextInjectionProbe.h"
 #include "security/HstsTests.h"
+#include "security/DownloadFileTests.h"
 #include "security/PnaCompatTests.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
@@ -107,6 +108,8 @@ int main(int argc, char *argv[])
     if (webRtcProbe) return runWebRtcProbe();
     if (strictWebRtcChild >= 0) return runWebRtcProbe(true);
     if (hstsTest) return runHstsTest();
+    if (app.arguments().contains("--download-probe")) return runDownloadFileTests(false);
+    if (app.arguments().contains("--download-test")) return runDownloadFileTests(true);
     if (app.arguments().contains("--text-injection-probe")) return runTextInjectionProbe();
 
     BoundaryTlsServer transportTls;

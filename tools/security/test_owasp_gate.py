@@ -62,7 +62,7 @@ class GateContractTests(unittest.TestCase):
     def test_missing_binary_blocks(self):
         with tempfile.TemporaryDirectory() as d:
             results=gate.run_suites(None,Path(d),1)
-        self.assertEqual(len(results),9)
+        self.assertEqual(len(results),10)
         self.assertTrue(all(x["status"]=="BLOCKED" for x in results))
 
     def test_zero_exit_without_diagnostics_fails(self):

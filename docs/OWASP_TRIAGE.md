@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 29 are classified applicable and 413 remain untriaged (third batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 44 are classified applicable and 398 remain untriaged (fourth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -77,3 +77,23 @@ Date: 2026-10-18. The 31 untriaged controls of this chapter describe the securit
 ### Proposed not-applicable (NOT approved)
 
 Server-set headers, cookies and hosting practices that CYBOU does not serve; the browser merely enforces some of them through the engine, and enforcement is covered by existing cases (CORS, transport, redirects) rather than by these controls: ASVS 3.1.1, 3.2.1, 3.2.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 3.3.5, 3.4.2, 3.4.3, 3.4.4, 3.4.5, 3.4.6, 3.4.7, 3.4.8, 3.5.1, 3.5.2, 3.5.3, 3.5.4, 3.5.5, 3.5.6, 3.5.7, 3.5.8, 3.6.1, 3.7.2, 3.7.3, 3.7.4, 3.7.5. Two deserve explicit reviewer attention before N/A: 3.4.5 (browser default referrer policy is a CYBOU privacy decision) and 3.7.3 (external-protocol navigation confirmation; the settings state external protocols are disabled but no test exists). They remain `untriaged`; no N/A is recorded.
+
+## Fourth batch - File Handling and Data Protection
+
+Date: 2026-10-18. 25 untriaged ASVS controls (chapters 5 and 14) were reviewed; **15 are classified applicable** (adapted to downloads, the wallpaper file picker and the application's own stores), 10 are proposed not-applicable. Applicable controls now total 44 of 442.
+
+| Control | Browser scope (adapted) | Open verification work |
+| --- | --- | --- |
+| ASVS 5.1.1 | Permitted file types and how files are made safe, documented for wallpaper and downloads. | One document; none exists. |
+| ASVS 5.2.1, 5.2.2, 5.2.6 | Wallpaper images are checked by extension only; no size, content or pixel limit in the application. | Oversize/pixel-flood/mismatched-content fixtures. |
+| ASVS 5.4.1, 5.4.2 | Content-Disposition names are attacker-controlled. Engine fixture passes; a real policy defect (reserved device names) was fixed. | Trailing dot/space anomaly, collisions, long/Unicode names, app accept path. |
+| ASVS 5.4.3 | Antivirus analogue: Mark-of-the-Web so the OS can scan. Present on normal downloads, missing in one anomaly. | ZoneId content, PDF export, non-NTFS. |
+| ASVS 14.1.1, 14.1.2, 14.2.4 | No data inventory, protection levels or retention requirements exist. | Write them, then verify. |
+| ASVS 14.2.1 | Sensitive URL parts must not persist in history, session, samples or logs. | Secret-canary test. |
+| ASVS 14.2.3 | Data must not flow to trackers. | Filter effectiveness measurement. |
+| ASVS 14.2.7, 14.3.1 | Retention and clearing of site data and private sessions. | Completeness and Clear-Site-Data fixtures. |
+| ASVS 14.3.3 | QSettings stores history and session in plaintext in the user profile. | Decide stripping and at-rest protection. |
+
+### Proposed not-applicable (NOT approved)
+
+Server-side or upload-processing requirements that CYBOU does not implement: ASVS 5.2.3 (compressed-file limits; the browser does not unpack), 5.2.4 (per-user quotas), 5.2.5 (symlinks in archives), 5.3.1 (server-side execution of uploads), 5.3.3 (zip slip in server processing), 14.2.2 and 14.2.5 (server/CDN caches), 14.2.6 (minimum data returned by an API), 14.2.8 (metadata stripping of user-submitted files), 14.3.2 (anti-caching headers set by a server). 5.2.4 may deserve review as a disk-fill concern for downloads. They stay `untriaged`; no N/A is recorded.

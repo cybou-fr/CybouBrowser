@@ -847,27 +847,54 @@
       "title": "Verify that the documentation defines the permitted file types, expected file extensions, and maximum size (including unpacked size) for each upload feature. Additionally, ensure that the documentation specifies how files are made safe for end-users to download and process, such as how the application behaves when a malicious file is detected.",
       "domain": "File Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/DownloadPolicy.h",
+        "src/browserstore.h"
+      ],
+      "rationale": "Adapted from upload features to the browser's file intake: user-chosen wallpaper images and downloaded files; permitted types and how files are made safe to open must be documented.",
+      "remainingWork": "Document the wallpaper allowlist (jpg/jpeg/png/webp/bmp) and the download open-allowlist and reserved-name rule in one place; no such document exists beyond code comments."
     },
     {
       "id": "ASVS:v5.0.0-5.2.1",
       "title": "Verify that the application will only accept files of a size which it can process without causing a loss of performance or a denial of service attack.",
       "domain": "File Handling",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "qml/NewTabPage.qml"
+      ],
+      "rationale": "A user-chosen wallpaper file is decoded by the UI process with no size limit in the application; downloads have no size limit by design.",
+      "remainingWork": "Measure behaviour with oversized and decompression-bomb images (Qt's image allocation limit is assumed, unverified); decide download size/space policy."
     },
     {
       "id": "ASVS:v5.0.0-5.2.2",
       "title": "Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial 'magic bytes', performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.",
       "domain": "File Handling",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/security/DownloadPolicy.h"
+      ],
+      "rationale": "setCustomWallpaper checks the file extension only; the content is not validated against it. Download open decisions are extension-allowlisted, content is not inspected.",
+      "remainingWork": "Fixture: PNG-named non-image, image-named executable; decide whether content sniffing is in scope. Extension allowlisting alone does not prove safe content."
     },
     {
       "id": "ASVS:v5.0.0-5.2.3",
@@ -901,9 +928,18 @@
       "title": "Verify that the application rejects uploaded images with a pixel size larger than the maximum allowed, to prevent pixel flood attacks.",
       "domain": "File Handling",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "qml/NewTabPage.qml"
+      ],
+      "rationale": "Pixel-flood images chosen as wallpaper are decoded in the UI process.",
+      "remainingWork": "Fixture with a header declaring huge dimensions; confirm rejection by Qt's allocation limit or add an explicit pixel cap. Level 3."
     },
     {
       "id": "ASVS:v5.0.0-5.3.1",
@@ -946,27 +982,56 @@
       "title": "Verify that the application validates or ignores user-submitted filenames, including in a JSON, JSONP, or URL parameter and specifies a filename in the Content-Disposition header field in the response.",
       "domain": "File Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/DownloadPolicy.h",
+        "src/security/DownloadFileTests.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "Server-supplied Content-Disposition names are attacker-controlled input to the browser-to-filesystem boundary.",
+      "remainingWork": "Engine fixture passes (suite 'download': traversal, RFC 6266, absolute path, reserved name, stream name stay inside the directory with a path-free name). Open: the trailing dot/space anomaly (reported name differs from two on-disk files, no Mark-of-the-Web), name collisions, very long names, Unicode normalisation and bidi controls, the app's own rename flows."
     },
     {
       "id": "ASVS:v5.0.0-5.4.2",
       "title": "Verify that file names served (e.g., in HTTP response header fields or email attachments) are encoded or sanitized (e.g., following RFC 6266) to preserve document structure and prevent injection attacks.",
       "domain": "File Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/DownloadPolicy.h",
+        "src/security/DownloadFileTests.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "Names decoded from Content-Disposition (including RFC 6266 filename*) must not inject path or stream syntax; the product also never opens reserved device names.",
+      "remainingWork": "RFC 6266 decoding is covered for traversal only; add percent-encoded control characters and overlong UTF-8. Reserved Windows device names are rejected for external open (unit-tested) but still saved by the engine."
     },
     {
       "id": "ASVS:v5.0.0-5.4.3",
       "title": "Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content.",
       "domain": "File Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/DownloadFileTests.h",
+        "src/security/DownloadPolicy.h"
+      ],
+      "rationale": "The browser does not run an antivirus itself; the browser-side equivalent is marking downloads as internet-origin so the OS (SmartScreen, Attachment Manager) can scan and warn.",
+      "remainingWork": "Engine writes Zone.Identifier on normal downloads (verified in the 'download' suite) but not on the trailing-dot file; verify ZoneId contents and persistence for the app's accept path, the PDF export path and non-NTFS destinations."
     },
     {
       "id": "ASVS:v5.0.0-6.1.1",
@@ -2721,27 +2786,53 @@
       "title": "Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. This includes data that is only encoded and therefore easily decoded, such as Base64 strings or the plaintext payload inside a JWT. Protection levels need to take into account any data protection and privacy regulations and standards which the application is required to comply with.",
       "domain": "Data Protection",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "docs/SECURITY_MODEL.md"
+      ],
+      "rationale": "The product stores browsing history, bookmarks, session URLs, cloud endpoint settings, permission leases, downloads and logs; none are classified.",
+      "remainingWork": "Create a data inventory with protection levels (history, session, cookies/cache in engine profiles, downloads, logs, QSettings in the registry)."
     },
     {
       "id": "ASVS:v5.0.0-14.1.2",
       "title": "Verify that all sensitive data protection levels have a documented set of protection requirements. This must include (but not be limited to) requirements related to general encryption, integrity verification, retention, how the data is to be logged, access controls around sensitive data in logs, database-level encryption, privacy and privacy-enhancing technologies to be used, and other confidentiality requirements.",
       "domain": "Data Protection",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "Each protection level needs documented encryption, retention, logging and access requirements.",
+      "remainingWork": "Write the requirements per level after the inventory exists; currently QSettings holds history and session in plaintext under the user profile."
     },
     {
       "id": "ASVS:v5.0.0-14.2.1",
       "title": "Verify that sensitive data is only sent to the server in the HTTP message body or header fields, and that the URL and query string do not contain sensitive information, such as an API key or session token.",
       "domain": "Data Protection",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/controlbar/RequestObserver.h",
+        "src/browserstore.h"
+      ],
+      "rationale": "Browser analogue: sensitive values in URLs must not be copied into history, session store, network samples or logs. The network sample is documented to retain no query.",
+      "remainingWork": "Secret-canary test through history, session restore, network sample, crash/log output and the library UI; history/session stores are not yet shown to strip tokens."
     },
     {
       "id": "ASVS:v5.0.0-14.2.2",
@@ -2757,18 +2848,35 @@
       "title": "Verify that defined sensitive data is not sent to untrusted parties (e.g., user trackers) to prevent unwanted collection of data outside of the application's control.",
       "domain": "Data Protection",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-NET-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/RuleEngine.h",
+        "src/security/TrackerBlocker.h"
+      ],
+      "rationale": "Sensitive browsing data must not flow to trackers; the tracker/ad rule engine and exceptions govern this.",
+      "remainingWork": "Filtering effectiveness and false-positive/negative rate are unmeasured against realistic lists; per-origin exceptions need lifecycle tests (CYB-NET-003)."
     },
     {
       "id": "ASVS:v5.0.0-14.2.4",
       "title": "Verify that controls around sensitive data related to encryption, integrity verification, retention, how the data is to be logged, access controls around sensitive data in logs, privacy and privacy-enhancing technologies, are implemented as defined in the documentation for the specific data's protection level.",
       "domain": "Data Protection",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "Controls on retention, logging and privacy must be implemented as documented.",
+      "remainingWork": "Blocked on 14.1.2 documentation; then verify each documented control."
     },
     {
       "id": "ASVS:v5.0.0-14.2.5",
@@ -2793,9 +2901,17 @@
       "title": "Verify that sensitive information is subject to data retention classification, ensuring that outdated or unnecessary data is deleted automatically, on a defined schedule, or as the situation requires.",
       "domain": "Data Protection",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "History, downloads and session data accumulate; automatic or user-triggered deletion and private-window ephemerality are the retention mechanisms.",
+      "remainingWork": "Test clear-history/clear-data completeness across stores and the engine profile; define a retention schedule or declare none."
     },
     {
       "id": "ASVS:v5.0.0-14.2.8",
@@ -2811,9 +2927,18 @@
       "title": "Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The 'Clear-Site-Data' HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.",
       "domain": "Data Protection",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "Browser analogue: authenticated site data (cookies, storage, cache) must be cleared when the user ends a private session or clears data, and Clear-Site-Data must be honoured by the engine.",
+      "remainingWork": "Private window teardown, crash recovery, and Clear-Site-Data fixtures; private profile storage absence is only partially proven."
     },
     {
       "id": "ASVS:v5.0.0-14.3.2",
@@ -2829,9 +2954,17 @@
       "title": "Verify that data stored in browser storage (such as localStorage, sessionStorage, IndexedDB, or cookies) does not contain sensitive data, with the exception of session tokens.",
       "domain": "Data Protection",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "The application's own persistent store (QSettings: history, bookmarks, session, preferences) lives in plaintext in the user profile and may contain sensitive URLs.",
+      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented."
     },
     {
       "id": "ASVS:v5.0.0-15.1.1",

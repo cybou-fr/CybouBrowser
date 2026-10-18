@@ -51,6 +51,12 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
     for (const auto &name : QStringList{"report.PDF", "notes.txt", "photo.jpg", "table.xlsx"}) {
         if (!DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL" << name; return 2; }
     }
+    for (const auto &name : QStringList{"CON.txt", "con.PDF", "NUL.png", "prn.docx", "aux", "com1.txt", "LPT9.pdf", "COM\u00b9.txt", "CONIN$.txt", "CONOUT$.pdf", "con .txt"}) {
+        if (DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL reserved device name" << name; return 2; }
+    }
+    for (const auto &name : QStringList{"console.txt", "company.pdf", "com10.txt", "lpt0.txt", "a.con.txt", "icon.png"}) {
+        if (!DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL false positive" << name; return 2; }
+    }
     qInfo() << "DOWNLOAD_POLICY_TEST PASS";
     {
         QTemporaryDir files;
