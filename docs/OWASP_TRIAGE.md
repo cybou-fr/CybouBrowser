@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 20 are classified applicable and 422 remain untriaged. No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 26 are classified applicable and 416 remain untriaged (second batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -46,3 +46,20 @@ Both browser-case evidence and applicable-control evidence now use the same vali
 ## Follow-up: first real network fixture (2026-10-18)
 
 The initial CORS and ws subset is now implemented in `src/security/NetworkBoundaryTests.h` and passed in the Release security suite. The two cases moved from planned to in_progress with covered and remaining scenario lists; control verification status remains not_verified. See [VALIDATION](VALIDATION.md) for scope and evidence. WSS, production temporary-profile behavior, public-to-private DNS routing, cross-site cookies and already-open socket revocation are still open.
+
+## Second batch — TLS and WebRTC (Secure Communication, WebRTC)
+
+Date: 2026-10-18. The 20 controls of these two ASVS domains were reviewed; **6 are classified applicable** in `tests/security/coverage.json` (owner role, case mapping, source references, `not_verified`, remaining work). Nothing is verified: the inventory gate reports "missing current-revision PASS evidence" for each, as it should.
+
+| Control | Browser scope (adapted) | Open verification work |
+| --- | --- | --- |
+| ASVS:v5.0.0-12.1.3 | Server may request a TLS client certificate; the source has no selection handler, so the engine default decides. | mTLS fixture: with and without an installed certificate; add explicit prompt/deny policy if the default selects silently. |
+| ASVS:v5.0.0-12.1.4 | Revocation checking is done by the embedded engine. | Document engine behaviour (OCSP stapling, CRLSets, soft-fail); revoked-certificate fixture. |
+| ASVS:v5.0.0-12.1.5 | ECH protects SNI of visited sites; engine capability. | Determine support/default in Chromium 140 and record the decision. |
+| ASVS:v5.0.0-12.3.1 | All outbound connections use TLS without silent fallback. | Inventory the app's own outbound connections; the single-navigation HTTP exception is a documented deviation. |
+| ASVS:v5.0.0-17.1.1 | TURN wording is server-side; the browser analogue is WebRTC/ICE not reaching loopback or private ranges (`webRTCPublicInterfacesOnly` is set). | Real RTCPeerConnection ICE probe with the setting on and off; none exists. |
+| ASVS:v5.0.0-17.2.8 | DTLS fingerprint vs SDP check is engine behaviour. | Confirm for the pinned engine; mismatching-fingerprint fixture if feasible. |
+
+### Proposed not-applicable (NOT approved)
+
+These 14 describe server-side infrastructure CYBOU does not operate. They stay `untriaged` until a named human reviewer accepts the rationale; no N/A is recorded in the coverage file: ASVS 12.2.2 (publicly trusted certificates for externally facing services; revisit when an update server exists), 12.3.3, 12.3.4, 12.3.5 (internal service-to-service TLS and authentication; no internal services), 17.1.2 (TURN exhaustion), 17.2.1, 17.2.2 (media-server DTLS key management and ciphers; the browser uses engine-generated ephemeral DTLS), 17.2.3, 17.2.4, 17.2.5, 17.2.6, 17.2.7 (media-server SRTP/DTLS handling) and 17.3.1, 17.3.2 (signaling-server flood and malformed input).

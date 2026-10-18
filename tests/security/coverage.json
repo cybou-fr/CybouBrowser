@@ -2354,27 +2354,51 @@
       "title": "Verify that the application validates that mTLS client certificates are trusted before using the certificate identity for authentication or authorization.",
       "domain": "Secure Communication",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "Browser is the TLS client; a server may request a client certificate. Source has no selection handler, so the engine default decides which identity is presented.",
+      "sourceRefs": [
+        "qml/BrowserTab.qml"
+      ],
+      "remainingWork": "Local mTLS endpoint fixture: determine what happens with and without an installed client certificate (silent selection would leak identity); add an explicit prompt or deny policy and test it. The requirement text is server-side, adapted to the client boundary."
     },
     {
       "id": "ASVS:v5.0.0-12.1.4",
       "title": "Verify that proper certification revocation, such as Online Certificate Status Protocol (OCSP) Stapling, is enabled and configured.",
       "domain": "Secure Communication",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "Revocation checking for HTTPS servers is performed by the embedded engine on behalf of the browser.",
+      "sourceRefs": [
+        "src/security/TlsBoundaryTests.h"
+      ],
+      "remainingWork": "Establish and document the engine's revocation behaviour (OCSP stapling, CRLSets, soft-fail) for the packaged build and test a revoked-certificate fixture; expiry, hostname and unknown-CA are covered, revocation is not."
     },
     {
       "id": "ASVS:v5.0.0-12.1.5",
       "title": "Verify that Encrypted Client Hello (ECH) is enabled in the application's TLS settings to prevent exposure of sensitive metadata, such as the Server Name Indication (SNI), during TLS handshake processes.",
       "domain": "Secure Communication",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "ECH protects SNI metadata of browsing destinations; support is an engine/client capability.",
+      "sourceRefs": [
+        "src/security/EngineHardening.h"
+      ],
+      "remainingWork": "Determine ECH support and default in Chromium 140 as embedded, whether a feature flag or DoH dependency applies, and record the decision; no test exists. Level 3 and possibly an accepted limitation."
     },
     {
       "id": "ASVS:v5.0.0-12.2.1",
@@ -2411,9 +2435,20 @@
       "title": "Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application, including monitoring systems, management tools, remote access and SSH, middleware, databases, mainframes, partner systems, or external APIs. The server must not fall back to insecure or unencrypted protocols.",
       "domain": "Secure Communication",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001",
+        "CYB-HTTP-002"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "All outbound browser connections must use TLS without silent fallback: HTTPS navigation, subresources, WebSocket, plus the application's own outbound requests.",
+      "sourceRefs": [
+        "src/security/NetworkPolicy.h",
+        "src/security/HttpNavigationLease.h",
+        "src/controlbar/RequestObserver.h"
+      ],
+      "remainingWork": "Strict-HTTPS, downgrade-redirect and ws/wss fixtures exist and pass; still missing an inventory of the application's own outbound connections (updates, cloud catalog) and the explicit single-navigation HTTP exception is a documented deviation from an unconditional reading."
     },
     {
       "id": "ASVS:v5.0.0-12.3.2",
@@ -3144,9 +3179,19 @@
       "title": "Verify that the Traversal Using Relays around NAT (TURN) service only allows access to IP addresses that are not reserved for special purposes (e.g., internal networks, broadcast, loopback). Note that this applies to both IPv4 and IPv6 addresses.",
       "domain": "WebRTC",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-PNA-001",
+        "CYB-PNA-002"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "TURN-relay wording is server-side; the browser-side equivalent is that WebRTC must not let a page reach loopback or private addresses through ICE candidates. The profile sets webRTCPublicInterfacesOnly.",
+      "sourceRefs": [
+        "qml/BrowserTab.qml",
+        "src/security/EngineHardening.h"
+      ],
+      "remainingWork": "Probe real RTCPeerConnection ICE/STUN behaviour against loopback and private-range candidates with the setting on and off; no WebRTC test exists. Adapted requirement, not a literal TURN server check."
     },
     {
       "id": "ASVS:v5.0.0-17.1.2",
@@ -3225,9 +3270,17 @@
       "title": "Verify that the Datagram Transport Layer Security (DTLS) certificate is checked against the Session Description Protocol (SDP) fingerprint attribute, terminating the media stream if the check fails, to ensure the authenticity of the media stream.",
       "domain": "WebRTC",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-PERM-004"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "DTLS fingerprint verification against SDP is performed by the embedded engine for every WebRTC peer connection.",
+      "sourceRefs": [
+        "qml/BrowserTab.qml"
+      ],
+      "remainingWork": "Engine-inherited behaviour: confirm via the pinned Chromium version and, if feasible, a local peer-connection fixture with a mismatching fingerprint; no test exists. Level 3."
     },
     {
       "id": "ASVS:v5.0.0-17.3.1",
