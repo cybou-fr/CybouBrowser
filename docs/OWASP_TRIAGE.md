@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 117 are classified applicable and 325 remain untriaged (eighth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 119 are classified applicable and 323 remain untriaged (ninth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -156,3 +156,30 @@ Applicable: WSTG CONF-05, CONF-07, CONF-09, ATHN-01, ATHN-06, ATHZ-01, SESS-02, 
 ### Proposed not-applicable (NOT approved)
 
 Server, account, session-server, injection-against-an-application and hosting scenarios: WSTG INFO-01, INFO-02, INFO-03, INFO-04, INFO-05, INFO-06, INFO-07, INFO-08, INFO-09, INFO-10, CONF-01, CONF-02, CONF-03, CONF-04, CONF-06, CONF-08, CONF-10, CONF-11, IDNT-01, IDNT-02, IDNT-03, IDNT-04, IDNT-05, ATHN-02, ATHN-03, ATHN-04, ATHN-05, ATHN-07, ATHN-08, ATHN-09, ATHN-10, ATHZ-02, ATHZ-03, ATHZ-04, SESS-01, SESS-03, SESS-04, SESS-05, SESS-06, SESS-07, SESS-08, SESS-09, INPV-01, INPV-02, INPV-03, INPV-04, INPV-05, INPV-06, INPV-07, INPV-08, INPV-09, INPV-10, INPV-12, INPV-13, INPV-14, INPV-15, INPV-16, INPV-17, INPV-18, CRYP-02, CRYP-04, BUSL-01, BUSL-02, BUSL-03, BUSL-04, CLNT-01, CLNT-02, CLNT-05, CLNT-08, CLNT-11, CLNT-13, APIT-01. Several have a browser angle that is already tracked under another control rather than as a separate scenario: INPV-12 and INPV-13 (command and format-string injection - ASVS 1.2.5 and 1.3.10), CLNT-11 (web messaging - the product has no bridge and the engine enforces origins), SESS-06 (logout - ASVS 7.4.1/14.3.1), SESS-05 (CSRF - SameSite is engine enforcement), INFO-05 (information in page content), CONF-04 (backup files - ASVS 13.4.1). They remain `untriaged`; no N/A is recorded.
+
+## Ninth batch - remaining chapters, and machine-readable proposals
+
+Date: 2026-10-19. The remaining domains (Authentication, OAuth/OIDC, API and web service, Authorization, Self-contained tokens) were reviewed. Only two controls have a browser counterpart and are now **applicable**: ASVS 4.1.2 (HTTP-to-HTTPS upgrade: CYBOU's HTTPS-First) and ASVS 4.4.1 (all WebSockets over TLS). Applicable controls now total 119 of 442.
+
+Every other untriaged row has been reviewed, and `tests/security/coverage.json` now records the engineering proposal on the row itself: `proposedDisposition: not_applicable`, a chapter-level `proposalRationale` and `proposalStatus`. These fields are **not read by the gate and are not an approval**: all 323 rows stay `untriaged` until a named reviewer records a reviewed disposition with a reason. 9 rows are marked `needs explicit review` with a note on why the proposal is not routine (for example ASVS 3.4.5 referrer policy, 5.2.4 download quotas, 12.2.2, 13.4.3, 16.4.3, 1.2.9, 11.1.4, 11.5.1, 11.6.2). The per-batch lists above remain as the narrative record; this file is the authoritative count.
+
+| Chapter | Proposed not-applicable rows |
+| --- | --- |
+| ASVS 1 | 16 |
+| ASVS 2 | 8 |
+| ASVS 3 | 27 |
+| ASVS 4 | 14 |
+| ASVS 5 | 5 |
+| ASVS 6 | 47 |
+| ASVS 7 | 17 |
+| ASVS 8 | 7 |
+| ASVS 9 | 7 |
+| ASVS 10 | 36 |
+| ASVS 11 | 21 |
+| ASVS 12 | 4 |
+| ASVS 13 | 16 |
+| ASVS 14 | 5 |
+| ASVS 15 | 7 |
+| ASVS 16 | 4 |
+| ASVS 17 | 10 |
+| WSTG | 72 |
