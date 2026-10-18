@@ -16,6 +16,8 @@ Item {
     property var trackedProfile: null
     property string screenshot: ""
     property var input: null
+    property double hoverStarted: 0
+    property int hoverRetries: 0
     property bool oldHttpsFirst: true
     function expect(value, message) { if (!value) throw new Error(message) }
     function begin() {
@@ -34,7 +36,7 @@ Item {
                 expect(!view.temporaryTransport && browserStore.httpsOnly, "HTTP denied before consent")
                 oldToken = browserWindow.transportState.httpToken
                 ownerIndex = browserWindow.activeTab
-                input = bar.testInputPoint("network", "move"); phase = 1
+                input = bar.testInputPoint("network", "move"); hoverStarted = Date.now(); hoverRetries = 0; phase = 1
             } else if (phase === 1 && bar.testCard().visible && bar.selectedData.httpPending) {
                 screenshot = "transport-http-blocked"
                 input = bar.testHttpAllowPoint(); phase = 2
@@ -64,7 +66,7 @@ Item {
             } else if (phase === 5 && view.temporaryTransport && view.title === "Transport ready" && !view.loading) {
                 ownerUid = view.tabUid
                 trackedProfile = view.profile
-                input = bar.testInputPoint("network", "move"); phase = 6
+                input = bar.testInputPoint("network", "move"); hoverStarted = Date.now(); hoverRetries = 0; phase = 6
             } else if (phase === 6 && bar.testCard().visible) {
                 screenshot = "transport-http-temporary"
                 input = bar.testHttpRevokePoint(); phase = 7
@@ -112,6 +114,10 @@ Item {
                 browserStore.httpsFirst = oldHttpsFirst
                 console.info("TRANSPORT_TEST PASS: exact navigation, same-origin resource gate, other tab, reload, stale token, popover revoke, inline revoke")
                 phase = 12; return 2
+            } else if ((phase === 1 || phase === 6) && !bar.testCard().visible && Date.now() - hoverStarted > 2000) {
+                // One synthetic move can be lost; leave and re-enter the icon until the card opens.
+                input = (++hoverRetries % 2) ? {x:80, y:300, kind:"move"} : bar.testInputPoint("network", "move")
+                if (hoverRetries === 1) console.warn("TRANSPORT_HOVER_RETRY phase", phase)
             }
             return phase === 12 ? 2 : 0
         } catch(error) {
