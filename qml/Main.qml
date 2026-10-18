@@ -325,7 +325,7 @@ ApplicationWindow {
                     "}" +
                 "}" +
             "} catch(e) {}" +
-        "})('" + targetKey + "');"
+        "})(" + JSON.stringify(targetKey) + ");"
         view.runJavaScript(script)
     }
     function revokePermissionGracefully(view, key, targetMode) {

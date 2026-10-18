@@ -58,6 +58,13 @@ public:
     }
 
     // Robust parser for alternative IPv4 representations (dword, hex, octal, 2-part and 3-part dotted notation)
+    // The engine treats "127.0.0.1." (an IP literal with trailing dots) as the IP itself while QUrl
+    // keeps the dot, so classification must ignore trailing dots to agree with what is connected to.
+    static QString normalizedHost(const QUrl &url) {
+        QString host = url.host().toLower();
+        while (host.endsWith(QLatin1Char('.'))) host.chop(1);
+        return host;
+    }
     static bool tryParseIpv4(const QString &host, QHostAddress &outAddr) {
         if (host.isEmpty()) return false;
         QString clean = host.trimmed().toLower();
@@ -181,7 +188,7 @@ public:
     }
 
     static bool isLocalHost(const QUrl &url) {
-        const QString host = url.host().toLower();
+        const QString host = normalizedHost(url);
         if (host == QStringLiteral("localhost") || host == QStringLiteral("localhost.")
             || host.endsWith(QStringLiteral(".localhost")) || host.endsWith(QStringLiteral(".localhost."))) {
             return true;
@@ -222,7 +229,7 @@ public:
 
     static bool isPrivateNetwork(const QUrl &url) {
         if (!url.isValid()) return false;
-        const QString host = url.host().toLower();
+        const QString host = normalizedHost(url);
         if (host.isEmpty()) return false;
 
         if (isLocalHost(url)) return true;

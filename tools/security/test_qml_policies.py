@@ -25,6 +25,12 @@ class ProductWebSettings(unittest.TestCase):
         for path in qml_files():
             self.assertIsNone(LOOSEN.search(path.read_text(encoding="utf-8")), f"{path.name} loosens the scheme policy")
 
+    def test_scripts_are_not_built_by_concatenating_into_string_literals(self):
+        # runJavaScript arguments must embed values with JSON.stringify, never inside hand-written quotes.
+        for path in qml_files():
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                self.assertNotRegex(line, r"""\(\s*'\s*"\s*\+|\(\s*"\s*'\s*\+""", f"{path.name}:{number} concatenates a value into a quoted JS argument")
+
     def test_no_application_code_opens_non_local_urls_externally(self):
         # QDesktopServices::openUrl may only be fed local files/folders chosen by the application.
         sources = list((ROOT / "src").rglob("*.h")) + list((ROOT / "src").rglob("*.cpp"))

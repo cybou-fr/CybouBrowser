@@ -153,3 +153,5 @@ The `pna` suite additionally covers a secure public source (ports 38476-38479, p
 `--protocol-test` (gate suite `protocol`) registers counting `QDesktopServices` handlers for two fabricated schemes and fires seven script triggers from a loopback page; the `AllowAllUnknownUrlSchemes` run must launch at least one (otherwise the harness is blind) and the product setting `DisallowUnknownUrlSchemes` must launch none. `tools/security/test_qml_policies.py` keeps the QML wiring honest.
 
 `tools/security/idle_connections.ps1` is a manual diagnostic, not a gate suite: it launches the product in private mode, samples process-tree sockets for a chosen time and prints remote endpoints. Always run a positive control (`-Url https://example.org/`) before trusting an empty result.
+
+`--url-parser-test` (gate suite `url-parser`) navigates the engine to 17 spellings of the loopback address and compares what the engine reaches with `NavigationGuard`'s classification of the same string; any spelling that reaches loopback but is not private fails the suite. The two control spellings must reach the fixture and be classified private so an empty table cannot pass.

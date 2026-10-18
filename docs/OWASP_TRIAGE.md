@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 60 are classified applicable and 382 remain untriaged (fifth batch below; ASVS 3.7.3 was added after the fourth, see VALIDATION). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 79 are classified applicable and 363 remain untriaged (sixth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -115,3 +115,15 @@ Date: 2026-10-18. 35 untriaged ASVS controls (chapters 13 and 16) were reviewed;
 ### Proposed not-applicable (NOT approved)
 
 Back-end infrastructure and server hosting requirements that a desktop browser does not have, or log pipelines the product intentionally lacks (no central log processor, no log transmission by design): ASVS 13.1.2, 13.1.3, 13.1.4, 13.2.1, 13.2.2, 13.2.3, 13.2.5, 13.2.6, 13.3.1, 13.3.2, 13.3.3, 13.3.4, 13.4.3, 13.4.4, 13.4.5, 13.4.7, 16.2.4, 16.3.1, 16.4.2, 16.4.3. 16.4.3 (no remote log shipping) is a deliberate privacy choice rather than a gap; 13.4.3 (directory listings) does touch the engine's file: listings but those are a browsing feature. They remain `untriaged`; no N/A is recorded.
+
+## Sixth batch - Encoding, Sanitization, Validation and Business Logic (ASVS chapters 1 and 2)
+
+Date: 2026-10-18. 43 untriaged ASVS controls were reviewed; **19 are classified applicable** (adapted to the browser's own parsing, native UI, OS interaction and consent flows), 24 are proposed not-applicable. Applicable controls now total 79 of 442.
+
+Two real defects came from this review and were fixed with tests: the host `127.0.0.1.` (IP literal with a trailing dot) reached loopback in the engine but was not classified private by `NavigationGuard` (ASVS 1.5.3, found by the new differential suite `url-parser`), and `stopMediaTracks` built JavaScript by concatenating a value into a quoted literal (ASVS 1.2.3, now `JSON.stringify` plus a static guard). See [VALIDATION](VALIDATION.md).
+
+Applicable: ASVS 1.1.1, 1.1.2, 1.2.2, 1.2.3, 1.2.5, 1.3.2, 1.3.6, 1.3.10, 1.3.12, 1.4.1, 1.4.2, 1.4.3, 1.5.2, 1.5.3, 2.1.1, 2.2.1, 2.2.2, 2.3.1, 2.4.1. Per-control rationale, case mapping and remaining work are in `tests/security/coverage.json`; none is verified.
+
+### Proposed not-applicable (NOT approved)
+
+Injection classes and business-transaction mechanics that the application does not contain (no SQL/LDAP/XPath/LaTeX/JNDI/memcache/mail use, no CSV export, no XML parsing of its own, no server-side templates, no multi-user approvals, locking or transactions): ASVS 1.2.1, 1.2.4, 1.2.6, 1.2.7, 1.2.8, 1.2.9, 1.2.10, 1.3.1, 1.3.3, 1.3.4, 1.3.5, 1.3.7, 1.3.8, 1.3.9, 1.3.11, 1.5.1, 2.1.2, 2.1.3, 2.2.3, 2.3.2, 2.3.3, 2.3.4, 2.3.5, 2.4.2. 1.2.1 and 1.3.3 are generic restatements covered by 1.1.2 and the UI text work; 1.2.9 (regular-expression escaping) should be re-checked if user input is ever compiled into a regex. They remain `untriaged`; no N/A is recorded.

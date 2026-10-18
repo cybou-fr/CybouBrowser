@@ -7,18 +7,34 @@
       "title": "Verify that input is decoded or unescaped into a canonical form only once, it is only decoded when encoded data in that form is expected, and that this is done before processing the input further, for example it is not performed after input validation or sanitization.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "URLs from the address bar, pages and redirects are decoded by QUrl and again by the engine; canonicalisation must happen once and consistently.",
+      "remainingWork": "Differential suite 'url-parser' covers 17 host spellings; extend to path/query percent-decoding and double-encoding."
     },
     {
       "id": "ASVS:v5.0.0-1.1.2",
       "title": "Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UI-004"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "tools/security/qml_text_lint.py"
+      ],
+      "rationale": "Output encoding is done by the interpreter: plain-text rendering in native UI (fixed and linted); JS is built with JSON.stringify.",
+      "remainingWork": "Text rendered outside QML (C++ dialogs, notifications) not reviewed."
     },
     {
       "id": "ASVS:v5.0.0-1.2.1",
@@ -34,18 +50,35 @@
       "title": "Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:).",
       "domain": "Encoding and Sanitization",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h"
+      ],
+      "rationale": "Search queries are percent-encoded into provider URLs (searchUrl, smoke-tested with 'a & b'); allowed schemes are http/https for navigation.",
+      "remainingWork": "Add unit cases for unicode, '#', '%', very long queries and provider-specific parameters."
     },
     {
       "id": "ASVS:v5.0.0-1.2.3",
       "title": "Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection).",
       "domain": "Encoding and Sanitization",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/Main.qml",
+        "tools/security/test_qml_policies.py"
+      ],
+      "rationale": "stopMediaTracks concatenated a value into a quoted JS literal; replaced by JSON.stringify and guarded by a static test.",
+      "remainingWork": "Audit every runJavaScript call site periodically; the lint covers the quoted-concatenation pattern only."
     },
     {
       "id": "ASVS:v5.0.0-1.2.4",
@@ -61,9 +94,18 @@
       "title": "Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.",
       "domain": "Encoding and Sanitization",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/security/DownloadPolicy.h"
+      ],
+      "rationale": "The application starts no processes itself; OS interaction is QDesktopServices::openUrl on local files whose names are attacker-controlled (reserved device names now rejected).",
+      "remainingWork": "Fixtures for names with spaces, shell metacharacters, long paths and UNC paths on the open and show-in-folder paths."
     },
     {
       "id": "ASVS:v5.0.0-1.2.6",
@@ -124,9 +166,17 @@
       "title": "Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed.",
       "domain": "Encoding and Sanitization",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/Main.qml"
+      ],
+      "rationale": "No eval(), Function() or createQmlObject with data exists in application QML or C++ (grep found none).",
+      "remainingWork": "Add a lint rule so none appears later; engine JS is the page's own."
     },
     {
       "id": "ASVS:v5.0.0-1.3.3",
@@ -160,9 +210,18 @@
       "title": "Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-PNA-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/NavigationGuard.h",
+        "src/security/EngineHardening.h"
+      ],
+      "rationale": "SSRF analogue: a page must not make the browser reach loopback or private services. Engine PNA plus application classification are in place, with gaps (WebRTC STUN, WebSocket resolver).",
+      "remainingWork": "WebRTC STUN to loopback remains open; DNS rebinding not connection-bound."
     },
     {
       "id": "ASVS:v5.0.0-1.3.7",
@@ -196,9 +255,18 @@
       "title": "Verify that format strings which might resolve in an unexpected or malicious way when used are sanitized before being processed.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UI-004"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/PolicyBanner.qml",
+        "qml/CapabilityPopover.qml"
+      ],
+      "rationale": "QString::arg substitutes the lowest %n each call, so untrusted text inserted early can capture later placeholders; in the code reviewed the untrusted origin is always the last or only argument.",
+      "remainingWork": "Add a rule/test that origins, titles and file names are never inserted before another placeholder."
     },
     {
       "id": "ASVS:v5.0.0-1.3.11",
@@ -214,36 +282,70 @@
       "title": "Verify that regular expressions are free from elements causing exponential backtracking, and ensure untrusted input is sanitized to mitigate ReDoS or Runaway Regex attacks.",
       "domain": "Encoding and Sanitization",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FUZZ-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/security/RuleEngine.h"
+      ],
+      "rationale": "Regexes in source are simple character classes and scheme checks; no nested quantifiers found by review. Tracker rule matching does not use regular expressions.",
+      "remainingWork": "Fuzz URL classification and rule matching with long adversarial inputs for time bounds."
     },
     {
       "id": "ASVS:v5.0.0-1.4.1",
       "title": "Verify that the application uses memory-safe string, safer memory copy and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FUZZ-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "C++ parsing of attacker-controlled URLs, hostnames and headers; Qt containers are used, no raw buffers were found in review.",
+      "remainingWork": "No fuzzing or sanitizer builds exist; add ASan/UBSan test builds and fuzz targets."
     },
     {
       "id": "ASVS:v5.0.0-1.4.2",
       "title": "Verify that sign, range, and input validation techniques are used to prevent integer overflows.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FUZZ-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "IPv4 and port parsing of attacker-controlled numeric forms (decimal, octal, hex) is where integer overflow could occur.",
+      "remainingWork": "Boundary tests: values near 2^32, 2^31, negative and overlong numerals; 17 spellings are covered only for loopback."
     },
     {
       "id": "ASVS:v5.0.0-1.4.3",
       "title": "Verify that dynamically allocated memory and resources are released, and that references or pointers to freed memory are removed or set to null to prevent dangling pointers and use-after-free vulnerabilities.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FUZZ-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "Profile, view and download-item lifetimes are manually managed across tabs, temporary profiles and revoke flows; tests check destruction but not use-after-free.",
+      "remainingWork": "Run the suites under AddressSanitizer or Application Verifier and a 100-tab stress case."
     },
     {
       "id": "ASVS:v5.0.0-1.5.1",
@@ -259,27 +361,54 @@
       "title": "Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input.",
       "domain": "Encoding and Sanitization",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FUZZ-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/cloud/CloudServiceManager.h"
+      ],
+      "rationale": "QSettings variant lists (history, session, bookmarks) and the cloud JSON are read back from storage another same-user process can edit; a corrupted-config recovery test exists for cloud.",
+      "remainingWork": "Tamper tests for history, session and bookmarks (wrong types, huge lists, embedded URLs with unusual schemes)."
     },
     {
       "id": "ASVS:v5.0.0-1.5.3",
       "title": "Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks.",
       "domain": "Encoding and Sanitization",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/UrlParserDifferentialTests.h",
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "The application classifies with QUrl while the engine connects with its own parser; a differential suite compares them.",
+      "remainingWork": "Suite 'url-parser' found and fixed one real gap (127.0.0.1.). Extend to IPv6 zones, userinfo tricks, backslashes and percent-encoded hosts."
     },
     {
       "id": "ASVS:v5.0.0-2.1.1",
       "title": "Verify that the application's documentation defines input validation rules for how to check the validity of data items against an expected structure. This could be common data formats such as credit card numbers, email addresses, telephone numbers, or it could be an internal data format.",
       "domain": "Validation and Business Logic",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/security/DownloadPolicy.h"
+      ],
+      "rationale": "Input validation rules (URLs, search engine names, wallpaper types and extensions, download names, ports) exist in code but are not documented.",
+      "remainingWork": "Write a single validation-rules document."
     },
     {
       "id": "ASVS:v5.0.0-2.1.2",
@@ -304,18 +433,36 @@
       "title": "Verify that input is validated to enforce business or functional expectations for that input. This should either use positive validation against an allow list of values, patterns, and ranges, or be based on comparing the input to an expected structure and logical limits according to predefined rules. For L1, this can focus on input which is used to make specific business or security decisions. For L2 and up, this should apply to all input.",
       "domain": "Validation and Business Logic",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "Setters allowlist their values (search engine, wallpaper type, blur range) and navigation input is classified; positive validation is mostly in place.",
+      "remainingWork": "Systematic review of every Q_INVOKABLE and Q_PROPERTY setter; wallpaper content is validated by extension only."
     },
     {
       "id": "ASVS:v5.0.0-2.2.2",
       "title": "Verify that the application is designed to enforce input validation at a trusted service layer. While client-side validation improves usability and should be encouraged, it must not be relied upon as a security control.",
       "domain": "Validation and Business Logic",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-INPUT-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "qml/SettingsPanel.qml"
+      ],
+      "rationale": "Adapted: validation must live in the C++ layer, not only in QML. Preference setters validate in C++.",
+      "remainingWork": "Verify that no QML-only check guards a security-relevant value."
     },
     {
       "id": "ASVS:v5.0.0-2.2.3",
@@ -331,9 +478,18 @@
       "title": "Verify that the application will only process business logic flows for the same user in the expected sequential step order and without skipping steps.",
       "domain": "Validation and Business Logic",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-003"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/HttpNavigationLease.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "The single-navigation HTTP consent is a sequential flow with tokens; stale and cross-tab tokens are rejected in the UI suite.",
+      "remainingWork": "UI suites are blocked in this environment; re-run the transport suite and extend to tab close/reopen and rapid repeated consent."
     },
     {
       "id": "ASVS:v5.0.0-2.3.2",
@@ -376,9 +532,17 @@
       "title": "Verify that anti-automation controls are in place to protect against excessive calls to application functions that could lead to data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, or overuse of costly resources.",
       "domain": "Validation and Business Logic",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/PermissionCoordinator.cpp"
+      ],
+      "rationale": "Adapted: a hostile page can flood permission requests and popups; the coordinator has a single pending request and timeouts, popup mode is controlled.",
+      "remainingWork": "High-rate request stress case and popup flood test are planned, not written."
     },
     {
       "id": "ASVS:v5.0.0-2.4.2",

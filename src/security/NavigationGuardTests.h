@@ -92,6 +92,10 @@ inline bool runNavigationGuardTests() {
 
     // Public -> Private subresources: MUST be blocked
     if (!NavigationGuard::blocksPrivateNetworkAccess(QUrl("http://192.168.1.1/admin"), publicFirstParty, false)) { qCritical() << "PNA FAIL: 192.168.1.1 subresource"; return false; }
+    for (const char *spelled : {"http://127.0.0.1./x", "http://10.0.0.5./x", "http://192.168.1.1./x", "http://169.254.169.254./x", "http://localhost./x", "http://127.1./x", "http://2130706433./x"}) {
+        if (!NavigationGuard::isPrivateNetwork(QUrl(QString::fromLatin1(spelled))) || !NavigationGuard::blocksPrivateNetworkAccess(QUrl(QString::fromLatin1(spelled)), publicFirstParty, false)) { qCritical() << "PNA FAIL: trailing-dot spelling" << spelled; return false; }
+    }
+    if (NavigationGuard::isPrivateNetwork(QUrl("http://example.com./x")) || NavigationGuard::isPrivateNetwork(QUrl("http://8.8.8.8./x"))) { qCritical() << "PNA FAIL: trailing dot made a public host private"; return false; }
     if (!NavigationGuard::blocksPrivateNetworkAccess(QUrl("http://127.0.0.1:8080/api"), publicFirstParty, false)) { qCritical() << "PNA FAIL: 127.0.0.1 subresource"; return false; }
     if (!NavigationGuard::blocksPrivateNetworkAccess(QUrl("http://localhost:9000/"), publicFirstParty, false)) { qCritical() << "PNA FAIL: localhost subresource"; return false; }
     if (!NavigationGuard::blocksPrivateNetworkAccess(QUrl("http://169.254.169.254/latest/meta-data/"), publicFirstParty, false)) { qCritical() << "PNA FAIL: 169.254 subresource"; return false; }
