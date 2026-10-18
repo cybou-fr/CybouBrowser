@@ -293,7 +293,7 @@
         "src/security/RuleEngine.h"
       ],
       "rationale": "Regexes in source are simple character classes and scheme checks; no nested quantifiers found by review. Tracker rule matching does not use regular expressions.",
-      "remainingWork": "Fuzz URL classification and rule matching with long adversarial inputs for time bounds."
+      "remainingWork": "Source review found no backtracking-prone regexes; suite 'fuzz' adds timing bounds on pathological URL inputs (all fast). Extend to rule-list matching with large lists."
     },
     {
       "id": "ASVS:v5.0.0-1.4.1",
@@ -310,7 +310,7 @@
         "src/security/NavigationGuard.h"
       ],
       "rationale": "C++ parsing of attacker-controlled URLs, hostnames and headers; Qt containers are used, no raw buffers were found in review.",
-      "remainingWork": "No fuzzing or sanitizer builds exist; add ASan/UBSan test builds and fuzz targets."
+      "remainingWork": "Deterministic URL fuzz exists (suite 'fuzz', no crash on 20 000 generated and 8 pathological inputs) but no sanitizer builds or coverage-guided fuzzing; add ASan/UBSan test builds and libFuzzer-style targets."
     },
     {
       "id": "ASVS:v5.0.0-1.4.2",
@@ -327,7 +327,7 @@
         "src/security/NavigationGuard.h"
       ],
       "rationale": "IPv4 and port parsing of attacker-controlled numeric forms (decimal, octal, hex) is where integer overflow could occur.",
-      "remainingWork": "Boundary tests: values near 2^32, 2^31, negative and overlong numerals; 17 spellings are covered only for loopback."
+      "remainingWork": "Mixed-radix IPv4 spellings were fuzzed against the engine (250 samples, none misclassified) and boundary cases are in url-parser; still add explicit values near 2^32/2^31 and port overflow cases, and run under UBSan."
     },
     {
       "id": "ASVS:v5.0.0-1.4.3",
@@ -3053,7 +3053,7 @@
         "src/security/StoredUrl.h"
       ],
       "rationale": "Browser analogue: sensitive values in URLs must not be copied into history, session store, network samples or logs. The network sample is documented to retain no query.",
-      "remainingWork": "History and bookmarks now strip fragments, credentials and secret-named query values (StoredUrl, tested, with migration). Still open: the session store keeps full URLs by decision, visited URLs in the engine HTTP cache until the cache is cleared, unrecognised parameter names, and an end-to-end secret-canary test across stores, network sample and diagnostics."
+      "remainingWork": "History and bookmarks now strip fragments, credentials and secret-named query values (StoredUrl, tested, with migration). Still open: the session store keeps full URLs by decision, visited URLs in the engine HTTP cache until the cache is cleared, unrecognised parameter names, and an end-to-end secret-canary test across stores, network sample and diagnostics. StoredUrl now also handles unparsable URLs, ';' separators and nested query secrets (fuzz-tested)."
     },
     {
       "id": "ASVS:v5.0.0-14.2.2",

@@ -1,4 +1,5 @@
 #pragma once
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
@@ -23,25 +24,43 @@ inline bool isSensitiveParameter(const QString &name) {
 }
 
 // Returns the input unchanged (same string) when there is nothing to remove, so ordinary URLs keep
-// their exact stored form.
+// their exact stored form. A string QUrl cannot parse is cut at the first '?' or '#': its query and
+// fragment cannot be inspected, so they are not kept.
 inline QString sanitize(const QString &input) {
     QUrl url(input, QUrl::TolerantMode);
-    if (!url.isValid() || url.scheme().isEmpty()) return input;
+    if (!url.isValid()) {
+        const int cut = input.indexOf(QRegularExpression(QStringLiteral("[?#]")));
+        return cut < 0 ? input : input.left(cut);
+    }
+    if (url.scheme().isEmpty()) return input;
     bool changed = false;
     if (url.hasFragment()) { url.setFragment(QString()); changed = true; }
     if (!url.userInfo().isEmpty()) { url.setUserInfo(QString()); changed = true; }
     if (url.hasQuery()) {
-        QStringList rebuilt;
-        for (const QString &pair : url.query(QUrl::FullyEncoded).split(QLatin1Char('&'))) {
+        // Parameters are separated by '&' and, in older servers, ';'. Separators are kept as written.
+        const QString query = url.query(QUrl::FullyEncoded);
+        QString rebuilt, pair;
+        bool redacted = false;
+        auto flush = [&](QChar separator) {
             const int eq = pair.indexOf(QLatin1Char('='));
-            if (eq > 0 && isSensitiveParameter(QUrl::fromPercentEncoding(pair.left(eq).toUtf8()))) {
-                rebuilt << pair.left(eq) + QStringLiteral("=redacted");
-                changed = true;
-            } else {
-                rebuilt << pair;
+            // A secret can also sit in a nested query inside a parameter (continue=/a?token=X, also
+            // percent-encoded), so every "name=value" piece of the decoded parameter is checked.
+            bool secret = false;
+            const QStringList nested = QUrl::fromPercentEncoding(pair.toUtf8()).split(QRegularExpression(QStringLiteral("[?#&;]")));
+            for (const QString &piece : nested) {
+                const int e = piece.indexOf(QLatin1Char('='));
+                if (e > 0 && isSensitiveParameter(piece.left(e))) { secret = true; break; }
             }
+            if (secret) { rebuilt += eq > 0 ? pair.left(eq) + QStringLiteral("=redacted") : QStringLiteral("redacted"); redacted = true; }
+            else rebuilt += pair;
+            if (!separator.isNull()) rebuilt += separator;
+            pair.clear();
+        };
+        for (const QChar ch : query) {
+            if (ch == QLatin1Char('&') || ch == QLatin1Char(';')) flush(ch); else pair += ch;
         }
-        if (changed) url.setQuery(rebuilt.join(QLatin1Char('&')), QUrl::StrictMode);
+        flush(QChar());
+        if (redacted) { url.setQuery(rebuilt, QUrl::StrictMode); changed = true; }
     }
     return changed ? url.toString() : input;
 }

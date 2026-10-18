@@ -71,6 +71,10 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
             {"https://example.org/s?X-Amz-Signature=SECRET&X-Amz-Credential=C", "https://example.org/s?X-Amz-Signature=redacted&X-Amz-Credential=redacted"},
             {"https://example.org/z?zipcode=75001&encoding=utf8&monkey=1", "https://example.org/z?zipcode=75001&encoding=utf8&monkey=1"},
             {"https://example.org/q?api_key=SECRET#frag", "https://example.org/q?api_key=redacted"},
+            {"https://example.org/a?x=1;token=SECRET", "https://example.org/a?x=1;token=redacted"},
+            {"https://example.org/r?continue=https%3A%2F%2Fapp%2Fcb%3Ftoken%3DSECRET&x=1", "https://example.org/r?continue=redacted&x=1"},
+            {"https://example.org/r?next=/a?access_token=SECRET&x=1", "https://example.org/r?next=redacted&x=1"},
+            {"https://example.org/r?back=%2Fhome&x=1", "https://example.org/r?back=%2Fhome&x=1"},
         };
         for (const auto &u : urls) {
             const QString got = StoredUrl::sanitize(QString::fromUtf8(u.input));
