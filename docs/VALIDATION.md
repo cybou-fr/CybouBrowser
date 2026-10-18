@@ -186,3 +186,14 @@ Limits, stated plainly: the lookup is not bound to the connection Chromium later
 ## Dedicated worker coverage — 2026-10-18
 
 Three `pna` cases run `fetch()` inside a dedicated Worker created from a blob URL: a public-space page's worker to a local literal and to a hostname alias is blocked with zero target hits (engine, hardened flags); a local page's worker to a local target works. Dedicated workers therefore inherit the creator's address space in Chromium 140. Not covered: shared/service workers, WebSocket inside a worker, WebRTC, HTTPS workers, real DNS. Only `--pna-test` was run for this addition (PASS, exit 0); the full gate is still blocked by the stale-process cache lock recorded above and was not rerun.
+
+## WebRTC ICE probe — 2026-10-18
+
+New opt-in diagnostic `cybou_tests.exe --webrtc-probe` (`WebRtcProbe.h`; raw engine, off-the-record profile, no app interceptor, no STUN/TURN servers; Qt 6.12 / Chromium 140.0.7339.225). It runs with `QWebEngineSettings::WebRTCPublicInterfacesOnly` off, then on.
+
+| Observation | setting off | setting on |
+| --- | --- | --- |
+| Local ICE candidates visible to the page | two `*.local` mDNS host candidates, no raw LAN or loopback IP | none |
+| STUN connectivity checks received on a UDP socket at `127.0.0.1` after the page injected a remote loopback candidate | **87** | **91** |
+
+Findings: (1) the page does not learn private IPs without a media permission (mDNS masking); with `PublicInterfacesOnly` it gets no candidates at all. Behaviour with a granted camera/microphone permission is untested and is when Chromium exposes real addresses. (2) **Open gap:** a page can make the browser send UDP STUN binding requests to an arbitrary loopback address by injecting a remote ICE candidate, and `WebRTCPublicInterfacesOnly` does not stop it - that setting limits exposed local candidates, not connection targets. The traffic is UDP, so neither Chromium's private-network protections nor the URL interceptor see it. Impact is limited to STUN-format datagrams (a fixed small request, rate of roughly 17 per second here), a local-network probing and reflection primitive rather than arbitrary UDP; reading responses is limited to ICE state. Not tested: private-range LAN targets, TCP candidates, TURN-relayed paths, an HTTPS public page, any Chromium flag or policy that filters remote candidates. The probe exits 0 whenever the experiment ran; it is not a PASS. CYB-PNA-001/002 and ASVS 17.1.1 stay open.

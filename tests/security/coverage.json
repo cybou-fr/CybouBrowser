@@ -3191,7 +3191,7 @@
         "qml/BrowserTab.qml",
         "src/security/EngineHardening.h"
       ],
-      "remainingWork": "Probe real RTCPeerConnection ICE/STUN behaviour against loopback and private-range candidates with the setting on and off; no WebRTC test exists. Adapted requirement, not a literal TURN server check."
+      "remainingWork": "Probe now exists (--webrtc-probe): mDNS-masked candidates and none with WebRTCPublicInterfacesOnly, but injected remote loopback candidates still receive STUN checks (87-91 in 5 s) with the setting on or off - open gap. Still needed: LAN-range targets, granted-media-permission behaviour, a mitigation (filter or policy) and its test. Adapted requirement, not a literal TURN server check."
     },
     {
       "id": "ASVS:v5.0.0-17.1.2",

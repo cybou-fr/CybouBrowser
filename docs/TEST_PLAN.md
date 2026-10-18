@@ -135,3 +135,5 @@ The `pna` suite additionally covers a secure public source (ports 38476-38479, p
 `pna` redirect cases serve 302 responses from the public fixture to a local target; WebSocket cases open `ws://` to the local fixture, which never completes the handshake, so they are judged by the target hit counter. A `knownGap` case that does not reach its expected counter logs `PNA_COMPAT_KNOWN_GAP` instead of failing; it must never be reported as a PASS of the boundary.
 
 `pna` app-layer cases install `RequestObserver` with a stub host resolver and load a public-source page over HTTP: `ws://` to a loopback literal and to a loopback-resolving alias must show zero target hits; a public-resolving name must still connect. A real resolver (CNAME chain, changing answers) is not covered.
+
+`--webrtc-probe` is a raw-engine diagnostic for ICE behaviour: local candidates with and without `WebRTCPublicInterfacesOnly`, and STUN checks that reach a test-owned UDP socket at loopback after a remote candidate is injected. It reports observations and exits 0 when the experiment ran; interpret the counts, not the exit code.
