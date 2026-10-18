@@ -6,6 +6,7 @@ Button {
     scale: down ? 0.95 : hovered ? 1.03 : 1.0
     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
     contentItem: Text {
+        textFormat: Text.PlainText
         text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
         font.pixelSize: 13; font.bold: gbtn.highlighted || gbtn.hovered
         horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter

@@ -16,6 +16,7 @@ Dialog {
     padding: 20
     background: GlassDialogBackground {}
     header: Label {
+        textFormat: Text.PlainText
         text: dialog.title; padding: 20; bottomPadding: 8
         color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap
     }
@@ -34,6 +35,7 @@ Dialog {
             text: qsTr("Source : %1").arg(pendingOpenOrigin || qsTr("Source inconnue"))
         }
         Label {
+            textFormat: Text.PlainText
             Layout.fillWidth: true; wrapMode: Text.WordWrap; color: CybouTheme.mainText
             text: dialog.allowed ? qsTr("Ce fichier sera ouvert par une application externe. Continuez uniquement si vous faites confiance à sa source. CYBOU ne réalise pas d’analyse antivirus.") : qsTr("L’ouverture de ce type de fichier est bloquée dans CYBOU. Les programmes, scripts, raccourcis et types inconnus doivent être examinés depuis leur dossier.")
         }

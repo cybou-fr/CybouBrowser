@@ -43,9 +43,10 @@ Menu {
                 Row {
                     anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                     ControlBarIcon { id: iconState; capability: entry.row; focusPolicy: Qt.NoFocus; enabled: false; width: 30; height: 26 }
-                    Label { text: entry.text; color: "#FFFFFF"; font.pixelSize: 13; height: 28; verticalAlignment: Text.AlignVCenter }
+                    Label { textFormat: Text.PlainText; text: entry.text; color: "#FFFFFF"; font.pixelSize: 13; height: 28; verticalAlignment: Text.AlignVCenter }
                 }
                 Label {
+                    textFormat: Text.PlainText
                     anchors.right: parent.right; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter
                     readonly property bool activeDeny: entry.row.policy === 2 && (!!entry.row.explicitDeny || !!entry.row.blocked)
                     text: entry.row.pending ? qsTr("Demande") : entry.row.policy === 1 ? qsTr("Autorisé") : activeDeny ? qsTr("Bloqué") : entry.row.policy === 4 ? qsTr("Rechargement") : qsTr("Demander")

@@ -7,6 +7,7 @@ MenuItem {
     implicitHeight: 32
     scale: down ? 0.98 : 1.0
     contentItem: Text {
+        textFormat: Text.PlainText
         leftPadding: 8; rightPadding: 8
         text: gitem.text
         color: gitem.enabled ? (gitem.highlighted ? "#FFFFFF" : CybouTheme.mainText) : CybouTheme.mutedText

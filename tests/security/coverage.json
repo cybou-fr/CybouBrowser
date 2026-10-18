@@ -412,9 +412,21 @@
       "title": "Verify that content intended to be displayed as text, rather than rendered as HTML, is handled using safe rendering functions (such as createTextNode or textContent) to prevent unintended execution of content such as HTML or JavaScript.",
       "domain": "Web Frontend Security",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UI-004"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "Page titles, URLs, download names and origins are attacker-controlled strings shown in the browser's own QML UI; the default AutoText format rendered HTML-looking strings as rich text and fetched <img src> URLs through the application's network stack, outside the profile and request interceptor.",
+      "sourceRefs": [
+        "qml/Main.qml",
+        "qml/LibraryDrawer.qml",
+        "qml/SettingsPanel.qml",
+        "tools/security/qml_text_lint.py",
+        "src/security/TextInjectionProbe.h"
+      ],
+      "remainingWork": "Fixed in all 48 dynamic Label/Text items and enforced by qml_text_lint.py (unit-tested); --text-injection-probe shows AutoText/StyledText fetch and PlainText does not. Still missing: an end-to-end UI test with a hostile page title in the live tab strip and library (UI suites currently blocked by the stale-process cache lock), a review of text rendered outside QML (C++ dialogs, tray/notification text, accessibility names), and Qt version coverage of the behaviour."
     },
     {
       "id": "ASVS:v5.0.0-3.2.3",
@@ -475,9 +487,18 @@
       "title": "Verify that a Strict-Transport-Security header field is included on all responses to enforce an HTTP Strict Transport Security (HSTS) policy. A maximum age of at least 1 year must be defined, and for L2 and up, the policy must apply to all subdomains as well.",
       "domain": "Web Frontend Security",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "Server-side header wording; the browser analogue is that the engine honours Strict-Transport-Security for later http:// navigations to a host and cannot be bypassed by the temporary HTTP exception.",
+      "sourceRefs": [
+        "src/security/NetworkPolicy.h",
+        "src/security/HttpNavigationLease.h"
+      ],
+      "remainingWork": "Fixture: TLS host (cybou-source.test leaf exists) sending STS, then http:// to the same host must be upgraded, including after the single-navigation HTTP lease; HSTS persistence in off-the-record profiles and preload behaviour are untested. Adapted requirement."
     },
     {
       "id": "ASVS:v5.0.0-3.4.2",
@@ -628,9 +649,18 @@
       "title": "Verify that the application only uses client-side technologies which are still supported and considered secure. Examples of technologies which do not meet this requirement include NSAPI plugins, Flash, Shockwave, ActiveX, Silverlight, NACL, or client-side Java applets.",
       "domain": "Web Frontend Security",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UPD-001"
+      ],
+      "verificationStatus": "not_verified",
+      "rationale": "Adapted to the product's own client-side technologies: the embedded Chromium base (140) plus the security patch level, and the absence of legacy plugin technologies.",
+      "sourceRefs": [
+        "CMakeLists.txt",
+        "docs/SECURITY_MODEL.md"
+      ],
+      "remainingWork": "Record the engine age against the current upstream stable, the patch cadence and known gaps that depend on newer Chromium (for example Local Network Access for WebRTC, Chrome 142+); confirm plugin/NPAPI technologies are absent. CVE triage is not done."
     },
     {
       "id": "ASVS:v5.0.0-3.7.2",

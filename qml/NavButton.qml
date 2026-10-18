@@ -15,6 +15,7 @@ Button {
     scale: control.down ? 0.93 : control.hovered ? 1.05 : 1.0
     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
     contentItem: Text {
+        textFormat: Text.PlainText
         text: control.text
         color: control.enabled ? (control.hovered ? "#FFFFFF" : "#A0B3D0") : "#41536E"
         Behavior on color { ColorAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 120 } }

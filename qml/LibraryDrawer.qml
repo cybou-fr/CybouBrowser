@@ -58,6 +58,7 @@ Drawer {
         anchors.fill: parent; anchors.margins: 20; spacing: 14
         RowLayout {
             Label {
+                textFormat: Text.PlainText
                 text: librarySection === "bookmarks" ? qsTr("Favoris") : librarySection === "history" ? qsTr("Historique") : qsTr("Téléchargements")
                 font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true
             }
@@ -107,8 +108,8 @@ Drawer {
                 }
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 12; spacing: 4
-                    Label { Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: CybouTheme.mainText; elide: Text.ElideRight; font.bold: true }
-                    Label { Layout.fillWidth: true; text: entry.download ? (browserWindow ? browserWindow.downloadStatus(entry.modelData) : "") : entry.modelData.url; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
+                    Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: CybouTheme.mainText; elide: Text.ElideRight; font.bold: true }
+                    Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: entry.download ? (browserWindow ? browserWindow.downloadStatus(entry.modelData) : "") : entry.modelData.url; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
                     ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                     RowLayout {
                         spacing: 8

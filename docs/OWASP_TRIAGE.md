@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 26 are classified applicable and 416 remain untriaged (second batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 29 are classified applicable and 413 remain untriaged (third batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -63,3 +63,17 @@ Date: 2026-10-18. The 20 controls of these two ASVS domains were reviewed; **6 a
 ### Proposed not-applicable (NOT approved)
 
 These 14 describe server-side infrastructure CYBOU does not operate. They stay `untriaged` until a named human reviewer accepts the rationale; no N/A is recorded in the coverage file: ASVS 12.2.2 (publicly trusted certificates for externally facing services; revisit when an update server exists), 12.3.3, 12.3.4, 12.3.5 (internal service-to-service TLS and authentication; no internal services), 17.1.2 (TURN exhaustion), 17.2.1, 17.2.2 (media-server DTLS key management and ciphers; the browser uses engine-generated ephemeral DTLS), 17.2.3, 17.2.4, 17.2.5, 17.2.6, 17.2.7 (media-server SRTP/DTLS handling) and 17.3.1, 17.3.2 (signaling-server flood and malformed input).
+
+## Third batch - Web Frontend Security (ASVS chapter 3)
+
+Date: 2026-10-18. The 31 untriaged controls of this chapter describe the security of a *web application served to browsers*; CYBOU is the browser, so most are server-side. **3 are classified applicable** (adapted) in `coverage.json`; 28 are proposed not-applicable and need a named reviewer.
+
+| Control | Browser scope (adapted) | Open verification work |
+| --- | --- | --- |
+| ASVS:v5.0.0-3.2.2 | Untrusted titles, URLs, file names and origins shown in native QML UI must render as plain text. A real defect was found and fixed (see VALIDATION); case CYB-UI-004. | End-to-end hostile-title UI test; text outside QML; Qt default coverage. |
+| ASVS:v5.0.0-3.4.1 | The engine must honour HSTS for later http:// navigations and the HTTP exception must not bypass it. | HSTS upgrade fixture incl. lease and off-the-record persistence. |
+| ASVS:v5.0.0-3.7.1 | CYBOU's own client-side stack: embedded Chromium 140 + patch level, no legacy plugins. | Engine age/cadence record, CVE triage, plugin absence. |
+
+### Proposed not-applicable (NOT approved)
+
+Server-set headers, cookies and hosting practices that CYBOU does not serve; the browser merely enforces some of them through the engine, and enforcement is covered by existing cases (CORS, transport, redirects) rather than by these controls: ASVS 3.1.1, 3.2.1, 3.2.3, 3.3.1, 3.3.2, 3.3.3, 3.3.4, 3.3.5, 3.4.2, 3.4.3, 3.4.4, 3.4.5, 3.4.6, 3.4.7, 3.4.8, 3.5.1, 3.5.2, 3.5.3, 3.5.4, 3.5.5, 3.5.6, 3.5.7, 3.5.8, 3.6.1, 3.7.2, 3.7.3, 3.7.4, 3.7.5. Two deserve explicit reviewer attention before N/A: 3.4.5 (browser default referrer policy is a CYBOU privacy decision) and 3.7.3 (external-protocol navigation confirmation; the settings state external protocols are disabled but no test exists). They remain `untriaged`; no N/A is recorded.

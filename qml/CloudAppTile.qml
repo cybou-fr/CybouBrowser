@@ -77,6 +77,7 @@ Item {
 
         // App display name (12px, clean contrast)
         Text {
+            textFormat: Text.PlainText
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
             Layout.maximumWidth: 88
@@ -91,6 +92,7 @@ Item {
 
         // Subtitle or configuration alert badge
         Text {
+            textFormat: Text.PlainText
             Layout.alignment: Qt.AlignHCenter
             text: {
                 if (!tile.tileData) return ""

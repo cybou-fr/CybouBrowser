@@ -933,7 +933,7 @@ ApplicationWindow {
                         RowLayout {
                             anchors.fill: parent; anchors.leftMargin: 9; anchors.rightMargin: 3; spacing: 6
                             Image { source: tabItem.favicon || "qrc:/assets/cybou.png"; Layout.preferredWidth: 15; Layout.preferredHeight: 15; sourceSize.width: 32; sourceSize.height: 32 }
-                            Text { visible: !tabItem.isPinned; text: tabItem.label === "Nouvel onglet" ? qsTr("Nouvel onglet") : tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: activeTab === tabItem.index ? "#FFFFFF" : "#8FA3BF"; font.bold: activeTab === tabItem.index; font.pixelSize: 12 }
+                            Text { textFormat: Text.PlainText; visible: !tabItem.isPinned; text: tabItem.label === "Nouvel onglet" ? qsTr("Nouvel onglet") : tabItem.label; elide: Text.ElideRight; Layout.fillWidth: true; color: activeTab === tabItem.index ? "#FFFFFF" : "#8FA3BF"; font.bold: activeTab === tabItem.index; font.pixelSize: 12 }
                             NavButton {
                                 visible: tabItem.isMuted || tabItem.audible; implicitWidth: 22; implicitHeight: 24
                                 hint: tabItem.isMuted ? qsTr("Réactiver le son") : qsTr("Couper le son")
@@ -1045,6 +1045,7 @@ ApplicationWindow {
                                 else window.allowTemporaryHttp(pressedToken)
                             }
                             contentItem: Text {
+                                textFormat: Text.PlainText
                                 text: httpButton.text; font.pixelSize: httpButton.httpAction ? 10 : 17; font.bold: httpButton.httpAction
                                 color: httpButton.httpAction ? "#FFD08A" : (currentView && currentView.restrictedMode && !currentView.restrictedModeOverridden ? "#F59E0B" : "#A0B3D0")
                                 horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
@@ -1360,7 +1361,7 @@ ApplicationWindow {
         width: 430; anchors.centerIn: parent; modal: true
         standardButtons: Dialog.Ok | Dialog.Cancel
         background: GlassDialogBackground {}
-        header: Label { text: behaviorDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        header: Label { textFormat: Text.PlainText; text: behaviorDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; textFormat: Text.PlainText; color: CybouTheme.mainText; text: behaviorDialog.policyOrigin + "\n\n" + (behaviorDialog.policyKey === "popups" ? qsTr("Ce choix modifie l’ouverture de nouvelles fenêtres pour cette origine. Autoriser inclut les fenêtres sans geste utilisateur.") : qsTr("Le changement sera appliqué lors de la prochaine navigation ou après un rechargement explicite. Bloquer JavaScript ou localStorage peut perturber les connexions et paiements.")) }
         onAccepted: if (currentView && browserStore.origin(currentView.url.toString()) === policyOrigin) {
             if (!controlState.setBehavior(policyKey, policyMode)) window.showStatus(qsTr("La modification n’a pas pu être confirmée."))
@@ -1417,13 +1418,13 @@ ApplicationWindow {
                     background: Rectangle { radius: 7; color: suggestionIndex === suggestionButton.index || suggestionButton.hovered ? CybouTheme.glassHover : "transparent" }
                     contentItem: RowLayout {
                         spacing: 12
-                        Label { text: suggestionButton.modelData.kindId === "bookmark" || suggestionButton.modelData.kind === "Favori" ? "☆" : "↶"; color: CybouTheme.secondaryText; font.pixelSize: 20 }
+                        Label { textFormat: Text.PlainText; text: suggestionButton.modelData.kindId === "bookmark" || suggestionButton.modelData.kind === "Favori" ? "☆" : "↶"; color: CybouTheme.secondaryText; font.pixelSize: 20 }
                         ColumnLayout {
                             Layout.fillWidth: true; spacing: 2
                             Label { Layout.fillWidth: true; text: suggestionButton.modelData.title; textFormat: Text.PlainText; elide: Text.ElideRight; color: CybouTheme.mainText; font.pixelSize: 12 }
                             Label { Layout.fillWidth: true; text: suggestionButton.modelData.url; textFormat: Text.PlainText; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
                         }
-                        Label { text: suggestionButton.modelData.kind; color: CybouTheme.mutedText; font.pixelSize: 10 }
+                        Label { textFormat: Text.PlainText; text: suggestionButton.modelData.kind; color: CybouTheme.mutedText; font.pixelSize: 10 }
                     }
                     onClicked: window.navigate(modelData.url)
                 }
@@ -1470,7 +1471,7 @@ ApplicationWindow {
         title: "Fermer cette fenêtre ?"
         standardButtons: Dialog.Ok | Dialog.Cancel
         background: GlassDialogBackground {}
-        header: Label { text: closeWorkDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        header: Label { textFormat: Text.PlainText; text: closeWorkDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: "Des téléchargements ou un export PDF sont en cours. Fermer cette fenêtre les interrompra." }
         onAccepted: {
             for (const item of downloadItems) if (item && !item.isFinished) item.cancel()
@@ -1501,20 +1502,20 @@ ApplicationWindow {
         id: clearHistoryDialog; anchors.centerIn: parent; title: "Effacer l’historique ?"; modal: true
         standardButtons: Dialog.Ok | Dialog.Cancel
         background: GlassDialogBackground {}
-        header: Label { text: clearHistoryDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        header: Label { textFormat: Text.PlainText; text: clearHistoryDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { text: "Toutes les visites enregistrées seront supprimées."; color: CybouTheme.mainText }
         onAccepted: browserStore.clearHistory()
     }
     Dialog {
         id: connectionInfo; anchors.centerIn: parent; width: 400; title: "Connexion"; modal: true; standardButtons: Dialog.Ok
         background: GlassDialogBackground {}
-        header: Label { text: connectionInfo.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
-        Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
+        header: Label { textFormat: Text.PlainText; text: connectionInfo.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        Label { textFormat: Text.PlainText; width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: currentView && currentView.url.toString().startsWith("https://") ? "Cette page utilise HTTPS. Le chiffrement ne garantit pas la fiabilité du site." : "Cette page n’utilise pas HTTPS ou affiche la page d’accueil locale." }
     }
     Dialog {
         id: about; anchors.centerIn: parent; width: 440; title: "CYBOU 0.8.0"; modal: true; standardButtons: Dialog.Ok
         background: GlassDialogBackground {}
-        header: Label { text: about.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        header: Label { textFormat: Text.PlainText; text: about.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {

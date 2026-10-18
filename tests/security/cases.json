@@ -103,7 +103,7 @@
         "native interceptor deny observations and sanitized target origin are asserted",
         "actual UI HTTP consent, same-origin resources and ws denial",
         "54 real GET/POST cases across 301/302/303/307/308; initial POST method/body observed and redirected targets never receive inherited HTTP consent",
-        "actual UI 302\u2192307 cross-origin chain: three button consents, three exact hop requests, stale tokens rejected and all temporary profiles destroyed"
+        "actual UI 302→307 cross-origin chain: three button consents, three exact hop requests, stale tokens rejected and all temporary profiles destroyed"
       ],
       "remainingScenarios": [
         "mixed TLS/downgrade chains and error presentation through UI",
@@ -337,6 +337,15 @@
       "tier": "P1",
       "candidateSuite": "surface",
       "status": "planned"
+    },
+    {
+      "id": "CYB-UI-004",
+      "domain": "ui",
+      "objective": "untrusted page strings (titles, URLs, file names, origins) render as plain text in native UI and never trigger UI-originated network fetches",
+      "method": "native",
+      "tier": "P0",
+      "candidateSuite": "security",
+      "status": "in_progress"
     },
     {
       "id": "CYB-UPD-001",

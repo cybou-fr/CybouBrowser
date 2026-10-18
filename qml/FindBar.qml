@@ -36,6 +36,7 @@ Rectangle {
         }
 
         Label {
+            textFormat: Text.PlainText
             text: root.resultText
             color: "#8FA3BF"
         }

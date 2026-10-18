@@ -45,6 +45,7 @@ Drawer {
         scale: down ? 0.95 : hovered ? 1.03 : 1.0
         Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
         contentItem: Text {
+            textFormat: Text.PlainText
             text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
             font.pixelSize: 13; font.bold: gbtn.highlighted || gbtn.hovered
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
@@ -126,6 +127,7 @@ Drawer {
                     onClicked: wallpaperFileDialog.open()
                 }
                 Label {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true; wrapMode: Text.WrapAnywhere
                     visible: browserStore.wallpaperType === "custom" && browserStore.customWallpaperPath.length > 0
                     text: browserStore.customWallpaperPath; color: "#94A3B8"; font.pixelSize: 11
@@ -140,7 +142,7 @@ Drawer {
                 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 Label { text: qsTr("TÉLÉCHARGEMENTS"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
-                Label { Layout.fillWidth: true; text: browserStore.downloadsPath; wrapMode: Text.WrapAnywhere; color: "#94A3B8"; font.pixelSize: 12 }
+                Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: browserStore.downloadsPath; wrapMode: Text.WrapAnywhere; color: "#94A3B8"; font.pixelSize: 12 }
                 GlassButton { text: qsTr("Choisir le dossier…"); onClicked: downloadFolder.open() }
                 CheckBox { text: qsTr("Toujours demander où enregistrer"); checked: browserStore.askDownloadLocation; onToggled: browserStore.askDownloadLocation = checked }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
@@ -201,7 +203,7 @@ Drawer {
                 }
                 Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12; text: qsTr("Appliqué aux profils ouverts. Certains services intégrés peuvent nécessiter ces cookies.") }
                 GlassButton { text: qsTr("Effacer les données de navigation…"); enabled: !browserStore.cacheBusy; onClicked: clearDialog.open() }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; visible: browserStore.cacheBusy || panel.statusText.length > 0; text: browserStore.cacheBusy ? qsTr("Nettoyage du cache en cours…") : panel.statusText; color: "#7DD3FC"; font.pixelSize: 12 }
+                Label { textFormat: Text.PlainText; Layout.fillWidth: true; wrapMode: Text.WordWrap; visible: browserStore.cacheBusy || panel.statusText.length > 0; text: browserStore.cacheBusy ? qsTr("Nettoyage du cache en cours…") : panel.statusText; color: "#7DD3FC"; font.pixelSize: 12 }
                 Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#162D4D" }
                 RowLayout {
                     Label { text: qsTr("AUTORISATIONS DES SITES"); Layout.fillWidth: true; color: "#38BDF8"; font.letterSpacing: 1; font.pixelSize: 11; font.bold: true }
@@ -226,13 +228,13 @@ Drawer {
                         }
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 10; spacing: 3
-                            Label { Layout.fillWidth: true; text: modelData.origin.toString(); elide: Text.ElideMiddle; font.bold: true; color: "#FFFFFF" }
-                            Label { Layout.fillWidth: true; text: browserStore.permissionName(modelData.permissionType) + " · " + (modelData.state === 2 ? qsTr("Autorisé") : modelData.state === 3 ? qsTr("Refusé") : qsTr("Demander")); color: modelData.state === 2 ? "#10B981" : modelData.state === 3 ? "#EF4444" : "#F59E0B"; font.pixelSize: 12 }
+                            Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: modelData.origin.toString(); elide: Text.ElideMiddle; font.bold: true; color: "#FFFFFF" }
+                            Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: browserStore.permissionName(modelData.permissionType) + " · " + (modelData.state === 2 ? qsTr("Autorisé") : modelData.state === 3 ? qsTr("Refusé") : qsTr("Demander")); color: modelData.state === 2 ? "#10B981" : modelData.state === 3 ? "#EF4444" : "#F59E0B"; font.pixelSize: 12 }
                             GlassButton { text: qsTr("Réinitialiser"); onClicked: { modelData.reset(); panel.refreshPermissions() } }
                         }
                     }
                 }
-                Label { Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#64748B"; font.pixelSize: 12; text: panel.privateMode ? qsTr("Profil privé : les données de cette fenêtre restent en mémoire. Elles sont supprimées à sa fermeture. Les téléchargements et favoris restent sur le disque.") : qsTr("Les paramètres et favoris sont partagés entre les fenêtres. Les données privées restent séparées.") }
+                Label { textFormat: Text.PlainText; Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#64748B"; font.pixelSize: 12; text: panel.privateMode ? qsTr("Profil privé : les données de cette fenêtre restent en mémoire. Elles sont supprimées à sa fermeture. Les téléchargements et favoris restent sur le disque.") : qsTr("Les paramètres et favoris sont partagés entre les fenêtres. Les données privées restent séparées.") }
             }
         }
     }
@@ -261,7 +263,7 @@ Drawer {
         width: 450
         title: panel.privateMode ? qsTr("Effacer les données privées") : qsTr("Effacer les données de navigation")
         modal: true
-        header: Label { text: clearDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
+        header: Label { textFormat: Text.PlainText; text: clearDialog.title; padding: 20; bottomPadding: 8; color: CybouTheme.mainText; font.pixelSize: 18; font.bold: true; wrapMode: Text.WordWrap }
         standardButtons: Dialog.Ok | Dialog.Cancel
         background: Rectangle {
             radius: CybouTheme.dialogRadius

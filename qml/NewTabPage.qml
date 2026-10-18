@@ -115,6 +115,7 @@ Item {
             }
 
             Text {
+                textFormat: Text.PlainText
                 Layout.alignment: Qt.AlignHCenter
                 text: root.privateMode ? qsTr("VOTRE ESPACE PRIVÉ") : qsTr("UN INTERNET À VOUS")
                 color: CybouTheme.secondaryText
@@ -204,6 +205,7 @@ Item {
                     scale: down ? 0.95 : hovered ? 1.03 : 1.0
                     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
                     contentItem: Text {
+                        textFormat: Text.PlainText
                         text: parent.text; color: CybouTheme.mainText
                         font.pixelSize: 13; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                     }
@@ -230,6 +232,7 @@ Item {
                     scale: down ? 0.95 : hovered ? 1.03 : 1.0
                     Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100; easing.type: Easing.OutQuad } }
                     contentItem: Text {
+                        textFormat: Text.PlainText
                         text: parent.text; color: CybouTheme.mainText
                         font.pixelSize: 13; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                     }
@@ -263,6 +266,7 @@ Item {
 
     // Discreet bottom caption
     Text {
+        textFormat: Text.PlainText
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 14
         anchors.horizontalCenter: parent.horizontalCenter

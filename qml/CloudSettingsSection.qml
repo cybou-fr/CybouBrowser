@@ -35,6 +35,7 @@ ColumnLayout {
             implicitHeight: 24
             padding: 4
             contentItem: Text {
+                textFormat: Text.PlainText
                 text: parent.text
                 color: "#7DD3FC"
                 font.pixelSize: 11
@@ -80,6 +81,7 @@ ColumnLayout {
     }
 
     Label {
+        textFormat: Text.PlainText
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         color: "#94A3B8"
@@ -124,6 +126,7 @@ ColumnLayout {
         }
 
         Label {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             color: (cloudMgr && cloudMgr.nextcloudBaseUrl.length > 0) ? "#34D399" : "#F59E0B"
@@ -172,6 +175,7 @@ ColumnLayout {
                 spacing: 8
 
                 Label {
+                    textFormat: Text.PlainText
                     text: roleRow.modelData.label
                     color: "#CBD5E1"
                     font.pixelSize: 12

@@ -33,6 +33,7 @@ Popup {
         scale: down ? 0.95 : hovered ? 1.02 : 1.0
         Behavior on scale { NumberAnimation { duration: (typeof browserStore !== "undefined" && browserStore.reduceMotion) ? 0 : 100 } }
         contentItem: Text {
+            textFormat: Text.PlainText
             text: gbtn.text; color: gbtn.highlighted ? "#FFFFFF" : gbtn.enabled ? CybouTheme.mainText : CybouTheme.mutedText
             font.pixelSize: 12; font.bold: gbtn.highlighted || gbtn.hovered
             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
@@ -122,7 +123,7 @@ Popup {
             }
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 1
-                Label { text: card.capability.title || ""; color: "white"; font.bold: true; font.pixelSize: 15 }
+                Label { textFormat: Text.PlainText; text: card.capability.title || ""; color: "white"; font.bold: true; font.pixelSize: 15 }
                 Label { text: card.capability.origin || qsTr("Page locale"); textFormat: Text.PlainText; color: "#7DD3FC"; font.pixelSize: 11; elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Button {
@@ -132,6 +133,7 @@ Popup {
             }
         }
         Label {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             text: card.capability.pending ? qsTr("Demande d’accès reçue")
                 : card.capability.key === "network" ? qsTr("Observation du profil")
@@ -143,7 +145,7 @@ Popup {
                 : qsTr("Sur demande (aucun accès actif)")
             color: "#FFFFFF"; wrapMode: Text.WordWrap; font.bold: true
         }
-        Label { Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
+        Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: card.capability.reason || ""; color: "#CBD5E1"; font.pixelSize: 12; wrapMode: Text.WordWrap }
         Label { visible: !!card.capability.requester && card.capability.requester !== card.capability.origin; Layout.fillWidth: true; text: qsTr("Origine demandeuse : ") + (card.capability.requester || ""); textFormat: Text.PlainText; color: "#FFD08A"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
         RowLayout {
             visible: !!card.capability.pending
@@ -201,10 +203,12 @@ Popup {
                 onClicked: card.revokeHttpRequested(pressedHttpToken)
             }
             Label {
+                textFormat: Text.PlainText
                 text: qsTr("Requêtes filtrées · profils ouverts : %1").arg(browserStore.totalBlockedTrackers())
                 color: "#38BDF8"; font.pixelSize: 12; font.bold: true
             }
             Label {
+                textFormat: Text.PlainText
                 text: qsTr("Échantillon réseau récent : %1").arg(card.capability.sampleCount || 0)
                 color: "#A9C1DC"; font.pixelSize: 11
             }
@@ -221,6 +225,7 @@ Popup {
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
                 Label {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
                     text: card.capability.adTemporary ? qsTr("Exception publicitaire active pour cette page. Révoquée au prochain chargement.")
                         : qsTr("Publicités bloquées par défaut. Si le contenu est altéré, vous pouvez autoriser temporairement les annonces.")
@@ -246,6 +251,7 @@ Popup {
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 3
                 Label {
+                    textFormat: Text.PlainText
                     Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#FFD08A"
                     text: card.capability.trackerTemporary ? qsTr("Exception de traqueurs active pour cette page. Révoquée au prochain chargement.")
                         : qsTr("Pistage bloqué par défaut. Si le site est cassé, vous pouvez autoriser temporairement les outils de mesure.")

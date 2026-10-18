@@ -141,3 +141,7 @@ The `pna` suite additionally covers a secure public source (ports 38476-38479, p
 ## Strict WebRTC suite
 
 `cybou_tests.exe --webrtc-test` (gate suite `webrtc`) composes engine flags without touching the environment and then starts two child runs of itself (`--webrtc-strict-child=0|1`) because the policy is a process-wide Chromium switch. Each child loads a page, injects a loopback ICE candidate and reports `stunChecksAtLoopback`. Pass requires control >= 10 and strict == 0. The suite needs a free loopback UDP port and about a minute.
+
+## Native UI text rendering
+
+`tools/security/qml_text_lint.py` requires `textFormat: Text.PlainText` on every `Label`/`Text` whose `text:` is not a literal or `qsTr("literal")`; `test_qml_text_lint.py` covers the linter and runs it on the product QML. `cybou_tests.exe --text-injection-probe` is the behavioural diagnostic (requests to a loopback server per text format). A live UI case with a hostile page title (tab strip, library, permission origins) is still to be written.

@@ -66,7 +66,7 @@ Button {
         visible: icon.requestPending || icon.policy === 1 || icon.policy === 4 || icon.isExplicitDeny
         x: parent.width - 12; y: 1; width: 10; height: 10; radius: icon.isExplicitDeny ? 2 : 5
         color: "#081426"; border.color: icon.stateColor; border.width: 1
-        Text { anchors.centerIn: parent; text: icon.requestPending ? "!" : icon.policy === 1 ? "✓" : icon.isExplicitDeny ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
+        Text { textFormat: Text.PlainText; anchors.centerIn: parent; text: icon.requestPending ? "!" : icon.policy === 1 ? "✓" : icon.isExplicitDeny ? "−" : "↻"; color: icon.stateColor; font.pixelSize: 8; font.bold: true }
     }
     Rectangle {
         visible: !!icon.capability.recent && !icon.requestPending && icon.capability.key !== "network"

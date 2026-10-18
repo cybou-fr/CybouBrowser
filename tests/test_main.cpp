@@ -29,6 +29,7 @@
 #include "security/HttpsPnaProbe.h"
 #include "security/WebRtcProbe.h"
 #include "security/StrictWebRtcTests.h"
+#include "security/TextInjectionProbe.h"
 #include "security/PnaCompatTests.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
     if (httpsPnaProbe) return runHttpsPnaProbe();
     if (webRtcProbe) return runWebRtcProbe();
     if (strictWebRtcChild >= 0) return runWebRtcProbe(true);
+    if (app.arguments().contains("--text-injection-probe")) return runTextInjectionProbe();
 
     BoundaryTlsServer transportTls;
     QString transportWssUrl;
