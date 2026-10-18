@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 79 are classified applicable and 363 remain untriaged (sixth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 98 are classified applicable and 344 remain untriaged (seventh batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -127,3 +127,22 @@ Applicable: ASVS 1.1.1, 1.1.2, 1.2.2, 1.2.3, 1.2.5, 1.3.2, 1.3.6, 1.3.10, 1.3.12
 ### Proposed not-applicable (NOT approved)
 
 Injection classes and business-transaction mechanics that the application does not contain (no SQL/LDAP/XPath/LaTeX/JNDI/memcache/mail use, no CSV export, no XML parsing of its own, no server-side templates, no multi-user approvals, locking or transactions): ASVS 1.2.1, 1.2.4, 1.2.6, 1.2.7, 1.2.8, 1.2.9, 1.2.10, 1.3.1, 1.3.3, 1.3.4, 1.3.5, 1.3.7, 1.3.8, 1.3.9, 1.3.11, 1.5.1, 2.1.2, 2.1.3, 2.2.3, 2.3.2, 2.3.3, 2.3.4, 2.3.5, 2.4.2. 1.2.1 and 1.3.3 are generic restatements covered by 1.1.2 and the UI text work; 1.2.9 (regular-expression escaping) should be re-checked if user input is ever compiled into a regex. They remain `untriaged`; no N/A is recorded.
+
+## Seventh batch - Session Management, Cryptography and Secure Coding (ASVS chapters 7, 11 and 15)
+
+Date: 2026-10-18. 64 untriaged ASVS controls were reviewed; **19 are classified applicable**, 45 are proposed not-applicable. Applicable controls now total 98 of 442.
+
+Facts the classification rests on, from the source: the application contains **no cryptographic code, random-number generation or hashing of its own** (all cryptography is the engine's); consent "tokens" are counters of the form `tab-N@epoch`, used only as staleness guards, and no bridge (WebChannel, postMessage) lets a page reach or present them, so no non-guessable secret exists to protect; and QML uses strict equality everywhere (a new lint enforces it).
+
+| Control | Browser scope (adapted) | Open verification work |
+| --- | --- | --- |
+| ASVS 7.4.1, 7.6.2 | Ending a browsing session must stop it being usable; site sessions must not start without user action (tab restore on start is on by default). | Teardown completeness; restore-on-start decision. |
+| ASVS 11.1.2, 11.2.1, 11.2.3 | Cryptography inventory (engine TLS only), validated implementations (BoringSSL via the engine), 128-bit minimum via TLS policy. | Inventory document; measure accepted TLS versions and ciphers. |
+| ASVS 15.1.1-15.1.5 | Documentation of remediation time frames, SBOM, resource-heavy and dangerous functionality, risky components (the engine). | Write them; no SBOM exists. |
+| ASVS 15.2.1-15.2.5 | Engine currency (Chromium 140 base), defences against availability loss, test harness shipped in production, dependency provenance, extra protection around dangerous functionality. | Define time frames and compare; stress cases; provenance of Qt. |
+| ASVS 15.3.5 | Strict equality in QML: lint added, 0 findings. | Keep in the self-test set. |
+| ASVS 15.4.1-15.4.3 | Shared state between the interceptor thread and UI; check-then-act on downloaded files (`canOpenDownloadedFile`); lock discipline. | Thread-sanitizer run, race fixture, lock review. |
+
+### Proposed not-applicable (NOT approved)
+
+Server-side session, key-management and web-framework mechanics that the product does not implement: ASVS 7.1.1, 7.1.2, 7.1.3, 7.2.1, 7.2.2, 7.2.3, 7.2.4, 7.3.1, 7.3.2, 7.4.2, 7.4.3, 7.4.4, 7.4.5, 7.5.1, 7.5.2, 7.5.3, 7.6.1 (account and session administration; the browser does not issue or manage application sessions); 11.1.1, 11.1.3, 11.1.4, 11.2.2, 11.2.4, 11.2.5, 11.3.1, 11.3.2, 11.3.3, 11.3.4, 11.3.5, 11.4.1, 11.4.2, 11.4.3, 11.4.4, 11.5.1, 11.5.2, 11.6.1, 11.6.2, 11.7.1, 11.7.2 (no application-level encryption, MACs, password storage, key derivation, nonces or random numbers - all cryptography is inherited from the engine, covered through 12.1.x and 11.2.x; 11.5.1 is classified this way because the only identifiers are non-secret counters that no page can reach, and must be revisited if any capability token is ever exposed to page content; 11.1.4 and 11.6.2 touch post-quantum migration and key exchange, which are engine decisions to be recorded in the cryptographic inventory); 15.3.1, 15.3.2, 15.3.3, 15.3.4, 15.3.6, 15.3.7, 15.4.4 (data-object field filtering, mass assignment, proxy IP forwarding, prototype pollution, HTTP parameter pollution, backend redirect following, thread starvation). They remain `untriaged`; no N/A is recorded.

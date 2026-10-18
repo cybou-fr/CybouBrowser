@@ -31,6 +31,28 @@ class ProductWebSettings(unittest.TestCase):
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 self.assertNotRegex(line, r"""\(\s*'\s*"\s*\+|\(\s*"\s*'\s*\+""", f"{path.name}:{number} concatenates a value into a quoted JS argument")
 
+    def test_javascript_uses_strict_equality(self):
+        # ASVS 15.3.5: loose == / != allow type juggling in security decisions.
+        string = re.compile(r"""("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')""")
+        loose = re.compile(r"(?<![=!<>])==(?!=)|!=(?!=)")
+        offenders = []
+        for path in qml_files():
+            in_block = False
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                code = string.sub('""', line)
+                if in_block:
+                    if "*/" not in code:
+                        continue
+                    code = code.split("*/", 1)[1]
+                    in_block = False
+                if "/*" in code:
+                    code, rest = code.split("/*", 1)
+                    in_block = "*/" not in rest
+                code = code.split("//", 1)[0]
+                if loose.search(code):
+                    offenders.append(f"{path.name}:{number}")
+        self.assertEqual(offenders, [], "loose equality found: " + ", ".join(offenders[:20]))
+
     def test_no_application_code_opens_non_local_urls_externally(self):
         # QDesktopServices::openUrl may only be fed local files/folders chosen by the application.
         sources = list((ROOT / "src").rglob("*.h")) + list((ROOT / "src").rglob("*.cpp"))
