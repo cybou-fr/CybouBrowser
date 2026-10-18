@@ -27,6 +27,7 @@
 #include "security/PrivateNetworkProbe.h"
 #include "security/EngineHardening.h"
 #include "security/HttpsPnaProbe.h"
+#include "security/WebRtcProbe.h"
 #include "security/PnaCompatTests.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
@@ -61,8 +62,10 @@ int main(int argc, char *argv[])
     bool httpsPnaProbe = false;
     for (int i = 1; i < argc; ++i) httpsPnaProbe |= QByteArray(argv[i]) == "--https-pna-probe";
     if (httpsPnaProbe) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1, MAP cybou-alias.test 127.0.0.1\" --no-proxy-server --ip-address-space-overrides=127.0.0.1:38471=public");
+    bool webRtcProbe = false;
+    for (int i = 1; i < argc; ++i) webRtcProbe |= QByteArray(argv[i]) == "--webrtc-probe";
     // Probes measure the raw engine; every other mode runs the shipped engine configuration.
-    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe) applyEngineHardening();
+    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe && !webRtcProbe) applyEngineHardening();
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
@@ -87,6 +90,7 @@ int main(int argc, char *argv[])
     if (enginePnaProbe) return runEnginePnaProbe();
     if (pnaCompat) return runPnaCompatTest();
     if (httpsPnaProbe) return runHttpsPnaProbe();
+    if (webRtcProbe) return runWebRtcProbe();
 
     BoundaryTlsServer transportTls;
     QString transportWssUrl;
