@@ -6,6 +6,8 @@
 #include <QtWebEngineCore/QWebEngineProfile>
 #include "../controlbar/RequestObserver.h"
 #include "DownloadPolicy.h"
+#include "StoredUrl.h"
+#include <QSettings>
 #include "NetworkBoundaryTests.h"
 #include "TlsBoundaryTests.h"
 #include "HttpRedirectTests.h"
@@ -58,6 +60,56 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         if (!DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL false positive" << name; return 2; }
     }
     qInfo() << "DOWNLOAD_POLICY_TEST PASS";
+    {
+        // Secrets that sites put in URLs must not reach the persistent history and bookmark stores.
+        struct { const char *input, *expected; } urls[] = {
+            {"https://example.org/a?b=1&c=2", "https://example.org/a?b=1&c=2"},              // unchanged, same string
+            {"https://example.org/cb#access_token=SECRET&state=x", "https://example.org/cb"},
+            {"https://u:pw@example.org/p", "https://example.org/p"},
+            {"https://example.org/reset?token=SECRET&lang=fr", "https://example.org/reset?token=redacted&lang=fr"},
+            {"https://example.org/o?Access-Token=SECRET&code=SECRET2&x=1", "https://example.org/o?Access-Token=redacted&code=redacted&x=1"},
+            {"https://example.org/s?X-Amz-Signature=SECRET&X-Amz-Credential=C", "https://example.org/s?X-Amz-Signature=redacted&X-Amz-Credential=redacted"},
+            {"https://example.org/z?zipcode=75001&encoding=utf8&monkey=1", "https://example.org/z?zipcode=75001&encoding=utf8&monkey=1"},
+            {"https://example.org/q?api_key=SECRET#frag", "https://example.org/q?api_key=redacted"},
+        };
+        for (const auto &u : urls) {
+            const QString got = StoredUrl::sanitize(QString::fromUtf8(u.input));
+            if (got != QString::fromUtf8(u.expected) || got.contains("SECRET")) { qCritical() << "STORED_URL_TEST FAIL" << u.input << "->" << got; return 2; }
+        }
+        BrowserStore store;
+        const QString leaky = "https://example.org/cb?access_token=SECRETVALUE&page=2#id_token=SECRETFRAG";
+        store.clearHistory();
+        store.recordVisit(leaky, QString());
+        store.recordVisit(leaky, leaky); // title equal to the URL must not smuggle it back
+        const auto history = store.history();
+        if (history.size() != 1) { qCritical() << "STORED_URL_TEST FAIL: history entries" << history.size(); return 2; }
+        const auto row = history.first().toMap();
+        if (row.value("url").toString().contains("SECRET") || row.value("title").toString().contains("SECRET")) { qCritical() << "STORED_URL_TEST FAIL: history leaks" << row; return 2; }
+        const bool wasBookmarked = store.isBookmarked(leaky);
+        if (!wasBookmarked) store.toggleBookmark(leaky, leaky);
+        if (!store.isBookmarked(leaky)) { qCritical() << "STORED_URL_TEST FAIL: bookmark lookup by raw URL"; return 2; }
+        for (const auto &item : store.bookmarks()) {
+            const auto mark = item.toMap();
+            if (mark.value("url").toString().contains("SECRETVALUE") || mark.value("title").toString().contains("SECRET")) { qCritical() << "STORED_URL_TEST FAIL: bookmark leaks" << mark; return 2; }
+        }
+        if (!wasBookmarked) store.toggleBookmark(leaky, leaky);
+        store.clearHistory();
+        // Migration: entries written by earlier versions are cleaned once.
+        QSettings legacy;
+        const QVariant keepHistory = legacy.value("history"), keepBookmarks = legacy.value("bookmarks");
+        legacy.setValue("history", QVariantList{QVariantMap{{"url", leaky}, {"title", leaky}, {"time", "2026-01-01T00:00:00"}}});
+        legacy.setValue("bookmarks", QVariantList{QVariantMap{{"url", leaky}, {"title", "kept title"}}});
+        legacy.remove("privacy/storedUrlsSanitized1"); legacy.sync();
+        {
+            BrowserStore migrated;
+            const auto h = migrated.history().first().toMap(), b = migrated.bookmarks().first().toMap();
+            if (h.value("url").toString().contains("SECRET") || h.value("title").toString().contains("SECRET") || b.value("url").toString().contains("SECRET") || b.value("title").toString() != "kept title") {
+                qCritical() << "STORED_URL_TEST FAIL: migration" << h << b; return 2;
+            }
+        }
+        legacy.setValue("history", keepHistory); legacy.setValue("bookmarks", keepBookmarks); legacy.sync();
+        qInfo() << "STORED_URL_TEST PASS: fragments, credentials and secret query values never reach history or bookmarks; ordinary URLs unchanged; legacy entries migrated once";
+    }
     {
         QTemporaryDir files;
         if (!files.isValid()) return 2;

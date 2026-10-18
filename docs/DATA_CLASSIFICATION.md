@@ -15,9 +15,9 @@
 
 | Data | Where it lives | Level | Written when | Retention today | Notes / gaps |
 | --- | --- | --- | --- | --- | --- |
-| History (`history`: url, title, time) | `QSettings` → registry `HKCU\Software\CYBOU\CYBOU` | P1 | Each web (http/https) visit unless the tab is private or restricted (`BrowserTab.qml:197`) | Last 1000 entries, then oldest dropped | **Full URL stored, query and fragment included; plaintext in the registry.** |
+| History (`history`: url, title, time) | `QSettings` → registry `HKCU\Software\CYBOU\CYBOU` | P1 | Each web (http/https) visit unless the tab is private or restricted (`BrowserTab.qml:197`) | Last 1000 entries, then oldest dropped | **Fragment, credentials and secret-named query values are removed before storing (since 2026-10-18, heuristic by parameter name); the rest of the URL is plaintext in the registry.** |
 | Open-tab session (`session`: url, pinned, muted) | same | P1 | On tab changes unless private mode (`Main.qml:725`) | Overwritten on each save; emptied by the clear-data dialog's session option (`Main.qml:387`) | Full URLs, plaintext. |
-| Bookmarks (`bookmarks`: url, title) | same | P1 | User action | Until removed | Full URL; unlimited count. |
+| Bookmarks (`bookmarks`: url, title) | same | P1 | User action | Until removed | Sanitised like history; unlimited count. |
 | Preferences (`preferences/*`, `ui/controlBar/*`) | same | P0 | User action | Persistent | Includes the opt-in `preferences/strictWebRtc`. `downloadsPath` and `customWallpaperPath` are local paths (mildly identifying). |
 | Cloud service choices (`cloud/configuration`) | same | P0/P1 | User action | Persistent | Provider choices and an optional user-supplied Nextcloud base URL; no credentials are stored by the application (OAuth/login stay in the web profile). |
 | Engine history and favicon databases (`History`, `Favicons` SQLite files) | Engine profile directory (below) | P1 | By the engine for visited pages | Engine-managed | **Second copy of browsing history** next to the registry one; whether the clear-history action empties it is untested. Observed on the development machine. |
@@ -30,7 +30,7 @@
 
 ## Observations that need an owner decision
 
-1. **P1 stores keep secrets that sites put in URLs.** History, session and bookmarks store the complete URL. A password-reset or OAuth link with a token in the query is persisted in plaintext for up to 1000 visits. Proposed rule: strip fragment and known token-bearing query values, or store origin and path only, for P1 stores.
+1. **P1 stores kept secrets that sites put in URLs - partly resolved.** Decision taken: history and bookmarks now drop the fragment and credentials and redact secret-named query values (`StoredUrl.h`, with migration of old entries). The open-tab session still stores complete URLs because restoring tabs needs them, and the engine's own `History` database is unchanged. Unrecognised parameter names are not caught.
 2. **No at-rest protection.** `QSettings` data is plaintext in the user's registry hive. Any process running as the user can read it. Decide whether OS-level protection (DPAPI) is in scope.
 3. **Shared registry location.** The key `HKCU\Software\CYBOU\CYBOU` also contained values unrelated to the browser (names that look like another CYBOU application's wallet and node settings) on the development machine. Whether another product writes there, or the browser's key is shared with it, is **unverified**; if shared, the other application can read browser history and the two can overwrite each other's keys. Needs a distinct organization/application name or key.
 4. **Retention is partial.** Only history has a cap; bookmarks and engine data have none, and no scheduled deletion exists. Decide whether "user-controlled" is the intended policy and document it.

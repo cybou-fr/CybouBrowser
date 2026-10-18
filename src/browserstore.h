@@ -25,6 +25,7 @@
 #include <QtWebEngineCore/QWebEngineCookieStore>
 #include "controlbar/RequestObserver.h"
 #include "security/NavigationGuard.h"
+#include "security/StoredUrl.h"
 #include "security/DownloadPolicy.h"
 #include "cloud/CloudServiceManager.h"
 #include "ui/AddressDisplay.h"
@@ -62,6 +63,7 @@ public:
     explicit BrowserStore(QObject *parent = nullptr, TemporaryProfileFactory factory = {})
         : QObject(parent), m_cloud(this), m_temporaryProfileFactory(std::move(factory)) {
         settings.remove("preferences/httpsOnly"); // Retire the old persistent global HTTP opt-out.
+        migrateStoredUrls();
         m_historySaveTimer.setInterval(1000);
         m_historySaveTimer.setSingleShot(true);
         connect(&m_historySaveTimer, &QTimer::timeout, this, &BrowserStore::flushHistory);
@@ -74,6 +76,24 @@ public:
     }
     ~BrowserStore() override {
         flushHistory();
+    }
+    // One-time cleanup of URLs stored by earlier versions (fragments, credentials, secret query values).
+    void migrateStoredUrls() {
+        if (settings.value("privacy/storedUrlsSanitized1", false).toBool()) return;
+        for (const char *key : {"history", "bookmarks"}) {
+            auto list = settings.value(key).toList();
+            bool changed = false;
+            for (auto &item : list) {
+                auto row = item.toMap();
+                const QString url = row.value("url").toString(), clean = StoredUrl::sanitize(url);
+                if (clean == url) continue;
+                if (row.value("title").toString() == url) row["title"] = clean; // title defaulted to the URL
+                row["url"] = clean; item = row; changed = true;
+            }
+            if (changed) settings.setValue(key, list);
+        }
+        settings.setValue("privacy/storedUrlsSanitized1", true);
+        settings.sync();
     }
     QVariantList bookmarks() const { return settings.value("bookmarks").toList(); }
     QVariantList history() const {
@@ -452,12 +472,15 @@ public:
         if (includeHistory && result.size() < 8) appendMatches(history(), "Historique", "history");
         return result;
     }
-    Q_INVOKABLE bool isBookmarked(const QString &url) const {
+    Q_INVOKABLE bool isBookmarked(const QString &rawUrl) const {
+        const QString url = StoredUrl::sanitize(rawUrl);
         for (const auto &item : bookmarks()) if (item.toMap().value("url").toString() == url) return true;
         return false;
     }
-    Q_INVOKABLE void toggleBookmark(const QString &url, const QString &title) {
-        if (!isWebUrl(url)) return;
+    Q_INVOKABLE void toggleBookmark(const QString &rawUrl, const QString &rawTitle) {
+        if (!isWebUrl(rawUrl)) return;
+        const QString url = StoredUrl::sanitize(rawUrl);
+        const QString title = rawTitle == rawUrl ? url : rawTitle;
         auto list = bookmarks();
         for (int i = 0; i < list.size(); ++i) {
             if (list[i].toMap().value("url").toString() == url) {
@@ -467,8 +490,10 @@ public:
         list.prepend(QVariantMap{{"url", url}, {"title", title.isEmpty() ? url : title}});
         settings.setValue("bookmarks", list); emit changed();
     }
-    Q_INVOKABLE void recordVisit(const QString &url, const QString &title) {
-        if (!isWebUrl(url)) return;
+    Q_INVOKABLE void recordVisit(const QString &rawUrl, const QString &rawTitle) {
+        if (!isWebUrl(rawUrl)) return;
+        const QString url = StoredUrl::sanitize(rawUrl);
+        const QString title = rawTitle == rawUrl ? url : rawTitle;
         auto list = history();
         if (!list.isEmpty() && list.first().toMap().value("url").toString() == url) list.removeFirst();
         list.prepend(QVariantMap{{"url", url}, {"title", title.isEmpty() ? url : title},
