@@ -22,6 +22,6 @@
 | [Release Criteria](RELEASE_CRITERIA.md) | Formal GO/NO-GO |
 | [ADR 0005](ADR/0005-origin-scoped-tracker-exceptions.md) | Current origin/profile tracker-exception policy |
 | [ADR 0008](ADR/0008-evidence-driven-versioning.md) | Mandatory evidence-driven release decision |
+| [Data Classification](DATA_CLASSIFICATION.md) | Draft data inventory and proposed protection levels (unapproved) |
 
 **Source code is authoritative for what exists. Executed, accessible test artifacts are authoritative for what passed.** Unimplemented or unverified functionality must be explicitly labelled.
-- [DATA_CLASSIFICATION](DATA_CLASSIFICATION.md) - draft data inventory and proposed protection levels (unapproved).
