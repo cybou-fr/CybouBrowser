@@ -285,3 +285,16 @@ New gate suite `protocol` (`cybou_tests.exe --protocol-test`, `ExternalProtocolT
 The control proves a launch attempt is observable, so the zero is meaningful. `tools/security/test_qml_policies.py` (3 tests) additionally checks that every QML file declaring a `WebEngineView` sets `DisallowUnknownUrlSchemes`, that nothing loosens it, and that every `QDesktopServices::openUrl` call site in application code passes a local file. Both pass; gate self-tests 12/12 with eleven suites listed.
 
 Consequence stated plainly: with the strict policy a legitimate `mailto:` or `tel:` link does nothing and the user gets no explanation or choice - there is no confirmation dialog. Not covered: user-gesture and address-bar navigations, real registered OS schemes (deliberately avoided), drag and drop, `file:`/`view-source:`/internal `chrome:` pages, schemes already known to Chromium. ASVS 3.7.3 is `applicable`, `not_verified`.
+
+## Idle outbound connections - 2026-10-18
+
+`tools/security/idle_connections.ps1` launches `cybou.exe --private` (off-the-record profile, no session restore, so the user's persistent profile and open tabs are not involved), samples every TCP connection and UDP endpoint owned by the process tree, and stops the tree afterwards. Windows 11, development build, no capture driver.
+
+| Run | Result |
+| --- | --- |
+| Positive control: same launch opening `https://example.org/`, 25 s | one established TCP connection to a Cloudflare IPv6 address on port 443, owned by `cybou` (the network service runs in the main process), seen in 9 samples - the sampler detects traffic |
+| Idle, new-tab page only, 120 s, 122 samples | **no TCP connection of any kind** from `cybou` or `QtWebEngineProcess`; no UDP endpoints; no new DNS-cache entries; no surviving processes |
+
+Source reading agrees: address-bar suggestions come from local history and bookmarks; search providers (DuckDuckGo, Brave, Bing, Google) and cloud launch targets are contacted only when the user navigates there.
+
+Limits: private window and new-tab page only (a persistent-profile start with session restore, cloud tiles, an open settings panel and the engine's behaviour over longer periods were not sampled); about one sample per second, so a connection shorter than that can be missed; UDP shows local endpoints only (and none appeared even in the control); the DNS-cache signal did not change in the control either, so it is not a reliable indicator. This is evidence for ASVS 16.2.3 / 13.1.1 / 13.2.4 at idle, not a proof of no telemetry; those controls stay `not_verified`.

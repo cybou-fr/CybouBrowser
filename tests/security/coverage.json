@@ -2619,7 +2619,7 @@
         "qml/Main.qml"
       ],
       "rationale": "Adapted: the application's own outbound communications (search providers, cloud launch targets, any user-supplied Nextcloud address, future update channel) must be documented, separate from page traffic.",
-      "remainingWork": "No outbound inventory exists; known from source: search engine URLs (DuckDuckGo, Brave, Bing, Google) and the cloud catalog. Write it and confirm with a packet or proxy capture that the idle application contacts nothing else."
+      "remainingWork": "Idle: no automatic outbound connections observed (see VALIDATION). Known user-triggered destinations: search providers (DuckDuckGo, Brave, Bing, Google), cloud launch targets, an optional user-supplied Nextcloud address. Still to write: the inventory document, and a capture of each user-triggered feature."
     },
     {
       "id": "ASVS:v5.0.0-13.1.2",
@@ -2691,7 +2691,7 @@
         "src/cloud/CloudServiceManager.h"
       ],
       "rationale": "Adapted: application-initiated requests (not page traffic) should go only to an allowlist of known providers and user-chosen addresses.",
-      "remainingWork": "Define the allowlist from the 13.1.1 inventory and test that suggestion or catalog requests cannot be redirected elsewhere; the user-supplied Nextcloud URL needs validation tests."
+      "remainingWork": "Define the allowlist from the 13.1.1 inventory and test that suggestion or catalog requests cannot be redirected elsewhere; the user-supplied Nextcloud URL needs validation tests. Idle application made no connections at all in the measurement, so there is nothing to allowlist for passive operation."
     },
     {
       "id": "ASVS:v5.0.0-13.2.5",
@@ -3281,7 +3281,7 @@
         "src/main.cpp"
       ],
       "rationale": "The application must not send logs or telemetry anywhere not documented; it intends to send none.",
-      "remainingWork": "Idle and active traffic capture proving no telemetry, crash upload or update ping; note the engine itself may phone home (component updater, safe browsing) unless disabled - unverified."
+      "remainingWork": "Idle measurement exists (tools/security/idle_connections.ps1): a private-window start with the new-tab page made zero connections in 120 s (positive control detected an example.org connection). Still open: persistent-profile start, longer periods, UDP/QUIC visibility, proxy-based capture, and the engine's own services (component updater, safe browsing) under real network conditions."
     },
     {
       "id": "ASVS:v5.0.0-16.2.4",
