@@ -227,3 +227,15 @@ Not proven and not claimed: usability of real calls with the option on (no TURN/
 **Fix.** `textFormat: Text.PlainText` on all 48 dynamic `Label`/`Text` items (no rich text was intentionally used anywhere). **Guard:** `tools/security/qml_text_lint.py` (standard library; run by `python -m unittest tools/security/test_qml_text_lint.py`, 5 tests) fails when any non-literal text binding lacks the opt-out; it passes on the current tree. After the change `--surface-test` and `--security-test` still pass; gate self-tests 12/12 plus 5 lint tests. New case `CYB-UI-004` (in progress) and applicable control ASVS 3.2.2.
 
 **Not proven:** a live end-to-end run with a hostile page title in the tab strip and library (UI suites are blocked by the stale-process cache lock), text rendered outside QML (C++ dialogs, system notifications, accessibility names), other Qt versions' defaults, whether the fetch was exploitable in the shipped packaged build. No exposure period or exploitation evidence is claimed.
+
+## HSTS enforcement - 2026-10-18
+
+New gate suite `hsts` (`cybou_tests.exe --hsts-test`, `HstsTests.h`; Qt 6.12 / Chromium 140.0.7339.225, engine decision only, hardened flags). A TLS-only loopback fixture (profile-local test CA, leaf for `cybou-source.test`) is reached through test-process resolver rules. Results, exit 0:
+
+| Scenario | Result |
+| --- | --- |
+| HTTPS visit with `Strict-Transport-Security: max-age=3600`, then `http://` to the same host and port in the same profile | upgraded to `https://`, request reached the TLS server once |
+| Control: fresh off-the-record profile, plain `http://` to the TLS-only port | load failed, zero server requests |
+| Control: HTTPS visit without the header, then `http://` | not upgraded, zero server requests |
+
+So the upgrade comes from the header and is scoped to the profile. Not covered: HSTS persistence across restarts for persistent profiles, `includeSubDomains`, the preload list, interaction with the application's single-navigation HTTP exception (the engine would upgrade before the application sees an http:// request for an HSTS host), cleared-site-data behaviour, and ports other than the fixture's. ASVS 3.4.1 stays `not_verified`; this is one engine-level fixture. Gate self-tests 12/12 with nine suites listed; only `--hsts-test`, `--pna-test` were run for this addition, the full gate is still blocked by the stale-process cache lock.

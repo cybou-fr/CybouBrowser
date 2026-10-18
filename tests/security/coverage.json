@@ -498,7 +498,7 @@
         "src/security/NetworkPolicy.h",
         "src/security/HttpNavigationLease.h"
       ],
-      "remainingWork": "Fixture: TLS host (cybou-source.test leaf exists) sending STS, then http:// to the same host must be upgraded, including after the single-navigation HTTP lease; HSTS persistence in off-the-record profiles and preload behaviour are untested. Adapted requirement."
+      "remainingWork": "Engine-level fixture now exists and passes (suite 'hsts': upgrade after STS within a profile, controls without header and in a fresh profile). Still missing: persistence across restarts, includeSubDomains, preload, and the interaction with the single-navigation HTTP lease. Adapted requirement."
     },
     {
       "id": "ASVS:v5.0.0-3.4.2",

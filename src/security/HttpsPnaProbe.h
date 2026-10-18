@@ -21,6 +21,7 @@ public:
     QSslKey key;
     bool tls = true;
     bool allowPrivateNetwork = true;
+    QByteArray extraHeaders; // appended to 200 responses, e.g. Strict-Transport-Security
     QMap<QByteArray, int> *hits = nullptr;
 protected:
     void incomingConnection(qintptr descriptor) override {
@@ -41,7 +42,7 @@ protected:
                               + (allowPrivateNetwork ? "Access-Control-Allow-Private-Network: true\r\n" : "") + "Content-Length: 0\r\n\r\n");
             } else {
                 const QByteArray body("<!doctype html><title>Probe ready</title>");
-                socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+                socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\nContent-Type: text/html\r\n" + extraHeaders + "Content-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
             }
             socket->disconnectFromHost();
         });

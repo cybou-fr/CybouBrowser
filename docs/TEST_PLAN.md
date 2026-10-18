@@ -145,3 +145,5 @@ The `pna` suite additionally covers a secure public source (ports 38476-38479, p
 ## Native UI text rendering
 
 `tools/security/qml_text_lint.py` requires `textFormat: Text.PlainText` on every `Label`/`Text` whose `text:` is not a literal or `qsTr("literal")`; `test_qml_text_lint.py` covers the linter and runs it on the product QML. `cybou_tests.exe --text-injection-probe` is the behavioural diagnostic (requests to a loopback server per text format). A live UI case with a hostile page title (tab strip, library, permission origins) is still to be written.
+
+`--hsts-test` (gate suite `hsts`) uses one TLS-only fixture and three fresh off-the-record profiles: header present then http:// (must upgrade), no memory (must not reach the server), header absent (must not upgrade). A failed load with zero server hits is the signal that an http:// request was not upgraded.

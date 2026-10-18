@@ -30,6 +30,7 @@
 #include "security/WebRtcProbe.h"
 #include "security/StrictWebRtcTests.h"
 #include "security/TextInjectionProbe.h"
+#include "security/HstsTests.h"
 #include "security/PnaCompatTests.h"
 #include "controlbar/ControlBarController.h"
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
@@ -71,6 +72,9 @@ int main(int argc, char *argv[])
         if (QByteArray(argv[i]).startsWith("--webrtc-strict-child=")) strictWebRtcChild = QByteArray(argv[i]).mid(22).toInt();
     }
     if (strictWebRtcTest) { QCoreApplication parentApp(argc, argv); return runStrictWebRtcTest(); }
+    bool hstsTest = false;
+    for (int i = 1; i < argc; ++i) hstsTest |= QByteArray(argv[i]) == "--hsts-test";
+    if (hstsTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1\" --no-proxy-server");
     bool webRtcProbe = false;
     for (int i = 1; i < argc; ++i) webRtcProbe |= QByteArray(argv[i]) == "--webrtc-probe";
     // Probes measure the raw engine; every other mode runs the shipped engine configuration.
@@ -102,6 +106,7 @@ int main(int argc, char *argv[])
     if (httpsPnaProbe) return runHttpsPnaProbe();
     if (webRtcProbe) return runWebRtcProbe();
     if (strictWebRtcChild >= 0) return runWebRtcProbe(true);
+    if (hstsTest) return runHstsTest();
     if (app.arguments().contains("--text-injection-probe")) return runTextInjectionProbe();
 
     BoundaryTlsServer transportTls;
