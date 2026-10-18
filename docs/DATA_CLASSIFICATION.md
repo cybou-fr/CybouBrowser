@@ -20,7 +20,7 @@
 | Bookmarks (`bookmarks`: url, title) | same | P1 | User action | Until removed | Sanitised like history; unlimited count. |
 | Preferences (`preferences/*`, `ui/controlBar/*`) | same | P0 | User action | Persistent | Includes the opt-in `preferences/strictWebRtc`. `downloadsPath` and `customWallpaperPath` are local paths (mildly identifying). |
 | Cloud service choices (`cloud/configuration`) | same | P0/P1 | User action | Persistent | Provider choices and an optional user-supplied Nextcloud base URL; no credentials are stored by the application (OAuth/login stay in the web profile). |
-| Engine history and favicon databases (`History`, `Favicons` SQLite files) | Engine profile directory (below) | P1 | By the engine for visited pages | Engine-managed | **Second copy of browsing history** next to the registry one; whether the clear-history action empties it is untested. Observed on the development machine. |
+| Engine HTTP cache entries (`Cache/Cache_Data`) | Cache directory (below) | P1/P2 | Per fetched resource | Engine-managed | **Contains the visited URLs** (measured by `--engine-history-probe`); removed by the clear-cache action, not by clearing history. The engine's `History`/`Favicons` files did not contain visited URLs in that probe (earlier "second copy of history" claim retracted). |
 | Cookies, local/session storage, IndexedDB, service workers | Engine profile `Cybou`: `%APPDATA%\CYBOU\CYBOU\QtWebEngine` | P2 | By sites | Engine-managed, persistent profile | Private windows use off-the-record profiles; completeness of clearing is unproven. |
 | HTTP cache, GPU/shader caches | `%LOCALAPPDATA%\cybou\CYBOU\cache\QtWebEngine\Cybou` | P2 | By the engine | Engine-managed | Clear-cache action exists in settings; verification missing. |
 | Downloaded files | Directory in `preferences/downloadsPath` (default: user Downloads) | P2 | User/accept path | Until deleted by the user | Mark-of-the-Web present on normal downloads; list of download items is in memory only. |
@@ -34,7 +34,7 @@
 2. **No at-rest protection.** `QSettings` data is plaintext in the user's registry hive. Any process running as the user can read it. Decide whether OS-level protection (DPAPI) is in scope.
 3. **Shared registry location.** The key `HKCU\Software\CYBOU\CYBOU` also contained values unrelated to the browser (names that look like another CYBOU application's wallet and node settings) on the development machine. Whether another product writes there, or the browser's key is shared with it, is **unverified**; if shared, the other application can read browser history and the two can overwrite each other's keys. Needs a distinct organization/application name or key.
 4. **Retention is partial.** Only history has a cap; bookmarks and engine data have none, and no scheduled deletion exists. Decide whether "user-controlled" is the intended policy and document it.
-5. **Clear-data completeness is unproven** across `QSettings`, the engine profile (including its own `History` database) and caches (ASVS 14.2.7, 14.3.1).
+5. **Clear-data completeness is partly measured.** Visited URLs live in the HTTP cache until the cache option is cleared (the dialog ticks both by default); the Quick profile cannot clear the engine's visited-link state. Registry stores, cookies and the engine databases for a long-lived profile are still unverified (ASVS 14.2.7, 14.3.1).
 
 ## Verification still needed
 

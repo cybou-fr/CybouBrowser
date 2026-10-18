@@ -2834,7 +2834,7 @@
         "src/security/StoredUrl.h"
       ],
       "rationale": "Browser analogue: sensitive values in URLs must not be copied into history, session store, network samples or logs. The network sample is documented to retain no query.",
-      "remainingWork": "History and bookmarks now strip fragments, credentials and secret-named query values (StoredUrl, tested, with migration). Still open: the session store keeps full URLs by decision, the engine profile's own History database, unrecognised parameter names, and an end-to-end secret-canary test across stores, network sample and diagnostics."
+      "remainingWork": "History and bookmarks now strip fragments, credentials and secret-named query values (StoredUrl, tested, with migration). Still open: the session store keeps full URLs by decision, visited URLs in the engine HTTP cache until the cache is cleared, unrecognised parameter names, and an end-to-end secret-canary test across stores, network sample and diagnostics."
     },
     {
       "id": "ASVS:v5.0.0-14.2.2",
@@ -2913,7 +2913,7 @@
         "src/browserstore.h"
       ],
       "rationale": "History, downloads and session data accumulate; automatic or user-triggered deletion and private-window ephemerality are the retention mechanisms.",
-      "remainingWork": "Test clear-history/clear-data completeness across stores and the engine profile; define a retention schedule or declare none."
+      "remainingWork": "Measured: clearing history does not remove visited URLs from the engine HTTP cache (clear-cache does; the dialog ticks both by default); the Quick profile cannot clear visited-link state. Still to test: completeness of the full clear flow across registry, cookies and a long-lived profile; define a retention schedule or declare none."
     },
     {
       "id": "ASVS:v5.0.0-14.2.8",
@@ -2966,7 +2966,7 @@
         "src/browserstore.h"
       ],
       "rationale": "The application's own persistent store (QSettings: history, bookmarks, session, preferences) lives in plaintext in the user profile and may contain sensitive URLs.",
-      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented. Also: engine History/Favicons databases and a possibly shared registry key (see docs/DATA_CLASSIFICATION.md). History and bookmarks are now sanitised (StoredUrl); session, engine databases and at-rest protection remain open."
+      "remainingWork": "Document and test what is stored, decide on stripping query/fragment, and on at-rest protection; no encryption is implemented. Also: visited URLs persist in the engine HTTP cache (measured), and a possibly shared registry key (see docs/DATA_CLASSIFICATION.md). History and bookmarks are now sanitised (StoredUrl); session, engine databases and at-rest protection remain open."
     },
     {
       "id": "ASVS:v5.0.0-15.1.1",
