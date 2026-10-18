@@ -74,6 +74,12 @@ inline int runPnaCompatTest() {
     // "ws:" targets open a WebSocket. The plain fixture never completes the handshake, so the
     // outcome is judged by target hit counters (a blocked socket never connects), not by events.
     auto scriptFor = [&](const QString &target) {
+        if (target.startsWith("worker:")) {
+            // Dedicated worker (blob URL) performs the fetch; it inherits the creator's address space.
+            return QString("(()=>{const src=\"fetch('%1',{mode:'no-cors',cache:'no-store'}).then(()=>postMessage('ok'),()=>postMessage('blocked'))\";"
+                           "const w=new Worker(URL.createObjectURL(new Blob([src])));w.onmessage=e=>{window.__r=e.data;document.title='done'};"
+                           "w.onerror=()=>{window.__r='worker-error';document.title='done'};setTimeout(()=>{if(!window.__r){window.__r='timeout';document.title='done'}},12000)})()").arg(target.mid(7));
+        }
         if (!target.startsWith("ws:")) return fetchScript(target);
         return QString("(()=>{const done=()=>{window.__r='settled';document.title='done'};const w=new WebSocket('%1');w.onerror=done;w.onclose=done;w.onopen=done;setTimeout(done,8000)})()").arg(target.mid(3));
     };
@@ -91,6 +97,9 @@ inline int runPnaCompatTest() {
         {"public ws->local literal", kPnaPublicSource, QString("ws:ws://127.0.0.1:%1/m").arg(kPnaLocalTarget), "*", QByteArray::number(kPnaLocalTarget) + "/m", 0, true},
         {"public ws->local alias", kPnaPublicSource, QString("ws:ws://cybou-alias.test:%1/n").arg(kPnaLocalTarget), "*", QByteArray::number(kPnaLocalTarget) + "/n", 0, true},
         {"local ws->local", kPnaLocalSource, QString("ws:ws://127.0.0.1:%1/o").arg(kPnaLocalTarget), "*", QByteArray::number(kPnaLocalTarget) + "/o", 1},
+        {"public worker->local literal", kPnaPublicSource, QString("worker:http://127.0.0.1:%1/s").arg(kPnaLocalTarget), "blocked", QByteArray::number(kPnaLocalTarget) + "/s", 0},
+        {"public worker->local alias", kPnaPublicSource, QString("worker:http://cybou-alias.test:%1/t").arg(kPnaLocalTarget), "blocked", QByteArray::number(kPnaLocalTarget) + "/t", 0},
+        {"local worker->local", kPnaLocalSource, QString("worker:http://127.0.0.1:%1/u").arg(kPnaLocalTarget), "ok", QByteArray::number(kPnaLocalTarget) + "/u", 1},
         {"local->public", kPnaLocalSource, host(kPnaPublicTarget, "cybou-alias.test") + "/f", "ok", QByteArray::number(kPnaPublicTarget) + "/f", 1},
     };
     int knownGaps = 0;
