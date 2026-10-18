@@ -2607,9 +2607,19 @@
       "title": "Verify that all communication needs for the application are documented. This must include external services which the application relies upon and cases where an end user might be able to provide an external location to which the application will then connect.",
       "domain": "Configuration",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/cloud/CloudServiceManager.h",
+        "qml/Main.qml"
+      ],
+      "rationale": "Adapted: the application's own outbound communications (search providers, cloud launch targets, any user-supplied Nextcloud address, future update channel) must be documented, separate from page traffic.",
+      "remainingWork": "No outbound inventory exists; known from source: search engine URLs (DuckDuckGo, Brave, Bing, Google) and the cloud catalog. Write it and confirm with a packet or proxy capture that the idle application contacts nothing else."
     },
     {
       "id": "ASVS:v5.0.0-13.1.2",
@@ -2670,9 +2680,18 @@
       "title": "Verify that an allowlist is used to define the external resources or systems with which the application is permitted to communicate (e.g., for outbound requests, data loads, or file access). This allowlist can be implemented at the application layer, web server, firewall, or a combination of different layers.",
       "domain": "Configuration",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/cloud/CloudServiceManager.h"
+      ],
+      "rationale": "Adapted: application-initiated requests (not page traffic) should go only to an allowlist of known providers and user-chosen addresses.",
+      "remainingWork": "Define the allowlist from the 13.1.1 inventory and test that suggestion or catalog requests cannot be redirected elsewhere; the user-supplied Nextcloud URL needs validation tests."
     },
     {
       "id": "ASVS:v5.0.0-13.2.5",
@@ -2733,18 +2752,36 @@
       "title": "Verify that the application is deployed either without any source control metadata, including the .git or .svn folders, or in a way that these folders are inaccessible both externally and to the application itself.",
       "domain": "Configuration",
       "level": "1",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-UPD-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "CMakeLists.txt"
+      ],
+      "rationale": "A distributed package must not ship .git or other source-control metadata.",
+      "remainingWork": "No package exists yet; add a package-content check (no .git, no build logs, no test fixtures or private keys such as tests/security/fixtures/tls/*-key.pem) when the installer is produced."
     },
     {
       "id": "ASVS:v5.0.0-13.4.2",
       "title": "Verify that debug modes are disabled for all components in production environments to prevent exposure of debugging features and information leakage.",
       "domain": "Configuration",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-SBX-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/main.cpp",
+        "qml/Main.qml",
+        "src/security/EngineHardening.h"
+      ],
+      "rationale": "Production must expose no debug or test mode. Source sets smokeMode/trackerTestMode false, but test-harness QML ships in the production module and the engine honours QTWEBENGINE_REMOTE_DEBUGGING and QTWEBENGINE_CHROMIUM_FLAGS from the environment.",
+      "remainingWork": "Verify on the packaged binary that remote debugging cannot be enabled without an explicit developer action, decide whether test harness QML belongs in the production build, and document the environment variables the process honours."
     },
     {
       "id": "ASVS:v5.0.0-13.4.3",
@@ -2778,9 +2815,17 @@
       "title": "Verify that the application does not expose detailed version information of backend components.",
       "domain": "Configuration",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/BrowserTab.qml"
+      ],
+      "rationale": "Browser analogue: the default user agent discloses engine and Qt WebEngine versions to every site; no user agent is customised in the source.",
+      "remainingWork": "Record exactly what the shipped UA reveals (QtWebEngine token, Chromium version) and decide whether to reduce it; fingerprint trade-offs apply."
     },
     {
       "id": "ASVS:v5.0.0-13.4.7",
@@ -3172,36 +3217,71 @@
       "title": "Verify that an inventory exists documenting the logging performed at each layer of the application's technology stack, what events are being logged, log formats, where that logging is stored, how it is used, how access to it is controlled, and for how long logs are kept.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/main.cpp",
+        "src/controlbar/RequestObserver.h",
+        "docs/DATA_CLASSIFICATION.md"
+      ],
+      "rationale": "The application writes no production log file; security-relevant events live in an in-memory bounded network sample and permission state. That is an undocumented logging design.",
+      "remainingWork": "Write the logging inventory: layers, events, formats, storage (memory only), access, retention; DATA_CLASSIFICATION states only that no production log file exists."
     },
     {
       "id": "ASVS:v5.0.0-16.2.1",
       "title": "Verify that each log entry includes necessary metadata (such as when, where, who, what) that would allow for a detailed investigation of the timeline when an event happens.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/controlbar/RequestObserver.h"
+      ],
+      "rationale": "Each network event carries time, sanitised origin, first party, resource type, outcome and reason, scoped to a profile.",
+      "remainingWork": "Assess against when/where/who/what for investigation (tab attribution is intentionally not claimed, CYB-NET-005); events are not persisted, so no timeline survives a restart."
     },
     {
       "id": "ASVS:v5.0.0-16.2.2",
       "title": "Verify that time sources for all logging components are synchronized, and that timestamps in security event metadata use UTC or include an explicit time zone offset. UTC is recommended to ensure consistency across distributed systems and to prevent confusion during daylight saving time transitions.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/browserstore.h",
+        "src/controlbar/RequestObserver.h"
+      ],
+      "rationale": "Timestamps must be UTC or carry an offset; history stores a local ISO time without offset.",
+      "remainingWork": "Confirm the format of event times and switch history timestamps to UTC or offset form (currently QDateTime::currentDateTime().toString(Qt::ISODate), local without offset)."
     },
     {
       "id": "ASVS:v5.0.0-16.2.3",
       "title": "Verify that the application only stores or broadcasts logs to the files and services that are documented in the log inventory.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-LOG-002"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/main.cpp"
+      ],
+      "rationale": "The application must not send logs or telemetry anywhere not documented; it intends to send none.",
+      "remainingWork": "Idle and active traffic capture proving no telemetry, crash upload or update ping; note the engine itself may phone home (component updater, safe browsing) unless disabled - unverified."
     },
     {
       "id": "ASVS:v5.0.0-16.2.4",
@@ -3245,27 +3325,54 @@
       "title": "Verify that failed authorization attempts are logged. For L3, this must include logging all authorization decisions, including logging when sensitive data is accessed (without logging the sensitive data itself).",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-PERM-001",
+        "CYB-NET-005"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/PermissionCoordinator.cpp",
+        "src/controlbar/RequestObserver.h"
+      ],
+      "rationale": "Browser analogue: denied permission requests and blocked requests are the failed authorization decisions.",
+      "remainingWork": "Blocked requests are recorded with reason; permission denials and timeouts are shown in state but their durability and completeness need tests."
     },
     {
       "id": "ASVS:v5.0.0-16.3.3",
       "title": "Verify that the application logs the security events that are defined in the documentation and also logs attempts to bypass the security controls, such as input validation, business logic, and anti-automation.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-NET-005"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/controlbar/RequestObserver.h",
+        "src/security/NavigationGuard.h"
+      ],
+      "rationale": "Defined security events (strict-HTTPS block, private-network block, credential URLs, tracker rules) are recorded with a reason.",
+      "remainingWork": "No documented list of security events; attempts to bypass controls (PNA, scheme launches, WebSocket to private hosts) are not all recorded."
     },
     {
       "id": "ASVS:v5.0.0-16.3.4",
       "title": "Verify that the application logs unexpected errors and security control failures such as backend TLS failures.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/BrowserTab.qml"
+      ],
+      "rationale": "TLS and certificate failures are security control failures; the certificate-error handler rejects immediately.",
+      "remainingWork": "The handler rejects but does not visibly record the failure as a security event in the sample; verify what the user and the event log see for each TLS failure class."
     },
     {
       "id": "ASVS:v5.0.0-16.4.1",
@@ -3308,18 +3415,36 @@
       "title": "Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs, ensuring no exposure of sensitive internal system data such as stack traces, queries, secret keys, and tokens.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "qml/BrowserTab.qml",
+        "qml/Main.qml"
+      ],
+      "rationale": "Error pages and dialogs shown for failures must not expose internals (paths, stack traces, tokens).",
+      "remainingWork": "Review every user-visible error string (page error dialog, download errors, QML error output) and add a fault-injection check."
     },
     {
       "id": "ASVS:v5.0.0-16.5.2",
       "title": "Verify that the application continues to operate securely when external resource access fails, for example, by using patterns such as circuit breakers or graceful degradation.",
       "domain": "Security Logging and Error Handling",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/RuleEngine.h",
+        "src/controlbar/RequestObserver.h"
+      ],
+      "rationale": "Security controls must fail closed when a dependency fails; known exception: the WebSocket hostname resolver fails open to the engine when a lookup fails.",
+      "remainingWork": "Fault-inject filter-list, resolver, disk and profile failures; document the intentional fail-open cases."
     },
     {
       "id": "ASVS:v5.0.0-16.5.3",
@@ -3345,9 +3470,17 @@
       "title": "Verify that a \"last resort\" error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.",
       "domain": "Security Logging and Error Handling",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": []
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-FAIL-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/main.cpp"
+      ],
+      "rationale": "Level 3: a last-resort handler for unhandled failures. The only handler is exiting when the QML root fails to load; there is no terminate handler, crash recovery report or safe shutdown path beyond what Qt provides.",
+      "remainingWork": "Decide on a terminate/crash policy that does not log browsing data, and test unexpected shutdown (CYB-FAIL-001)."
     },
     {
       "id": "ASVS:v5.0.0-17.1.1",

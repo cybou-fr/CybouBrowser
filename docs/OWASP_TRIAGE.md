@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 45 are classified applicable and 397 remain untriaged (fourth batch below; ASVS 3.7.3 added afterwards, see VALIDATION). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 60 are classified applicable and 382 remain untriaged (fifth batch below; ASVS 3.7.3 was added after the fourth, see VALIDATION). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -97,3 +97,21 @@ Date: 2026-10-18. 25 untriaged ASVS controls (chapters 5 and 14) were reviewed; 
 ### Proposed not-applicable (NOT approved)
 
 Server-side or upload-processing requirements that CYBOU does not implement: ASVS 5.2.3 (compressed-file limits; the browser does not unpack), 5.2.4 (per-user quotas), 5.2.5 (symlinks in archives), 5.3.1 (server-side execution of uploads), 5.3.3 (zip slip in server processing), 14.2.2 and 14.2.5 (server/CDN caches), 14.2.6 (minimum data returned by an API), 14.2.8 (metadata stripping of user-submitted files), 14.3.2 (anti-caching headers set by a server). 5.2.4 may deserve review as a disk-fill concern for downloads. They stay `untriaged`; no N/A is recorded.
+
+## Fifth batch - Configuration, Logging and Error Handling
+
+Date: 2026-10-18. 35 untriaged ASVS controls (chapters 13 and 16) were reviewed; **15 are classified applicable** (adapted), 20 are proposed not-applicable. Applicable controls now total 60 of 442.
+
+| Control | Browser scope (adapted) | Open verification work |
+| --- | --- | --- |
+| ASVS 13.1.1, 13.2.4 | The application's own outbound communications (search providers, cloud catalog, user-supplied Nextcloud address) need an inventory and allowlist. | Write the inventory, capture idle and active traffic. |
+| ASVS 13.4.1 | A package must not ship `.git`, logs or private test keys. | Package-content check once an installer exists. |
+| ASVS 13.4.2 | No debug/test mode in production; test-harness QML ships in the module and the engine honours `QTWEBENGINE_REMOTE_DEBUGGING`/`QTWEBENGINE_CHROMIUM_FLAGS`. | Verify on the packaged binary and document honoured variables. |
+| ASVS 13.4.6 | The default user agent reveals engine and Qt versions to sites. | Record and decide. |
+| ASVS 16.1.1, 16.2.1, 16.2.2, 16.2.3 | There is no production log file; events live in a bounded in-memory sample. History times are local without offset. No telemetry intended, unproven. | Logging inventory, UTC/offset times, traffic capture. |
+| ASVS 16.3.2, 16.3.3, 16.3.4 | Blocked requests carry reasons; certificate errors are rejected but not visibly recorded. | Event list, TLS failure visibility. |
+| ASVS 16.5.1, 16.5.2, 16.5.4 | User-visible errors must not leak internals; controls must fail closed (known fail-open: WebSocket resolver); no last-resort handler beyond exit on QML load failure. | Fault injection, crash policy. |
+
+### Proposed not-applicable (NOT approved)
+
+Back-end infrastructure and server hosting requirements that a desktop browser does not have, or log pipelines the product intentionally lacks (no central log processor, no log transmission by design): ASVS 13.1.2, 13.1.3, 13.1.4, 13.2.1, 13.2.2, 13.2.3, 13.2.5, 13.2.6, 13.3.1, 13.3.2, 13.3.3, 13.3.4, 13.4.3, 13.4.4, 13.4.5, 13.4.7, 16.2.4, 16.3.1, 16.4.2, 16.4.3. 16.4.3 (no remote log shipping) is a deliberate privacy choice rather than a gap; 13.4.3 (directory listings) does touch the engine's file: listings but those are a browsing feature. They remain `untriaged`; no N/A is recorded.

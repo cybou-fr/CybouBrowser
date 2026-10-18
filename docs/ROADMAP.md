@@ -40,7 +40,7 @@ This review covers the local Windows implementation and test infrastructure. Imp
 - [ ] **R4 — Windows product qualification:** cloud login/2FA, keyboard/FR/RU/DPI, many tabs, crash/session recovery and cleanup.
 - [ ] **R5 — distributable candidate:** reproducible installer, licenses/SBOM, signing, safe update/rollback, independent review and matching candidate evidence.
 
-R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is active: import/pinning complete, four applicability batches (45 applicable, 51 N/A proposals awaiting human approval) recorded in [OWASP_TRIAGE](OWASP_TRIAGE.md), evidence still pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
+R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is active: import/pinning complete, five applicability batches (60 applicable, 71 N/A proposals awaiting human approval) recorded in [OWASP_TRIAGE](OWASP_TRIAGE.md), evidence still pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
 
 ## Gates
 
