@@ -200,6 +200,8 @@ WebEngineView {
             }
         }
         if (info.status === WebEngineView.LoadFailedStatus && isCurrentTab) {
+            // Downloads and cancelled navigations are expected lifecycle events.
+            if (info.isDownload || info.errorCode === -3) return
             if (web.upgradedFromHttpUrl.length > 0 && web.upgradeEpoch === web.navigationEpoch && info.url.toString() === web.upgradeExpectedUrl) {
                 offerHttpRequested(web, web.upgradedFromHttpUrl)
                 return

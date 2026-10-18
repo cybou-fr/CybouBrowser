@@ -109,3 +109,13 @@ This qualifies the native interceptor/lease subset for 302 GET navigation. Other
 `runHttpsDowngradeRedirectTests()` adds ten GET/POST cases for the same codes. A fresh off-the-record profile trusts only the local private test CA; its HTTPS positive control must succeed without certificate-error acceptance. The TLS server then issues a real redirect to an independently proven live HTTP endpoint. The test requires one TLS redirect response, a native insecure-transport block and zero HTTP landing requests. Target counters exclude unrelated favicon traffic. Each navigation has a ten-second timeout.
 
 This is the native WebEngine/interceptor boundary. Multi-hop/UI consent presentation, DNS/CNAME changes and public/private network transitions remain separate work.
+
+## Redirect chain through actual UI
+
+The transport harness now follows a three-address 302→307 chain between two loopback origins. It requires a separate click on the HTTP consent button at each hop; a redirect must replace the old context and offer the precise next URL. Previous tokens must be rejected. Server counters require each hop exactly once, so a hidden request followed by a consented retry fails. The terminal page remains isolated and is explicitly revoked; six temporary profile QPointers (three original streaming contexts plus three chain contexts) must clear while the unrelated tab is preserved. The chain has a 45-second deadline.
+
+The shared TCP fixture now buffers request headers and handles a request only once per connection. The redirect peer endpoint is local and synthetic. Neither this UI scenario nor the native redirect matrix qualifies DNS/CNAME rebinding.
+
+The native HTTP negative matrix waits for either renderer completion or an explicit synchronous MainFrame deny with the expected reason plus a short event-loop settlement; target server counters and deny metadata remain mandatory. A missing completion signal alone can never pass. The page is stopped during cleanup after the network verdict. Successful direct controls still require loadFinished(true). Renderer error-page completion timing is separate from the network-policy assertion.
+
+The shared UI smoke prerequisites emit BrowserTab.errorNotice with a synthetic message and require the actual pageLoadErrorDialog popup to become visible, then close it before the other interactions. This guards the QML signal/id name collision. Download navigations and Chromium ERR_ABORTED (-3) are excluded from page-failure notices; completed/cancelled download UI regressions remain in the suite.

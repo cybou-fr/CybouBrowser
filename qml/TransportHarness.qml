@@ -6,6 +6,8 @@ Item {
     property int phase: 0
     onPhaseChanged: console.info("TRANSPORT_PHASE", phase)
     property string target: ""
+    property real chainStarted: 0
+    property var chainTargets: []
     property string oldToken: ""
     property string ownerUid: ""
     property string peerUid: ""
@@ -27,6 +29,7 @@ Item {
     function step() {
         try {
             const view = browserWindow.currentView
+            if (phase >= 13 && Date.now() - chainStarted > 45000) throw new Error("redirect consent chain timeout")
             if (phase === 0 && browserWindow.transportState.httpPending) {
                 expect(!view.temporaryTransport && browserStore.httpsOnly, "HTTP denied before consent")
                 oldToken = browserWindow.transportState.httpToken
@@ -80,6 +83,32 @@ Item {
             } else if (phase === 10 && bar.testCard().visible) {
                 input = browserWindow.testHttpButtonPoint(); phase = 11
             } else if (phase === 11 && view.url.toString() === "about:blank" && !view.temporaryTransport) {
+                chainStarted = Date.now()
+                chainTargets = [smokeBaseUrl + "/ui-redirect?hop=1", transportRedirectPeerBase + "/ui-redirect?hop=2", smokeBaseUrl + "/ui-redirect?hop=3"]
+                browserWindow.navigate(chainTargets[0]); phase = 13
+            } else if (phase === 13 && browserWindow.transportState.httpPending) {
+                expect(view.blockedHttpUrl === chainTargets[0], "first redirect URL awaits consent")
+                oldToken = browserWindow.transportState.httpToken; ownerUid = view.tabUid
+                input = browserWindow.testHttpButtonPoint(); phase = 14
+            } else if (phase === 14 && browserWindow.transportState.httpPending && !view.temporaryTransport && view.blockedHttpUrl === chainTargets[1]) {
+                expect(view.tabUid !== ownerUid && browserWindow.transportState.httpToken !== oldToken, "cross-origin redirect has a new context and token")
+                expect(!browserWindow.allowTemporaryHttp(oldToken), "first-hop token cannot authorize the second hop")
+                oldToken = browserWindow.transportState.httpToken; ownerUid = view.tabUid
+                input = browserWindow.testHttpButtonPoint(); phase = 15
+            } else if (phase === 15 && browserWindow.transportState.httpPending && !view.temporaryTransport && view.blockedHttpUrl === chainTargets[2]) {
+                expect(view.tabUid !== ownerUid && browserWindow.transportState.httpToken !== oldToken, "307 redirect requires a third context and token")
+                expect(!browserWindow.allowTemporaryHttp(oldToken), "second-hop token cannot authorize the terminal URL")
+                oldToken = browserWindow.transportState.httpToken
+                input = browserWindow.testHttpButtonPoint(); phase = 16
+            } else if (phase === 16 && view.temporaryTransport && view.title === "Redirect terminal" && !view.loading) {
+                expect(view.profile.offTheRecord && view.profile !== browserWindow.activeProfile, "terminal URL still uses an isolated profile")
+                trackedProfile = view.profile; ownerUid = view.tabUid
+                input = browserWindow.testHttpButtonPoint(); phase = 17
+            } else if (phase === 17 && view.url.toString() === "about:blank" && !view.temporaryTransport) {
+                expect(view.tabUid !== ownerUid && !browserWindow.allowTemporaryHttp(oldToken), "terminal revoke invalidates the redirect consent")
+                const peer = browserWindow.testViewAt(peerIndex)
+                expect(peer && peer.tabUid === peerUid && !peer.temporaryTransport, "redirect chain leaves the peer tab untouched")
+                console.info("HTTP_REDIRECT_UI_CHAIN PASS: 302 and 307 cross-origin hops require separate UI consent and reject stale tokens")
                 browserStore.httpsFirst = oldHttpsFirst
                 console.info("TRANSPORT_TEST PASS: exact navigation, same-origin resource gate, other tab, reload, stale token, popover revoke, inline revoke")
                 phase = 12; return 2

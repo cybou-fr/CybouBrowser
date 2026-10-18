@@ -1091,7 +1091,7 @@ ApplicationWindow {
                     widthBudget: effectiveWidth
                     Layout.preferredWidth: effectiveWidth; Layout.minimumWidth: effectiveWidth; Layout.maximumWidth: effectiveWidth
                     visible: true
-                    interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !errorNotice.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible
+                    interactionsEnabled: window.visibility !== Window.FullScreen && !library.visible && !settingsPanel.visible && !behaviorDialog.visible && !pageLoadErrorDialog.visible && !closeWorkDialog.visible && !downloadOpenDialog.visible
                     onPolicyRequested: function(key, mode) {
                         if (key === "error") { window.showStatus(qsTr("La modification n’a pas pu être confirmée.")); return }
                         if (currentView) {
@@ -1245,7 +1245,7 @@ ApplicationWindow {
             onTabPropertyUpdate: function(idx, prop, val) { if (idx < tabs.count) tabs.setProperty(idx, prop, val) }
             onAddressRefresh: window.refreshAddress()
             onStatusNotice: function(msg) { window.showStatus(msg) }
-            onErrorNotice: function(msg) { errorText.text = msg; errorNotice.open() }
+            onErrorNotice: function(msg) { errorText.text = msg; pageLoadErrorDialog.open() }
             onDismissControlBar: if (controlBar) controlBar.dismiss()
             onClosePolicyBanner: if (policyBanner) policyBanner.close()
             onRestartSaveTimer: saveTimer.restart()
@@ -1518,7 +1518,7 @@ ApplicationWindow {
         Label { width: parent.width; wrapMode: Text.WordWrap; color: CybouTheme.mainText; text: "Navigateur Qt Quick + Qt WebEngine.\n\nVersion de développement. Les sites demandent votre accord pour les permissions prises en charge. Le mode privé n’anonymise pas le trafic réseau. Les fichiers téléchargés restent sur le disque.\n\nCtrl+T : nouvel onglet · Ctrl+L : adresse\nCtrl+D : favori · Ctrl+F : recherche\nCtrl+H : historique · Ctrl+J : téléchargements\nCtrl+, : paramètres · Ctrl+Shift+N : fenêtre privée" }
     }
     Popup {
-        id: errorNotice; anchors.centerIn: parent; width: Math.min(520, window.width - 40); padding: 24; modal: true
+        id: pageLoadErrorDialog; objectName: "pageLoadErrorDialog"; anchors.centerIn: parent; width: Math.min(520, window.width - 40); padding: 24; modal: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         background: GlassDialogBackground { radius: 16 }
         contentItem: Label { id: errorText; wrapMode: Text.WordWrap; color: CybouTheme.mainText }

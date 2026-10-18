@@ -28,3 +28,9 @@ Top 10:2025 [A01 access control, A02 misconfiguration, A03 supply chain, A04 cry
 Renderer sandbox and site/process isolation on packaged Windows binary; real camera/screen revoke across complex media tracks; DNS/WebRTC leak behavior; update signing/rollback; comprehensive external penetration test; login flows of all cloud vendors; multi-day soak. Existing suites may cover subsets but do not constitute evidence for all these claims.
 
 Keep the ban on third-party extensions (ADR 0006) and provider-neutral cloud choice (ADR 0007). A commercial partner is **never** an exception to the permission or network model.
+
+## Runtime DNS integration gap — source review 2026-10-18
+
+`NavigationGuard::checkDnsRebind()` / `DnsRebindGuard::recordResolution()` currently have test callers only. `RequestObserver` invokes `blocksPrivateNetworkAccess()` against request URLs/first-party URLs, but no reviewed production call feeds actual WebEngine DNS answers or the connected address into the rebinding helper. Thus literal/private-domain classification and synthetic resolution-unit tests do not establish runtime protection against CNAME-to-private targets or a hostname changing addresses.
+
+This is an implementation/verification gap, not a demonstrated exploit or a claim that Chromium provides no protection. Next work must probe the actual renderer/network service with controlled local DNS/resolver fixtures and inspect engine enforcement. An unrelated application-side DNS lookup would not bind the browser's later connection and must not be counted as a complete fix. Keep CYB-PNA-001/002 and the relevant release gates open until the actual connection boundary is verified.

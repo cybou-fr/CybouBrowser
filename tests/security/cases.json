@@ -94,17 +94,19 @@
       "testSources": [
         "src/security/HttpRedirectTests.h",
         "src/security/HttpLeaseTests.h",
-        "qml/TransportHarness.qml"
+        "qml/TransportHarness.qml",
+        "tests/test_main.cpp"
       ],
       "coveredScenarios": [
         "real HTTP 302 path/query/loop/cross-origin/credential redirects cannot inherit consumed HTTP consent",
         "both endpoint servers pass independent direct HTTP navigation controls",
         "native interceptor deny observations and sanitized target origin are asserted",
         "actual UI HTTP consent, same-origin resources and ws denial",
-        "54 real GET/POST cases across 301/302/303/307/308; initial POST method/body observed and redirected targets never receive inherited HTTP consent"
+        "54 real GET/POST cases across 301/302/303/307/308; initial POST method/body observed and redirected targets never receive inherited HTTP consent",
+        "actual UI 302\u2192307 cross-origin chain: three button consents, three exact hop requests, stale tokens rejected and all temporary profiles destroyed"
       ],
       "remainingScenarios": [
-        "multi-hop chains and UI redirect-consent presentation",
+        "mixed TLS/downgrade chains and error presentation through UI",
         "DNS/CNAME, public/private address transitions and renderer/download stress"
       ]
     },
@@ -128,7 +130,8 @@
         "three never-completed HTTP response streams close before test completion",
         "all ws requests from temporary HTTP documents denied before reaching server",
         "actual temporary QML HTTP profiles receive live WSS messages; reload, popover and inline revoke close all three WSS sockets plus HTTP streams and destroy profile owners",
-        "uncooperative WSS peer received three close frames, sent no replies and initiated no socket closes; reload and both UI revoke paths still disconnected all three"
+        "uncooperative WSS peer received three close frames, sent no replies and initiated no socket closes; reload and both UI revoke paths still disconnected all three",
+        "all six temporary profile objects retire after three streaming/WSS contexts and three redirected UI-consent contexts; peer tab preserved"
       ],
       "remainingScenarios": [
         "suspended renderer and in-flight download stress",
@@ -152,7 +155,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "implementationGap": "Source review 2026-10-18: checkDnsRebind/recordResolution have test callers only; production interceptor uses URL classification, not actual WebEngine DNS answers/connected addresses. Chromium runtime enforcement remains to be verified."
     },
     {
       "id": "CYB-NET-001",

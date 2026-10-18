@@ -74,14 +74,30 @@ inline bool runHttpRedirectTests() {
         QEventLoop loop;
         QTimer deadline;
         deadline.setSingleShot(true);
-        bool finished = false, loaded = false;
+        bool finished = false, loaded = false, mainFrameDenied = false;
+        QTimer denialSettle;
+        denialSettle.setSingleShot(true);
+        QObject::connect(&denialSettle, &QTimer::timeout, &loop, &QEventLoop::quit);
+        if (!direct) QObject::connect(&observer, &RequestObserver::activityAvailable, &loop, [&] {
+            const QString expected = scenario == "credentials" ? "embedded-credentials" : "insecure-transport";
+            for (const auto &value : observer.sample()) {
+                const auto event = value.toMap();
+                if (!mainFrameDenied && event.value("resourceType").toInt() == int(QWebEngineUrlRequestInfo::ResourceTypeMainFrame)
+                    && event.value("blocked").toBool() && event.value("reason").toString() == expected) {
+                    mainFrameDenied = true;
+                    // The network decision is synchronous; renderer error-page completion can lag.
+                    denialSettle.start(200);
+                }
+            }
+        });
         QObject::connect(&deadline, &QTimer::timeout, &loop, &QEventLoop::quit);
         QObject::connect(&page, &QWebEnginePage::loadFinished, &loop, [&](bool ok) { finished = true; loaded = ok; loop.quit(); });
         QWebEngineHttpRequest navigation(initial);
         if (post) { navigation.setMethod(QWebEngineHttpRequest::Post); navigation.setPostData("fixture-body"); navigation.setHeader("Content-Type", "text/plain"); }
         deadline.start(10000); page.load(navigation); loop.exec(); deadline.stop();
-        if (!finished || loaded != direct || starts != (direct ? 0 : 1) || landings != (direct ? 1 : 0)) {
-            qCritical() << "HTTP_REDIRECT_TEST FAIL" << scenario << "finished" << finished << "loaded" << loaded << "starts" << starts << "landings" << landings;
+        const bool completed = direct ? finished : (finished || mainFrameDenied);
+        if (!completed || loaded != direct || starts != (direct ? 0 : 1) || landings != (direct ? 1 : 0)) {
+            qCritical() << "HTTP_REDIRECT_TEST FAIL" << scenario << "finished" << finished << "loaded" << loaded << "starts" << starts << "landings" << landings << "nativeDenial" << mainFrameDenied << observer.sample();
             return false;
         }
         if (!direct) {
@@ -99,6 +115,8 @@ inline bool runHttpRedirectTests() {
             }
             if (!denied) { qCritical() << "HTTP_REDIRECT_TEST FAIL: missing native deny observation" << scenario; return false; }
         }
+        denialSettle.stop();
+        if (!finished) page.triggerAction(QWebEnginePage::Stop);
         ++checked;
         qInfo() << "HTTP_REDIRECT_CASE PASS" << scenario << "status" << code << "method" << (post ? "POST" : "GET");
     }

@@ -10,6 +10,8 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QSet>
+#include <QUrlQuery>
+#include <algorithm>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QJSValue>
@@ -83,11 +85,46 @@ int main(int argc, char *argv[])
     int transportWsRequests = 0;
     QTcpServer testServer;
     testServer.listen(QHostAddress::LocalHost);
-    QObject::connect(&testServer, &QTcpServer::newConnection, &app, [&testServer, &transportWssUrl, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
+    QTcpServer redirectPeer;
+    if (!redirectPeer.listen(QHostAddress::LocalHost)) return 2;
+    QHash<int,int> redirectHits;
+    auto handleUiRedirect = [&](QTcpSocket *socket, const QByteArray &request) {
+        const auto parts = request.left(request.indexOf("\r\n")).split(' ');
+        if (parts.size() < 2 || !parts[1].startsWith("/ui-redirect?")) return false;
+        const int hop = QUrlQuery(QUrl(QString::fromLatin1(parts[1]))).queryItemValue("hop").toInt();
+        ++redirectHits[hop];
+        if (hop == 1 || hop == 2) {
+            const auto port = hop == 1 ? redirectPeer.serverPort() : testServer.serverPort();
+            const auto location = QByteArray("http://127.0.0.1:") + QByteArray::number(port) + "/ui-redirect?hop=" + QByteArray::number(hop+1);
+            socket->write(QByteArray(hop == 1 ? "HTTP/1.1 302 Found\r\n" : "HTTP/1.1 307 Temporary Redirect\r\n")
+                          + "Connection: close\r\nLocation: " + location + "\r\nContent-Length: 0\r\n\r\n");
+        } else {
+            const QByteArray body("<!doctype html><title>Redirect terminal</title>");
+            socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+        }
+        socket->disconnectFromHost(); return true;
+    };
+    QObject::connect(&redirectPeer, &QTcpServer::newConnection, &app, [&] {
+        while (auto socket = redirectPeer.nextPendingConnection()) {
+            QObject::connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+            QObject::connect(socket, &QTcpSocket::readyRead, socket, [&, socket] {
+                auto request = socket->property("headers").toByteArray() + socket->readAll();
+                socket->setProperty("headers", request);
+                if (!request.contains("\r\n\r\n") || socket->property("handled").toBool()) return;
+                socket->setProperty("handled", true);
+                if (!handleUiRedirect(socket, request)) socket->disconnectFromHost();
+            });
+        }
+    });
+    QObject::connect(&testServer, &QTcpServer::newConnection, &app, [&testServer, &handleUiRedirect, &transportWssUrl, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
         while (auto socket = testServer.nextPendingConnection()) {
             QObject::connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
-            QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, &transportWssUrl, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
-                const auto request = socket->readAll();
+            QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, &handleUiRedirect, &transportWssUrl, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests] {
+                auto request = socket->property("headers").toByteArray() + socket->readAll();
+                socket->setProperty("headers", request);
+                if (!request.contains("\r\n\r\n") || socket->property("handled").toBool()) return;
+                socket->setProperty("handled", true);
+                if (handleUiRedirect(socket, request)) return;
                 if (request.startsWith("GET /transport-stream ")) {
                     activeTransportStreams.insert(socket);
                     ++transportStreamsOpened;
@@ -146,10 +183,11 @@ int main(int argc, char *argv[])
         if (secResult != 0 || securityTest) return secResult;
     }
 
+    QList<QPointer<QObject>> temporaryFixtureProfiles;
     QQmlEngine profileFactoryEngine;
     BrowserStore::TemporaryProfileFactory transportFactory;
     if (!transportWssUrl.isEmpty()) {
-        transportFactory = [&profileFactoryEngine](QObject *parent) -> BrowserStore::TemporaryProfileContext {
+        transportFactory = [&profileFactoryEngine, &temporaryFixtureProfiles](QObject *parent) -> BrowserStore::TemporaryProfileContext {
             QQmlComponent component(&profileFactoryEngine);
             component.setData("import QtWebEngine\nWebEngineProfilePrototype { persistentPermissionsPolicy: WebEngineProfile.AskEveryTime }", QUrl());
             auto prototype = component.createWithInitialProperties({{"additionalTrustedCertificateFiles", QStringList{QDir::current().absoluteFilePath("tests/security/fixtures/tls/test-ca-cert.pem")}}});
@@ -160,6 +198,7 @@ int main(int argc, char *argv[])
                 delete prototype; return {};
             }
             QQmlEngine::setObjectOwnership(prototype, QQmlEngine::CppOwnership);
+            temporaryFixtureProfiles.append(profile);
             return {profile, prototype};
         };
     }
@@ -179,6 +218,7 @@ int main(int argc, char *argv[])
     translateControlBar();
 
     engine.rootContext()->setContextProperty("browserStore", &store);
+    engine.rootContext()->setContextProperty("transportRedirectPeerBase", QString("http://127.0.0.1:%1").arg(redirectPeer.serverPort()));
     engine.rootContext()->setContextProperty("smokeMode", smokeTest);
     engine.rootContext()->setContextProperty("trackerTestMode", trackerTest);
     engine.rootContext()->setContextProperty("smokeBaseUrl", QString("http://127.0.0.1:%1").arg(testServer.serverPort()));
@@ -202,7 +242,16 @@ int main(int argc, char *argv[])
 
     if (smokeTest && !engine.rootObjects().isEmpty()) {
         auto root = engine.rootObjects().first();
-        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests, &transportTls, controlBarTest, transportTest, trackerTest, surfaceTest] {
+        QTimer::singleShot(1500, &app, [root, &app, &engine, &store, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests, &transportTls, &temporaryFixtureProfiles, &redirectHits, controlBarTest, transportTest, trackerTest, surfaceTest] {
+            auto currentViewValue = root->property("currentView");
+            auto currentView = currentViewValue.value<QObject *>();
+            if (!currentView && currentViewValue.canConvert<QJSValue>()) currentView = currentViewValue.value<QJSValue>().toQObject();
+            auto errorDialog = root->findChild<QObject *>("pageLoadErrorDialog");
+            if (!currentView || !errorDialog || !QMetaObject::invokeMethod(currentView, "errorNotice", Q_ARG(QString, QStringLiteral("Synthetic page failure"))) || !errorDialog->property("visible").toBool()) {
+                qCritical() << "PAGE_ERROR_DIALOG_TEST FAIL"; app.exit(2); return;
+            }
+            QMetaObject::invokeMethod(errorDialog, "close");
+            qInfo() << "PAGE_ERROR_DIALOG_TEST PASS: tab error signal opens the actual popup";
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->resize(1360, 900);
             QVariant dragCoordinates;
@@ -333,7 +382,7 @@ int main(int argc, char *argv[])
             auto controlStarted = std::make_shared<bool>(false);
             auto terminalTransportChecks = std::make_shared<int>(0);
             auto retiredHttpProfile = std::make_shared<QPointer<QObject>>();
-            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, trackerTest, controlStarted, retiredHttpProfile, terminalTransportChecks, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests, &transportTls] {
+            QObject::connect(poll, &QTimer::timeout, &app, [root, &app, poll, attempts, privateProfileA, privateProfileB, controlBarTest, transportTest, trackerTest, controlStarted, retiredHttpProfile, terminalTransportChecks, &activeTransportStreams, &transportStreamsOpened, &transportStreamsClosed, &transportWsRequests, &transportTls, &temporaryFixtureProfiles, &redirectHits] {
                 QVariant state;
                 if (*controlStarted) {
                     QMetaObject::invokeMethod(root, transportTest ? "pollTransportTest" : "pollControlBarTest", Q_RETURN_ARG(QVariant, state));
@@ -380,7 +429,12 @@ int main(int argc, char *argv[])
                         qCritical() << "HTTP_CONTEXT_CONNECTION_TEST FAIL: stream controls or websocket escape" << transportStreamsOpened << transportWsRequests;
                         app.exit(2); return;
                     }
-                    if (!activeTransportStreams.isEmpty() || transportStreamsClosed != 3 || !transportTls.activeSockets.isEmpty() || transportTls.closedSockets != 3) {
+                    if (redirectHits.size() != 3 || redirectHits.value(1) != 1 || redirectHits.value(2) != 1 || redirectHits.value(3) != 1 || temporaryFixtureProfiles.size() != 6) {
+                        qCritical() << "HTTP_REDIRECT_UI_TEST FAIL: redirect fetched without distinct consent or profile controls missing" << redirectHits << temporaryFixtureProfiles.size();
+                        app.exit(2); return;
+                    }
+                    const bool retainedFixtureProfile = std::any_of(temporaryFixtureProfiles.cbegin(), temporaryFixtureProfiles.cend(), [](const auto &profile) { return !profile.isNull(); });
+                    if (retainedFixtureProfile || !activeTransportStreams.isEmpty() || transportStreamsClosed != 3 || !transportTls.activeSockets.isEmpty() || transportTls.closedSockets != 3) {
                         if (++*terminalTransportChecks < 10) return;
                         qCritical() << "HTTP_CONTEXT_CONNECTION_TEST FAIL: active stream survived context revoke" << activeTransportStreams.size() << transportStreamsClosed;
                         app.exit(2); return;
@@ -390,6 +444,7 @@ int main(int argc, char *argv[])
                         app.exit(2); return;
                     }
                     if (*terminalTransportChecks != -1) {
+                        qInfo() << "HTTP_REDIRECT_UI_TEST PASS: three hop requests each after explicit UI consent; stale tokens rejected, all six temporary profiles destroyed";
                         qInfo() << "TRANSPORT_WSS_UNCOOPERATIVE_TEST PASS: server sent no close replies and never closed upgraded sockets; client teardown disconnected all three" << "peerCloseFrames" << transportTls.peerCloseFrames;
                         qInfo() << "TRANSPORT_WSS_TEST PASS: three live WSS message controls; reload, popover and inline revoke closed all sockets and retired their profile owners";
                         qInfo() << "HTTP_CONTEXT_CONNECTION_TEST PASS: three real streams closed across reload and both revoke paths; temporary profiles denied all ws handshakes";
