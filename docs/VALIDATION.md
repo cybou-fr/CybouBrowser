@@ -117,3 +117,12 @@ The next attempt exposed a QML name collision: the BrowserTab errorNotice signal
 Final candidate evidence is under build/ui-redirect-chain/final-ui-fix/: baseline.json, security-logs, tested-working-tree.patch and source snapshots/hashes. This remains development working-tree evidence; this validation entry is written after the tested patch was captured. No broad case or control is promoted to verified. Runtime DNS/CNAME enforcement remains open following the source review recorded in THREAT_MODEL.
 
 Final full baseline: **6/6 PASS** (security, controlbar, transport, tracker, surface, smoke). The tested patch hash matches baseline sourceDiffSha256, and all five tested source-file hashes were rechecked unchanged. run-summary.json fingerprints the browser and test binaries plus the baseline report. The overall release gate remains BLOCKED by outstanding coverage requirements.
+
+## Resolver-alias private-network probe — 2026-10-18
+
+The opt-in `cybou_tests.exe --private-network-probe` diagnostic was added and run on the Release test binary (commit `89a3490`). Result: **exit 3 (PRIVATE_NETWORK_ALIAS_GAP)**, as designed — not a PASS.
+
+- `PRIVATE_NETWORK_LITERAL_TEST PASS`: direct literal/alias/source navigations reached the fixture; four page `fetch()` calls (127.0.0.1, localhost, decimal and hex loopback) were denied with native `private-network-access` metadata and zero server hits.
+- `PRIVATE_NETWORK_ALIAS_GAP`: a URL-public hostname (`cybou-alias.test`) resolved to loopback by test-process resolver rules reached the endpoint. The app classifies URLs only; no runtime DNS/connected-address enforcement is demonstrated.
+
+The six-suite baseline was rerun afterwards: gate **PASS, 0 issues** (`build/probe-baseline/`, local, ignored). The probe is deliberately outside the baseline. The source connection is loopback, so this does not model Chromium's public address space, real DNS changes, CNAME chains, HTTPS or WebRTC. CYB-PNA-001/002 and the DNS-rebinding gate stay open.

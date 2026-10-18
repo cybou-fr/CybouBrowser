@@ -34,3 +34,7 @@ Keep the ban on third-party extensions (ADR 0006) and provider-neutral cloud cho
 `NavigationGuard::checkDnsRebind()` / `DnsRebindGuard::recordResolution()` currently have test callers only. `RequestObserver` invokes `blocksPrivateNetworkAccess()` against request URLs/first-party URLs, but no reviewed production call feeds actual WebEngine DNS answers or the connected address into the rebinding helper. Thus literal/private-domain classification and synthetic resolution-unit tests do not establish runtime protection against CNAME-to-private targets or a hostname changing addresses.
 
 This is an implementation/verification gap, not a demonstrated exploit or a claim that Chromium provides no protection. Next work must probe the actual renderer/network service with controlled local DNS/resolver fixtures and inspect engine enforcement. An unrelated application-side DNS lookup would not bind the browser's later connection and must not be counted as a complete fix. Keep CYB-PNA-001/002 and the relevant release gates open until the actual connection boundary is verified.
+
+### Probe result — 2026-10-18
+
+The `--private-network-probe` diagnostic demonstrated the gap empirically for the loopback case: a public-looking hostname mapped to 127.0.0.1 by test-only resolver rules was reached by a page fetch, while literal loopback forms were denied. Fix must bind enforcement to the connected address (engine/network-service level), not URL classification. See [VALIDATION](VALIDATION.md).
