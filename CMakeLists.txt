@@ -121,6 +121,21 @@ target_link_libraries(cybou PRIVATE cybou_core cybou_coreplugin)
 target_compile_definitions(cybou PRIVATE "CYBOU_PRODUCT_VERSION=\"${PROJECT_VERSION}-${CYBOU_PRERELEASE}\"")
 set_target_properties(cybou PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE TRUE)
 install(TARGETS cybou BUNDLE DESTINATION . RUNTIME DESTINATION bin)
+# Runnable layout: Qt runtime, QML modules, WebEngine process and resources next to the executable (windeployqt).
+qt_generate_deploy_qml_app_script(TARGET cybou OUTPUT_SCRIPT cybou_deploy_script
+    NO_UNSUPPORTED_PLATFORM_ERROR DEPLOY_USER_QML_MODULES_ON_UNSUPPORTED_PLATFORM)
+install(SCRIPT ${cybou_deploy_script})
+install(FILES README.md DESTINATION .)
+install(DIRECTORY licenses DESTINATION .)
+# Visual C++ runtime next to the executable so a machine without the redistributable can start it.
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION bin)
+include(InstallRequiredSystemLibraries)
+set(CPACK_PACKAGE_NAME "CYBOU")
+set(CPACK_PACKAGE_VENDOR "CYBOU")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}-${CYBOU_PRERELEASE}")
+set(CPACK_GENERATOR "ZIP")
+set(CPACK_PACKAGE_FILE_NAME "CYBOU-${PROJECT_VERSION}-${CYBOU_PRERELEASE}-win64")
+include(CPack)
 
 # Test runner executable
 if(TARGET Qt6::Test)
