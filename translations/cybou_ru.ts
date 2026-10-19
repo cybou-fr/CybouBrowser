@@ -1191,6 +1191,21 @@ Passés par exception : %5</source>
 <context>
     <name>SettingsPanel</name>
     <message>
+        <location filename="../qml/SettingsPanel.qml" line="1"/>
+        <source>WebRTC strict · aucun UDP direct</source>
+        <translation>WebRTC strict · без прямого UDP</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPanel.qml" line="1"/>
+        <source>Empêche une page de se servir de WebRTC pour sonder le réseau local (paquets STUN vers des adresses locales). Désactive aussi l’UDP direct : les appels vidéo peuvent se dégrader ou échouer sans relais TCP. Activé par défaut.</source>
+        <translation>Не даёт странице использовать WebRTC для сканирования локальной сети (пакеты STUN на локальные адреса). Также отключает прямой UDP: видеозвонки могут ухудшиться или не работать без TCP-ретрансляции. Включено по умолчанию.</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPanel.qml" line="1"/>
+        <source>Redémarrez CYBOU pour appliquer ce changement.</source>
+        <translation>Перезапустите CYBOU, чтобы применить это изменение.</translation>
+    </message>
+    <message>
         <location filename="../qml/SettingsPanel.qml" line="71"/>
         <source>Paramètres</source>
         <translation>Настройки</translation>

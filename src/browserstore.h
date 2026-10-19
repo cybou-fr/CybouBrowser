@@ -26,6 +26,7 @@
 #include "controlbar/RequestObserver.h"
 #include "security/NavigationGuard.h"
 #include "security/StoredUrl.h"
+#include "security/EngineHardening.h"
 #include "security/BrowserSettings.h"
 #include "security/ExternalLinkNotice.h"
 #include "security/GeolocationPolicy.h"
@@ -170,7 +171,7 @@ public:
     }
     // Opt-in, off by default. The Chromium switch is process-wide and read before the engine starts,
     // so the saved preference applies after a restart; strictWebRtcActive reports what this process runs with.
-    bool strictWebRtc() const { return settings.value("preferences/strictWebRtc", false).toBool(); }
+    bool strictWebRtc() const { return settings.value("preferences/strictWebRtc", kStrictWebRtcDefault).toBool(); }
     void setStrictWebRtc(bool enabled) {
         if (enabled == strictWebRtc()) return;
         settings.setValue("preferences/strictWebRtc", enabled);

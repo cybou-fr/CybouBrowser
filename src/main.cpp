@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("CYBOU");
     QCoreApplication::setApplicationName("CYBOU");
     BrowserSettings::migrate();
-    const bool strictWebRtc = BrowserSettings().value("preferences/strictWebRtc", false).toBool();
+    const bool strictWebRtc = BrowserSettings().value("preferences/strictWebRtc", kStrictWebRtcDefault).toBool();
     applyEngineHardening(strictWebRtc);
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);

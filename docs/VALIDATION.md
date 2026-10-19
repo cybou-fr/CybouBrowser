@@ -359,3 +359,7 @@ The test executable runs the same `BrowserSettings::migrate()` at start-up under
 - UI suites fail with find-in-page "0 / 0" and empty link hints when the Windows session is locked; keep the session unlocked while running them.
 
 Gate suite `geolocation` (`cybou_tests.exe --geolocation-test`, 300 create/use/delete cycles of the default position source, about 20 s) keeps the own-plugin fix covered: the process must survive and the source must be the `cybou` plugin. Gate now lists fourteen suites; self-tests 12/12.
+
+### WebRTC strict is now on by default
+
+Owner decision: `preferences/strictWebRtc` defaults to true (`kStrictWebRtcDefault` in `EngineHardening.h`, used by `BrowserStore` and `main.cpp`); users who saved a choice keep it. The flag-composition function still defaults to off so the engine tests control it explicitly. `webrtc` suite after the change: control 88 STUN checks at loopback, strict 0 (PASS); security, smoke, surface pass. Real-call impact is still not measured (no TURN endpoint or provider account): calls that need direct UDP may degrade or fail. CYB-PNA-001/002 and ASVS 17.1.1 move from "default exposed" to "closed by default, user can reopen"; they stay open pending a call-quality measurement and an engine with WebRTC Local Network Access.

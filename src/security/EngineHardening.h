@@ -10,10 +10,12 @@
 // Access-Control-Allow-Private-Network. Both are enforced on the connected address, so they also
 // cover hostnames that resolve to private IPs (see docs/VALIDATION.md, engine-level experiments).
 //
-// Strict WebRTC (opt-in, off by default): disable_non_proxied_udp forbids direct UDP, which is the
+// Strict WebRTC (on by default since 0.3.0-alpha.1, user can turn it off): disable_non_proxied_udp forbids direct UDP, which is the
 // only measured way to stop a page from making the browser send STUN checks to loopback/private
 // addresses via injected ICE candidates. It also removes direct peer-to-peer media, so calls rely
 // on TCP/TLS relays. The switch is process-wide, hence it takes effect after a restart.
+// Value used when the user has never chosen: the saved preference "preferences/strictWebRtc" overrides it.
+inline constexpr bool kStrictWebRtcDefault = true;
 inline constexpr const char *kStrictWebRtcSwitch = "--force-webrtc-ip-handling-policy=disable_non_proxied_udp";
 
 // Pure so the flag composition can be tested without touching the environment.
