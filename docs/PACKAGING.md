@@ -32,6 +32,22 @@ MSVC runtime, DirectX compiler, Mesa software OpenGL, docs). Deterministic: the 
 Not covered: Chromium's own third-party libraries inside `Qt6WebEngineCore.dll` (the engine is one component here), package
 URLs/CPE identifiers, and signing of the SBOM.
 
+## Reproducible build
+
+`bash tools/package/repro_check.sh` builds `cybou.exe` twice from clean and compares SHA-256. Needs `/Brepro` (set in
+`CMakeLists.txt` for MSVC) and `SOURCE_DATE_EPOCH` (the script sets it): without the latter `rcc` embeds the modification time of a
+resource file and the two builds differ in 3 bytes. Result: two clean builds in the same source folder with the same toolchain give a
+byte-identical `cybou.exe` (`4e279ccb...`). Not shown: a different folder (absolute paths may be embedded), a different machine,
+the Qt DLLs (taken from the Qt install, not built here) and the installer (IFW stamps).
+
+## Signing
+
+`powershell -ExecutionPolicy Bypass -File tools/package/sign_selfsigned.ps1 <files>` signs with a self-signed certificate
+(`CN=CYBOU Development (self-signed)`, created in `CurrentUser\My`, never added to a trusted root). Windows reports the status as
+`UnknownError` (untrusted publisher) and SmartScreen still warns; a modified file reports `HashMismatch`. It exercises the signing step
+and makes files tamper-evident by thumbprint. A trusted signature needs a certificate from a CA, a signing service or the Store.
+The release flow (sign `cybou.exe`, rebuild SBOM from the signed stage, then sign the installer) is not wired up yet.
+
 ## Checked
 
 - Installer, silent (`setup.exe --root <dir> --accept-licenses --accept-messages --confirm-command install`): exit 0, 271 files,
@@ -47,7 +63,6 @@ URLs/CPE identifiers, and signing of the SBOM.
 
 - Machine-wide install (the installer is per-user), upgrade-over-existing-install behaviour, user data handling on uninstall
   (the browser profile under `%APPDATA%` is not touched).
-- Code signing (needs a certificate), update channel with rollback.
+- A trusted code-signing certificate, wiring signing into the release flow, update channel with rollback.
 - A complete third-party license bundle (`licenses/THIRD_PARTY_NOTICES.md` is a short notice only) and an SBOM that goes inside Chromium.
-- Reproducible build (same inputs, same hash) is not demonstrated.
 - Run on a machine that never had Qt, Visual Studio or the VC redistributable: only simulated here by `PATH`.
