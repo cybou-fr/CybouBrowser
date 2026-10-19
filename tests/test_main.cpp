@@ -23,6 +23,7 @@
 #include <memory>
 #include <cstdio>
 #include "browserstore.h"
+#include "GeolocationStress.h"
 #include "security/SecurityTests.h"
 #include "security/PrivateNetworkProbe.h"
 #include "security/EngineHardening.h"
@@ -116,6 +117,7 @@ int main(int argc, char *argv[])
     if (hstsTest) return runHstsTest();
     if (app.arguments().contains("--engine-history-probe")) return runEngineHistoryProbe();
     if (app.arguments().contains("--protocol-test")) return runExternalProtocolTests();
+    if (app.arguments().contains("--geolocation-test")) return runGeolocationStress();
     if (app.arguments().contains("--fuzz-test")) return runFuzzTests();
     if (app.arguments().contains("--url-parser-probe")) return runUrlParserDifferential(false);
     if (app.arguments().contains("--url-parser-test")) return runUrlParserDifferential(true);

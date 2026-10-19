@@ -376,7 +376,7 @@ ApplicationWindow {
     }
     function askPermission(permission, view) {
         if (permission.permissionType === WebEnginePermission.PermissionType.Geolocation && !browserStore.geolocationAvailable)
-            window.showStatus(qsTr("La localisation est désactivée pour l’instant : le composant de géolocalisation de Windows (Qt) peut faire planter le navigateur."))
+            window.showStatus(qsTr("La localisation est désactivée dans cette version de CYBOU."))
         permissionCoordinator.submit(permission, view, view.profile, view === currentView,
             controlState.shouldDeny(permission, view ? view.url : "", view ? view.tabUid : ""))
     }

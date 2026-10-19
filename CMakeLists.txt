@@ -2,15 +2,15 @@ cmake_minimum_required(VERSION 3.24)
 project(CybouBrowser VERSION 0.3.0 LANGUAGES CXX)
 # Product source version: 0.3.0-alpha.1; QML module URI version below is unrelated.
 set(CYBOU_PRERELEASE "alpha.1")
-# Web geolocation is refused on Windows because the Qt WinRT positioning plugin can crash the process
-# (see src/security/GeolocationPolicy.h). Turn this on only to test the plugin or a fixed Qt.
-option(CYBOU_ALLOW_GEOLOCATION "Allow web geolocation on Windows" OFF)
-if(CYBOU_ALLOW_GEOLOCATION)
-    add_compile_definitions(CYBOU_ALLOW_GEOLOCATION)
+# Web geolocation uses CYBOU's own Qt Positioning plugin on Windows (src/geo); the stock WinRT plugin can crash the
+# process. Turn this on to refuse every geolocation request (emergency switch, see src/security/GeolocationPolicy.h).
+option(CYBOU_DISABLE_GEOLOCATION "Refuse web geolocation requests" OFF)
+if(CYBOU_DISABLE_GEOLOCATION)
+    add_compile_definitions(CYBOU_DISABLE_GEOLOCATION)
 endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 WebEngineQuick WebEngineCore Network LinguistTools)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 WebEngineQuick WebEngineCore Network Positioning LinguistTools)
 find_package(Qt6 6.9 OPTIONAL_COMPONENTS Test)
 qt_standard_project_setup(REQUIRES 6.9)
 
@@ -102,6 +102,15 @@ target_link_libraries(cybou_core PUBLIC
     Qt6::WebEngineCore
     Qt6::Network
 )
+
+# Own Qt Positioning plugin (priority above the stock WinRT one), linked statically so it is always the one used.
+if(WIN32)
+    set(CMAKE_AUTOMOC ON)
+    qt_add_plugin(cybou_position STATIC PLUGIN_TYPE position CLASS_NAME CybouPositionFactory
+        src/geo/CybouPositionPlugin.h src/geo/CybouPositionPlugin.cpp)
+    target_link_libraries(cybou_position PRIVATE Qt6::Core Qt6::Positioning runtimeobject)
+    target_link_libraries(cybou_core PUBLIC cybou_position cybou_position_init)
+endif()
 
 # Production browser executable (no Qt6::Test linked)
 qt_add_executable(cybou src/main.cpp)

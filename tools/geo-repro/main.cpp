@@ -60,12 +60,15 @@ int main(int argc, char *argv[]) {
         QObject::connect(source, &QGeoPositionInfoSource::errorOccurred, &app, [&](QGeoPositionInfoSource::Error) { ++errors; });
         source->setUpdateInterval(1000);
         source->startUpdates();
-        QEventLoop spin; QTimer::singleShot(spinMs + QRandomGenerator::global()->bounded(spinMs + 1), &spin, &QEventLoop::quit); spin.exec();
+        QEventLoop spin;
+        // GEO_REPRO_COARSE=1 waits with a coarse timer: Qt on Windows serves precise (< 2 s singleShot) timers with a multimedia timer thread.
+        QTimer::singleShot(spinMs + QRandomGenerator::global()->bounded(spinMs + 1), qEnvironmentVariableIsSet("GEO_REPRO_COARSE") ? Qt::CoarseTimer : Qt::PreciseTimer, &spin, &QEventLoop::quit);
+        spin.exec();
         if (mode == QLatin1String("stop-then-delete")) source->stopUpdates();
         delete source; // WinRT callbacks may still be in flight on their own thread here
     }
     // Let late callbacks arrive after the last destruction.
-    QEventLoop tail; QTimer::singleShot(400, &tail, &QEventLoop::quit); tail.exec();
+    QEventLoop tail; QTimer::singleShot(400, qEnvironmentVariableIsSet("GEO_REPRO_COARSE") ? Qt::CoarseTimer : Qt::PreciseTimer, &tail, &QEventLoop::quit); tail.exec();
     qInfo().noquote() << "GEO_REPRO_DONE" << "mode" << mode << "cycles" << cycles << "created" << created << "noSource" << noSource << "updates" << updates << "errors" << errors;
     return 0;
 }

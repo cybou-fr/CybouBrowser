@@ -1,0 +1,9 @@
+{
+    "Keys": ["cybou"],
+    "Provider": "cybou",
+    "Position": true,
+    "Satellite": false,
+    "Monitor": false,
+    "Priority": 2000,
+    "Testable": false
+}
