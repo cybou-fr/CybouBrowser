@@ -1,0 +1,83 @@
+diff --git a/qgeopositioninfosource_winrt.cpp b/qgeopositioninfosource_winrt.cpp
+index 7a9cdf7..957285a 100644
+--- a/qgeopositioninfosource_winrt.cpp
++++ b/qgeopositioninfosource_winrt.cpp
+@@ -11,6 +11,7 @@
+ #include <QtCore/qmutex.h>
+ #include <QtCore/qtimezone.h>
+ 
++#include <atomic>
+ #include <functional>
+ #include <windows.system.h>
+ #include <windows.devices.geolocation.h>
+@@ -67,8 +68,19 @@ enum class InitializationState {
+     Initialized
+ };
+ 
++// WinRT calls the registered handlers on its own threads and may still be inside one when the source
++// is destroyed. The handlers therefore hold this shared object instead of a raw pointer to the source:
++// the destructor clears `owner`, waits (bounded) for a handler that is already running, and handlers that
++// start later find no owner and return.
++struct WinRTCallbackGuard {
++    std::atomic<bool> alive { true };
++    std::atomic<QGeoPositionInfoSourceWinRT *> owner { nullptr };
++    QMutex mutex; // held while a handler uses `owner`
++};
++
+ class QGeoPositionInfoSourceWinRTPrivate {
+ public:
++    std::shared_ptr<WinRTCallbackGuard> guard = std::make_shared<WinRTCallbackGuard>();
+     ComPtr<IGeolocator> locator;
+     mutable ComPtr<IGeolocatorStatics> statics;
+     QTimer periodicTimer;
+@@ -98,11 +110,24 @@ QGeoPositionInfoSourceWinRT::QGeoPositionInfoSourceWinRT(QObject *parent)
+     d->updatesOngoing = false;
+     d->positionToken.value = 0;
+     d->statusToken.value = 0;
++    d->guard->owner.store(this);
+ }
+ 
+ QGeoPositionInfoSourceWinRT::~QGeoPositionInfoSourceWinRT()
+ {
+     qCDebug(lcPositioningWinRT) << __FUNCTION__;
++    Q_D(QGeoPositionInfoSourceWinRT);
++
++    // 1. New handler invocations must find no owner. 2. A handler that is already running holds the mutex:
++    // wait for it, bounded so that a handler blocked on this (apartment) thread cannot deadlock the destructor.
++    d->guard->alive.store(false);
++    d->guard->owner.store(nullptr);
++    if (d->guard->mutex.tryLock(2000))
++        d->guard->mutex.unlock();
++    else
++        qCWarning(lcPositioningWinRT) << "WinRT position handler still running while the source is destroyed";
++    // 3. Unsubscribe, as stopUpdates() does; previously the destructor left both handlers registered.
++    stopHandler();
+     CoUninitialize();
+ }
+ 
+@@ -305,13 +330,21 @@ bool QGeoPositionInfoSourceWinRT::startHandler()
+         hr = d->locator->GetGeopositionAsync(&op);
+         RETURN_HR_IF_FAILED("Could not start position operation");
+ 
+-        hr = d->locator->add_PositionChanged(Callback<GeoLocatorPositionHandler>(this,
+-                                                                                 &QGeoPositionInfoSourceWinRT::onPositionChanged).Get(),
++        hr = d->locator->add_PositionChanged(Callback<GeoLocatorPositionHandler>(
++                                                 [guard = d->guard](IGeolocator *locator, IPositionChangedEventArgs *args) -> HRESULT {
++                                                     QMutexLocker locker(&guard->mutex);
++                                                     QGeoPositionInfoSourceWinRT *source = guard->owner.load();
++                                                     return (guard->alive.load() && source) ? source->onPositionChanged(locator, args) : S_OK;
++                                                 }).Get(),
+                                              &d->positionToken);
+         RETURN_HR_IF_FAILED("Could not add position handler");
+ 
+-        hr = d->locator->add_StatusChanged(Callback<GeoLocatorStatusHandler>(this,
+-                                                                                 &QGeoPositionInfoSourceWinRT::onStatusChanged).Get(),
++        hr = d->locator->add_StatusChanged(Callback<GeoLocatorStatusHandler>(
++                                                 [guard = d->guard](IGeolocator *locator, IStatusChangedEventArgs *args) -> HRESULT {
++                                                     QMutexLocker locker(&guard->mutex);
++                                                     QGeoPositionInfoSourceWinRT *source = guard->owner.load();
++                                                     return (guard->alive.load() && source) ? source->onStatusChanged(locator, args) : S_OK;
++                                                 }).Get(),
+                                              &d->statusToken);
+         RETURN_HR_IF_FAILED("Could not add status handler");
+         return hr;

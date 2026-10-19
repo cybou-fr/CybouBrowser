@@ -1,4 +1,5 @@
 #include "PermissionCoordinator.h"
+#include "GeolocationPolicy.h"
 #include <QVariant>
 #include <QDebug>
 #include <QCoreApplication>
@@ -154,7 +155,10 @@ bool PermissionCoordinator::submit(const QWebEnginePermission &permission, QObje
                         SiteContext::origin(permission.origin()),
                         view ? view->property("navigationEpoch").toULongLong() : 0};
     const qsizetype totalPending = (m_pending ? 1 : 0) + m_queue.size();
-    const bool blocked = policyDenied || totalPending >= MaxQueuedRequests
+    // Refused before any position source exists; recorded like any other blocked request.
+    const bool unsafePlatformFeature = permission.permissionType() == QWebEnginePermission::PermissionType::Geolocation
+        && !GeolocationPolicy::available;
+    const bool blocked = policyDenied || unsafePlatformFeature || totalPending >= MaxQueuedRequests
         || !view || !transientProfile(profile)
         || view->property("profile").value<QObject *>() != profile
         || context.tabUid.isEmpty() || context.topOrigin.isEmpty() || context.requestingOrigin.isEmpty()

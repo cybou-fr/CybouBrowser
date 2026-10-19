@@ -375,6 +375,8 @@ ApplicationWindow {
             requestId === undefined ? permissionCoordinator.pendingRequestId : requestId)
     }
     function askPermission(permission, view) {
+        if (permission.permissionType === WebEnginePermission.PermissionType.Geolocation && !browserStore.geolocationAvailable)
+            window.showStatus(qsTr("La localisation est désactivée pour l’instant : le composant de géolocalisation de Windows (Qt) peut faire planter le navigateur."))
         permissionCoordinator.submit(permission, view, view.profile, view === currentView,
             controlState.shouldDeny(permission, view ? view.url : "", view ? view.tabUid : ""))
     }

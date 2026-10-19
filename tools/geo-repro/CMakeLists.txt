@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.24)
+project(GeoRepro LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Positioning)
+add_executable(geo_repro main.cpp)
+target_link_libraries(geo_repro PRIVATE Qt6::Core Qt6::Gui Qt6::Positioning dbghelp)

@@ -28,6 +28,7 @@
 #include "security/StoredUrl.h"
 #include "security/BrowserSettings.h"
 #include "security/ExternalLinkNotice.h"
+#include "security/GeolocationPolicy.h"
 #include "security/DownloadPolicy.h"
 #include "cloud/CloudServiceManager.h"
 #include "ui/AddressDisplay.h"
@@ -45,6 +46,7 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool httpsOnly READ httpsOnly WRITE setHttpsOnly NOTIFY preferencesChanged)
     Q_PROPERTY(bool httpsFirst READ httpsFirst WRITE setHttpsFirst NOTIFY preferencesChanged)
     Q_PROPERTY(bool strictWebRtc READ strictWebRtc WRITE setStrictWebRtc NOTIFY preferencesChanged)
+    Q_PROPERTY(bool geolocationAvailable READ geolocationAvailable CONSTANT)
     Q_PROPERTY(bool strictWebRtcActive READ strictWebRtcActive NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
@@ -175,6 +177,7 @@ public:
         emit preferencesChanged();
     }
     bool strictWebRtcActive() const { return m_strictWebRtcActive; }
+    static bool geolocationAvailable() { return GeolocationPolicy::available; }
     void setStrictWebRtcActive(bool active) { m_strictWebRtcActive = active; emit preferencesChanged(); }
     bool httpsFirst() const { return settings.value("preferences/httpsFirst", true).toBool(); }
     void setHttpsFirst(bool enabled) {

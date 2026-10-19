@@ -568,6 +568,16 @@ int main(int argc, char *argv[])
                 if (state.toInt() < 0 || ++*attempts > ((controlBarTest || transportTest) ? 700 : 200) || success) {
                     poll->stop();
                     qInfo() << "CYBOU_SMOKE_TEST" << (success ? "PASS" : "FAIL");
+                    if (!success) {
+                        // Say where the smoke sequence stopped; a bare FAIL gave no way to tell a timeout from a failed check.
+                        const auto currentView = root->property("currentView").value<QObject *>();
+                        qInfo() << "CYBOU_SMOKE_DIAG stage" << root->property("smokeStage").toInt() << "pollState" << state.toInt()
+                                << "attempts" << *attempts << "controlStarted" << *controlStarted
+                                << "viewTitle" << (currentView ? currentView->property("title").toString() : QString("(none)"))
+                                << "viewUrl" << (currentView ? currentView->property("url").toString() : QString("(none)"))
+                                << "loading" << (currentView ? currentView->property("loading").toBool() : false)
+                                << "findResult" << root->property("findResult").toString();
+                    }
                     if (success) {
                         QMetaObject::invokeMethod(root, "prepareFeaturePreview");
                         QTimer::singleShot(500, &app, [root, &app, success] {

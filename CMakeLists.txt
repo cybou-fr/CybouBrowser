@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.24)
 project(CybouBrowser VERSION 0.3.0 LANGUAGES CXX)
 # Product source version: 0.3.0-alpha.1; QML module URI version below is unrelated.
 set(CYBOU_PRERELEASE "alpha.1")
+# Web geolocation is refused on Windows because the Qt WinRT positioning plugin can crash the process
+# (see src/security/GeolocationPolicy.h). Turn this on only to test the plugin or a fixed Qt.
+option(CYBOU_ALLOW_GEOLOCATION "Allow web geolocation on Windows" OFF)
+if(CYBOU_ALLOW_GEOLOCATION)
+    add_compile_definitions(CYBOU_ALLOW_GEOLOCATION)
+endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 WebEngineQuick WebEngineCore Network LinguistTools)

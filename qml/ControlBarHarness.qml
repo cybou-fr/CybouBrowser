@@ -153,8 +153,14 @@ Item {
                 expect(browserWindow.activeProfile.listAllPermissions().length === 0, "no stored native positive permission")
                 leasedTabUid = view.tabUid
                 view.runJavaScript("navigator.geolocation.getCurrentPosition(()=>{},()=>{})")
-                phase = 21
-            } else if (phase === 21 && browserWindow.pendingPermission) {
+                grantObservedAt = Date.now(); phase = 21
+            } else if (phase === 21 && !browserStore.geolocationAvailable && (controller.capability("location").blocked || Date.now() - grantObservedAt > 6000)) {
+                // The platform positioning plugin can crash the process, so the request is refused without a prompt.
+                expect(controller.capability("location").blocked, "geolocation request recorded as blocked")
+                expect(!browserWindow.pendingPermission && !view.grantedKeys.includes("location"), "geolocation is not offered or granted")
+                expect(view.grantedKeys.includes("notifications"), "the earlier notification grant is untouched")
+                input = bar.testInputPoint("javascript","click"); phase = 10
+            } else if (phase === 21 && browserStore.geolocationAvailable && browserWindow.pendingPermission) {
                 expect(controller.capability("location").pending, "second capability has an independent request")
                 grantObservedAt = Date.now(); phase = 22
             } else if (phase === 22 && Date.now()-grantObservedAt >= 300) {
