@@ -46,7 +46,14 @@ the Qt DLLs (taken from the Qt install, not built here) and the installer (IFW s
 (`CN=CYBOU Development (self-signed)`, created in `CurrentUser\My`, never added to a trusted root). Windows reports the status as
 `UnknownError` (untrusted publisher) and SmartScreen still warns; a modified file reports `HashMismatch`. It exercises the signing step
 and makes files tamper-evident by thumbprint. A trusted signature needs a certificate from a CA, a signing service or the Store.
-The release flow (sign `cybou.exe`, rebuild SBOM from the signed stage, then sign the installer) is not wired up yet.
+
+## One-command release candidate
+
+`bash tools/package/release.sh` -> `build/release/`: builds, stages, signs `cybou.exe` (self-signed), writes the SBOM from the signed
+stage, makes the ZIP and the installer, signs the installer, writes `SHA256SUMS`. Checked once: the ZIP contains the signed
+`cybou.exe` (same thumbprint) and starts with a reduced `PATH`; the installer is signed. Qt DLLs and `QtWebEngineProcess.exe` are not
+signed by CYBOU. The installer's inner payload is the same signed stage. Not checked: installing from this installer after the change
+(the install/uninstall check above was done on the earlier, unsigned build).
 
 ## Checked
 
