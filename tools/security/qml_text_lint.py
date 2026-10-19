@@ -39,6 +39,11 @@ def blocks(source):
 
 def top_level_text(body):
     """Return the expression of this item's own `text:` property (not nested items'), or None."""
+    return top_level_property(body, "text:")
+
+
+def top_level_property(body, key):
+    """Return the expression of this item's own `key` property (not nested items'), or None."""
     depth, i, quote, n = 0, 0, None, len(body)
     while i < n:
         ch = body[i]
@@ -53,8 +58,8 @@ def top_level_text(body):
             depth += 1
         elif ch == '}':
             depth -= 1
-        elif depth == 0 and body.startswith('text:', i) and (i == 0 or not (body[i - 1].isalnum() or body[i - 1] in '._')):
-            j, d, q = i + 5, 0, None
+        elif depth == 0 and body.startswith(key, i) and (i == 0 or not (body[i - 1].isalnum() or body[i - 1] in '._')):
+            j, d, q = i + len(key), 0, None
             while j < n:
                 c = body[j]
                 if q:
@@ -71,7 +76,7 @@ def top_level_text(body):
                 elif d == 0 and c in ';\n':
                     break
                 j += 1
-            return body[i + 5:j].strip()
+            return body[i + len(key):j].strip()
         i += 1
     return None
 
@@ -109,6 +114,18 @@ def lint(root=ROOT / 'qml'):
                 continue
             line = source.count('\n', 0, start) + 1
             findings.append((path.name, line, expression[:90]))
+        # Text assigned from script (`someLabel.text = ...`) never appears as a `text:` binding.
+        plain = {}
+        for start, body in blocks(source):
+            ident = top_level_property(body, "id:")
+            if ident:
+                has = top_level_has(body, 'textFormat:') and 'PlainText' in body[body.index('textFormat:'):body.index('textFormat:') + 40]
+                plain[ident] = has
+        for match in re.finditer(r"\b([A-Za-z_]\w*)\.text\s*=(?!=)", source):
+            name = match.group(1)
+            if name in plain and not plain[name]:
+                line = source.count('\n', 0, match.start()) + 1
+                findings.append((path.name, line, f"{name}.text assigned from script but {name} is not textFormat: Text.PlainText"))
     return findings
 
 

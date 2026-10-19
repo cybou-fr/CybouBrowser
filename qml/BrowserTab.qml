@@ -95,6 +95,31 @@ WebEngineView {
         }
     }
 
+    property double lastExternalNoticeAt: 0
+    function externalLinkMessage(info) {
+        const target = info.target || ""
+        if (info.kind === "mail")
+            return target.length ? qsTr("Les liens « mailto: » ne s’ouvrent pas : les applications externes sont désactivées. Adresse : %1 — clic droit › Copier l’adresse du lien.").arg(target)
+                                 : qsTr("Les liens « mailto: » ne s’ouvrent pas : les applications externes sont désactivées. Clic droit › Copier l’adresse du lien.")
+        if (info.kind === "phone")
+            return target.length ? qsTr("Les liens téléphoniques ne s’ouvrent pas : les applications externes sont désactivées. Numéro : %1 — clic droit › Copier l’adresse du lien.").arg(target)
+                                 : qsTr("Les liens téléphoniques ne s’ouvrent pas : les applications externes sont désactivées. Clic droit › Copier l’adresse du lien.")
+        return qsTr("Ce lien ouvrirait une application externe (« %1: »). Les applications externes sont désactivées dans CYBOU.").arg(info.scheme)
+    }
+    // With DisallowUnknownUrlSchemes the engine refuses a link to an external application before any
+    // navigation hook runs (measured by --protocol-test), so the hint is driven by the link under the
+    // pointer when the left button goes down (Main.qml observes the press) instead of by a navigation
+    // request. The view filters mouse events for its own children, so the observer cannot live inside it.
+    property string hoveredLink: ""
+    onLinkHovered: function(hoveredUrl) { web.hoveredLink = hoveredUrl.toString() }
+    function noteLinkPress() {
+        if (!store || !isCurrentTab || !hoveredLink.length) return
+        const info = store.externalLinkInfo(hoveredLink)
+        const now = Date.now()
+        if (!info.kind || now - lastExternalNoticeAt < 1500) return
+        lastExternalNoticeAt = now
+        statusNotice(externalLinkMessage(info))
+    }
     onNavigationRequested: function(request) {
         if (request.isMainFrame) {
             web.navigationEpoch++

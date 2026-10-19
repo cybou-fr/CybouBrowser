@@ -219,6 +219,17 @@ int main(int argc, char *argv[])
                     });
                     transfer->start(40); return;
                 }
+                if (request.startsWith("GET /external-link ")) {
+                    // Five stacked links, 70 px high every 90 px from y=50: mail, phone, other scheme, in-page anchor, mail with markup.
+                    const QList<QPair<QByteArray, QByteArray>> links = {
+                        {"mailto:alice@example.org,bob@example.org?subject=Hi", "mail"}, {"tel:+33 1 23 45 67 89", "phone"},
+                        {"zoommtg://zoom.us/join?confno=1", "other"}, {"#local", "anchor"}, {"mailto:%3Cb%3Ebold%3C/b%3E@example.org", "markup"}};
+                    QByteArray page = "<!doctype html><title>External link fixture</title><body style='margin:0;font:20px sans-serif'><a name='local'></a>";
+                    for (int i = 0; i < links.size(); ++i)
+                        page += "<a href='" + links[i].first + "' style='position:absolute;left:20px;top:" + QByteArray::number(50 + i * 90) + "px;width:600px;height:70px;display:block;background:#cfe3ff'>" + links[i].second + "</a>";
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                    socket->disconnectFromHost(); return;
+                }
                 const bool download = request.startsWith("GET /download ");
                 const bool transport = request.startsWith("GET /transport-document?");
                 const bool controls = request.startsWith("GET /controls ");
@@ -388,6 +399,50 @@ int main(int argc, char *argv[])
                         }
                         dragWindow->grabWindow().save(QString("build/drawer-%1-%2.png").arg(section).arg(size.width()));
                     }
+                }
+                {
+                    // External-application links: a click explains why nothing opens (ASVS 3.7.3 user-facing side).
+                    const QString base = engine.rootContext()->contextProperty("smokeBaseUrl").toString();
+                    QMetaObject::invokeMethod(root, "navigate", Q_ARG(QVariant, QVariant(base + "/external-link")));
+                    auto linkPoint = [&](int index) {
+                        QVariant value;
+                        QMetaObject::invokeMethod(root, "surfaceLinkPoint", Q_RETURN_ARG(QVariant, value), Q_ARG(QVariant, QVariant(index)));
+                        return mapValue(value);
+                    };
+                    auto statusText = [&] {
+                        QVariant value;
+                        QMetaObject::invokeMethod(root, "surfaceStatusText", Q_RETURN_ARG(QVariant, value));
+                        return value.toString();
+                    };
+                    for (int wait = 0; wait < 100 && linkPoint(0).isEmpty(); ++wait) QTest::qWait(100);
+                    if (linkPoint(0).isEmpty()) { qCritical() << "EXTERNAL_LINK_HINT_TEST FAIL: fixture page did not load"; app.exit(2); return; }
+                    const auto press = [&](int index) {
+                        QMetaObject::invokeMethod(root, "surfaceDismissStatus"); QTest::qWait(250); // the previous hint must not cover the next link
+                        const auto p = linkPoint(index);
+                        const QPoint at(p["x"].toInt(), p["y"].toInt());
+                        QTest::mouseMove(dragWindow, QPoint(80, 300)); QTest::qWait(150);
+                        QTest::mouseMove(dragWindow, at); QTest::qWait(700);
+                        QTest::mouseClick(dragWindow, Qt::LeftButton, Qt::NoModifier, at);
+                    };
+                    // Negative control first, while no hint has been shown: a normal in-page link says nothing.
+                    press(3); QTest::qWait(800);
+                    if (!statusText().isEmpty()) { qCritical() << "EXTERNAL_LINK_HINT_TEST FAIL: an ordinary link produced a hint" << statusText(); app.exit(2); return; }
+                    struct Expectation { int index; const char *must; const char *name; };
+                    const Expectation expectations[] = {
+                        {0, "alice@example.org,bob@example.org", "mailto"}, {1, "+33 1 23 45 67 89", "tel"},
+                        {2, "zoommtg", "other scheme"}, {4, "<b>bold</b>@example.org", "markup shown as text"}};
+                    for (const auto &expected : expectations) {
+                        QTest::qWait(1700); // the hint is rate limited to one per 1.5 s
+                        press(expected.index);
+                        QString text;
+                        for (int wait = 0; wait < 40 && !text.contains(QString::fromUtf8(expected.must)); ++wait) { QTest::qWait(100); text = statusText(); }
+                        if (!text.contains(QString::fromUtf8(expected.must))) { qCritical() << "EXTERNAL_LINK_HINT_TEST FAIL:" << expected.name << "hint text was" << text; app.exit(2); return; }
+                        if (expected.index == 0) dragWindow->grabWindow().save("build/external-link-hint.png");
+                    }
+                    QVariant plain;
+                    QMetaObject::invokeMethod(root, "surfaceStatusIsPlain", Q_RETURN_ARG(QVariant, plain));
+                    if (!plain.toBool()) { qCritical() << "EXTERNAL_LINK_HINT_TEST FAIL: the status label renders rich text"; app.exit(2); return; }
+                    qInfo() << "EXTERNAL_LINK_HINT_TEST PASS: clicking mailto, tel and another scheme shows why nothing opens, with the cleaned address; an ordinary link stays silent; page-supplied markup is shown as text in a plain-text label";
                 }
                 qInfo() << "SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820";
                 app.exit(0); return;

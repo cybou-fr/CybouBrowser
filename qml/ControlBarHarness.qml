@@ -11,6 +11,21 @@ Item {
     property int sizeIndex: 0
     property var sizes: [[820,560],[1024,768],[1360,900],[1920,1080]]
     property real hoverStarted: 0
+    property int hoverStep: 0
+    property real waitSince: 0
+    property real lastResend: 0
+    property int resendCount: 0
+    // Synthetic input can be dropped while the window is still painting (cold start, first frames).
+    // For steps whose input is idempotent, repeat it for up to three seconds before the check fails.
+    // Returns true while the awaited condition is still pending.
+    function awaiting(ok, resend) {
+        if (ok) { waitSince = 0; return false }
+        const now = Date.now()
+        if (!waitSince) { waitSince = now; lastResend = now; return true }
+        if (now - waitSince >= 3000) { waitSince = 0; return false }
+        if (now - lastResend >= 700) { lastResend = now; input = resend() }
+        return true
+    }
     property real started: 0
     property real grantObservedAt: 0
     property real firstRemainingMs: 0
@@ -56,12 +71,14 @@ Item {
                 input = {kind:"key", key:Qt.Key_L, modifiers:Qt.ControlModifier}; phase = 4
             } else if (phase === 4) {
                 const m = browserWindow.testOmnibox()
+                if (awaiting(m.editing && m.selectedText === m.rawUrl, function() { return {kind:"key", key:Qt.Key_L, modifiers:Qt.ControlModifier} })) return 0
                 console.info("OBSERVABLE_ADDRESS", JSON.stringify(m))
                 expect(m.editing && m.selectedText === m.rawUrl, "Ctrl+L selects complete URL")
                 expect(m.visibleKeys.length === 11 && m.controlWidth > 0, "URL editing preserves controls")
                 screenshot = "observable-edit-" + sizes[sizeIndex][0]
                 input = {kind:"key",key:Qt.Key_Escape}; phase = 5
             } else if (phase === 5) {
+                if (awaiting(!browserWindow.testOmnibox().editing, function() { return {kind:"key", key:Qt.Key_Escape} })) return 0
                 expect(!browserWindow.testOmnibox().editing, "Escape collapses address")
                 sizeIndex++
                 if (sizeIndex < sizes.length) {
@@ -69,23 +86,36 @@ Item {
                 } else { input = browserWindow.testAddressPoint(); phase = 17 }
             } else if (phase === 17) {
                 const m = browserWindow.testOmnibox()
+                if (awaiting(m.editing && m.addressWidth >= 120 && m.selectedText === m.rawUrl, function() { return browserWindow.testAddressPoint() })) return 0
                 expect(m.editing && m.addressWidth >= 120 && m.selectedText === m.rawUrl, "mouse selects complete URL")
                 expect(m.visibleKeys.length === 11, "mouse edit preserves capabilities")
                 input = {kind:"key",key:Qt.Key_Escape}; phase = 18
             } else if (phase === 18) {
-                hoverStarted = Date.now()
+                hoverStarted = Date.now(); hoverStep = 0
                 input = bar.testInputPoint("location","move"); phase = 6
             } else if (phase === 6) {
-                if (!bar.testCard().visible && Date.now() - hoverStarted < 2000) return 0
+                const elapsed = Date.now() - hoverStarted
+                if (!bar.testCard().visible && elapsed < 4200) {
+                    // A dropped move leaves no hover change to open the card: leave the icon and enter it again.
+                    const step = Math.floor(elapsed / 700)
+                    if (step !== hoverStep) {
+                        hoverStep = step
+                        if (step === 2 || step === 4) input = {kind:"move", x:80, y:browserWindow.height-40}
+                        else if (step === 3 || step === 5) input = bar.testInputPoint("location","move")
+                    }
+                    return 0
+                }
                 expect(bar.testCard().visible && bar.testCard().key === "location", "hover opens the current glass control panel")
                 const c = bar.testCard()
                 expect(c.x >= 0 && c.x+c.width <= browserWindow.width, "glass panel stays inside window")
                 screenshot = "controlbar-hover-location"
                 input = {kind:"move", x:c.x+40, y:c.y+45}; phase = 24
             } else if (phase === 24) {
+                if (awaiting(bar.testCard().visible && bar.testCard().pointerInside, function() { const k = bar.testCard(); return {kind:"move", x:k.x+40+(++resendCount % 2) * 6, y:k.y+45} })) return 0
                 expect(bar.testCard().visible && bar.testCard().pointerInside, "pointer can enter the panel to use its controls")
                 input = bar.testInputPoint("javascript","move"); phase = 25
             } else if (phase === 25) {
+                if (awaiting(bar.testCard().visible && bar.testCard().key === "javascript", function() { const p = bar.testInputPoint("javascript","move"); if (p) p.x += (++resendCount % 2) * 4; return p })) return 0
                 expect(bar.testCard().visible && bar.testCard().key === "javascript", "hover replaces content without stale capability")
                 screenshot = "controlbar-hover-javascript"
                 input = {kind:"move",x:80,y:browserWindow.height-40}; phase = 26

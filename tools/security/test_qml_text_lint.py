@@ -30,6 +30,14 @@ class QmlTextLint(unittest.TestCase):
         nested = 'Item { Label { textFormat: Text.PlainText; text: a.b; Text { text: c.d } } }'
         self.assertEqual(len(findings_for(nested)), 1)  # the nested item needs its own opt-out
 
+    def test_script_assigned_text_requires_plain_text_on_the_target(self):
+        bad = 'Item { Label { id: note } function show(v) { note.text = v } }'
+        self.assertEqual(len(findings_for(bad)), 1)
+        good = 'Item { Label { id: note; textFormat: Text.PlainText } function show(v) { note.text = v } }'
+        self.assertEqual(findings_for(good), [])
+        comparison = 'Item { Label { id: note } function same(v) { return note.text == v } }'
+        self.assertEqual(findings_for(comparison), [])
+
     def test_rich_text_formats_do_not_satisfy_the_rule(self):
         self.assertEqual(len(findings_for('Item { Label { textFormat: Text.StyledText; text: a.b } }')), 1)
 

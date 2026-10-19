@@ -27,6 +27,7 @@
 #include "security/NavigationGuard.h"
 #include "security/StoredUrl.h"
 #include "security/BrowserSettings.h"
+#include "security/ExternalLinkNotice.h"
 #include "security/DownloadPolicy.h"
 #include "cloud/CloudServiceManager.h"
 #include "ui/AddressDisplay.h"
@@ -181,6 +182,8 @@ public:
         settings.setValue("preferences/httpsFirst", enabled);
         emit preferencesChanged();
     }
+    // Non-empty for links that would open an external application (mailto:, tel:, ...), which the browser never does.
+    Q_INVOKABLE QVariantMap externalLinkInfo(const QUrl &url) const { return ExternalLinkNotice::describe(url); }
     Q_INVOKABLE bool isLocalHost(const QUrl &url) const {
         return NavigationGuard::isLocalHost(url);
     }

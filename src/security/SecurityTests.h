@@ -8,6 +8,7 @@
 #include "DownloadPolicy.h"
 #include "StoredUrl.h"
 #include "BrowserSettings.h"
+#include "ExternalLinkNotice.h"
 #include <QSettings>
 #include "NetworkBoundaryTests.h"
 #include "TlsBoundaryTests.h"
@@ -61,6 +62,35 @@ inline int runSecurityTests(QGuiApplication &app, quint16 port) {
         if (!DownloadPolicy::allowsExternalOpen(name)) { qCritical() << "DOWNLOAD_POLICY_TEST FAIL false positive" << name; return 2; }
     }
     qInfo() << "DOWNLOAD_POLICY_TEST PASS";
+    {
+        // Links that would open an external application are described, cleaned and bounded.
+        struct { const char *url, *kind, *target; } links[] = {
+            {"mailto:alice@example.org", "mail", "alice@example.org"},
+            {"mailto:alice@example.org,bob@example.org?subject=Hi%20there&body=x", "mail", "alice@example.org,bob@example.org"},
+            {"mailto:?to=a@b.c", "mail", ""},
+            {"tel:+33 1 23 45 67 89", "phone", "+33 1 23 45 67 89"},
+            {"tel:+33(0)1.23-45", "phone", "+33(0)1.23-45"},
+            {"tel:abc", "phone", ""},
+            {"sms:+15551234567?body=x", "phone", "+15551234567"},
+            {"zoommtg://zoom.us/join?confno=1", "other", ""},
+            {"https://example.org/", "", ""}, {"http://127.0.0.1:8080/", "", ""}, {"file:///C:/a.txt", "", ""}, {"about:blank", "", ""},
+            {"javascript:alert(1)", "", ""}, {"view-source:https://a.example/", "", ""}, {"data:text/html,x", "", ""}, {"blob:https://a.example/1", "", ""},
+        };
+        for (const auto &l : links) {
+            const auto info = ExternalLinkNotice::describe(QUrl(QString::fromLatin1(l.url)));
+            if (info.value("kind").toString() != QString::fromLatin1(l.kind) || (*l.kind && info.value("target").toString() != QString::fromLatin1(l.target))) {
+                qCritical() << "EXTERNAL_LINK_NOTICE_TEST FAIL" << l.url << info; return 2;
+            }
+        }
+        const auto hostile = ExternalLinkNotice::describe(QUrl(QString("mailto:evil%1name@example.org%2").arg("%E2%80%AE", "%01%07")));
+        const QString shown = hostile.value("target").toString();
+        if (shown.contains(QChar(0x202E)) || shown.contains(QChar(0x01)) || !shown.contains("example.org")) { qCritical() << "EXTERNAL_LINK_NOTICE_TEST FAIL: control/format characters kept" << shown; return 2; }
+        const auto longTarget = ExternalLinkNotice::describe(QUrl("mailto:" + QString(500, QChar('a')) + "@example.org")).value("target").toString();
+        if (longTarget.size() != 121 || !longTarget.endsWith(QChar(0x2026))) { qCritical() << "EXTERNAL_LINK_NOTICE_TEST FAIL: not bounded" << longTarget.size(); return 2; }
+        const auto markup = ExternalLinkNotice::describe(QUrl("mailto:%3Cimg%20src=http://127.0.0.1/x%3E@example.org")).value("target").toString();
+        if (!markup.contains("<img")) { qCritical() << "EXTERNAL_LINK_NOTICE_TEST FAIL: markup was rewritten instead of being shown as text" << markup; return 2; }
+        qInfo() << "EXTERNAL_LINK_NOTICE_TEST PASS: mail, phone and other schemes described; engine-handled schemes ignored; control and format characters removed; length bounded; markup left as text for the plain-text label";
+    }
     {
         // Migration of the browser's keys out of a store shared with another application.
         QTemporaryDir dir;

@@ -471,6 +471,16 @@ ApplicationWindow {
         return {x:p.x,y:p.y}
     }
     function surfaceHintVisible() { return downloadsButton.hintVisible }
+    // Point (window coordinates) in the middle of the index-th link of the external-link fixture page, or null until it is loaded.
+    function surfaceLinkPoint(index) {
+        const view = currentView
+        if (!view || view.loading || view.title !== "External link fixture") return null
+        const p = view.mapToItem(null, 150, 85 + index * 90)
+        return {x: p.x, y: p.y}
+    }
+    function surfaceDismissStatus() { statusPopup.close() }
+    function surfaceStatusText() { return statusPopup.visible ? statusLabel.text : "" }
+    function surfaceStatusIsPlain() { return statusLabel.textFormat === Text.PlainText }
     function testTitleDragPoint() {
         const p = emptyTabDrag.mapToItem(null, emptyTabDrag.width / 2, emptyTabDrag.height / 2)
         return {x:p.x, y:p.y, width:emptyTabDrag.width}
@@ -1267,6 +1277,13 @@ ApplicationWindow {
             }
         }
     }
+    MouseArea {
+        // Reports a left press over the page to the current tab (for the external-link hint) and declines it,
+        // so the press and its release still reach the web view underneath.
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onPressed: function(mouse) { if (currentView) currentView.noteLinkPress(); mouse.accepted = false }
+    }
     Menu {
         id: pageContextMenu
         property string linkUrl: ""
@@ -1487,7 +1504,7 @@ ApplicationWindow {
         y: window.contentItem.height - height - 24
         width: Math.min(620, window.width - 32); padding: 14
         background: GlassDialogBackground { radius: 10 }
-        contentItem: Label { id: statusLabel; color: CybouTheme.mainText; wrapMode: Text.WordWrap; font.pixelSize: 12 }
+        contentItem: Label { id: statusLabel; textFormat: Text.PlainText; color: CybouTheme.mainText; wrapMode: Text.WordWrap; font.pixelSize: 12 }
     }
     SettingsPanel {
         id: settingsPanel
@@ -1522,7 +1539,7 @@ ApplicationWindow {
         id: pageLoadErrorDialog; objectName: "pageLoadErrorDialog"; anchors.centerIn: parent; width: Math.min(520, window.width - 40); padding: 24; modal: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         background: GlassDialogBackground { radius: 16 }
-        contentItem: Label { id: errorText; wrapMode: Text.WordWrap; color: CybouTheme.mainText }
+        contentItem: Label { id: errorText; textFormat: Text.PlainText; wrapMode: Text.WordWrap; color: CybouTheme.mainText }
     }
     // System resizing preserves native platform behavior without a separate title bar.
     Repeater {

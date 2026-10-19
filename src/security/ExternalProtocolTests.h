@@ -80,6 +80,36 @@ inline int runExternalProtocolTests() {
         if (policy.expectLaunch && reached.isEmpty()) { qCritical() << "EXTERNAL_PROTOCOL_TEST FAIL: control produced no launch, so the harness cannot observe one"; ++failures; }
         if (!policy.expectLaunch && !reached.isEmpty()) { qCritical() << "EXTERNAL_PROTOCOL_TEST FAIL: product policy let a page launch an external handler via" << reached; ++failures; }
     }
+    {
+        // Does the page's navigation hook see an external-scheme navigation that the engine refuses?
+        class RecordingPage final : public QWebEnginePage {
+        public:
+            using QWebEnginePage::QWebEnginePage;
+            QStringList seen;
+        protected:
+            bool acceptNavigationRequest(const QUrl &url, NavigationType, bool isMainFrame) override {
+                if (url.scheme().startsWith("cybou-ext")) seen << QString("%1 main=%2").arg(url.scheme()).arg(isMainFrame);
+                return true;
+            }
+        };
+        counter.hits = 0;
+        RecordingPage page(&profile);
+        page.settings()->setUnknownUrlSchemePolicy(QWebEngineSettings::DisallowUnknownUrlSchemes);
+        QEventLoop load; QTimer timeout; timeout.setSingleShot(true);
+        QObject::connect(&timeout, &QTimer::timeout, &load, &QEventLoop::quit);
+        QObject::connect(&page, &QWebEnginePage::loadFinished, &load, &QEventLoop::quit);
+        timeout.start(10000);
+        page.load(QUrl(QString("http://127.0.0.1:%1/").arg(server.serverPort())));
+        load.exec();
+        page.runJavaScript(QStringLiteral("location.href='cybou-ext-a://hook'"));
+        QEventLoop settle; QTimer::singleShot(1500, &settle, &QEventLoop::quit); settle.exec();
+        qInfo().noquote() << "EXTERNAL_PROTOCOL_HOOK navigation hook saw:" << (page.seen.isEmpty() ? QStringLiteral("nothing") : page.seen.join(", ")) << "| handler launches:" << counter.hits;
+        // Measured on Qt 6.12 / Chromium 140: the hook is NOT called, the engine refuses first. The UI hint
+        // therefore tracks the hovered link and the button press (BrowserTab.qml). If this ever changes, the
+        // line above shows it and the hint can be simplified.
+        if (!page.seen.isEmpty()) qWarning() << "EXTERNAL_PROTOCOL_NOTE: the navigation hook now sees external schemes; the click-based hint in BrowserTab.qml could use it";
+        if (counter.hits != 0) { qCritical() << "EXTERNAL_PROTOCOL_TEST FAIL: product policy launched a handler"; ++failures; }
+    }
     for (const char *scheme : {"cybou-ext-a", "cybou-ext-b"}) QDesktopServices::unsetUrlHandler(QString::fromLatin1(scheme));
     if (failures) return 1;
     qInfo() << "EXTERNAL_PROTOCOL_TEST PASS: control launches were observed; with DisallowUnknownUrlSchemes none of" << triggers.size() << "script triggers reached an external handler";

@@ -43,6 +43,7 @@ Rectangle {
 
         Label {
             id: policyBannerText
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             color: root.isRestricted ? "#FFD08A" : CybouTheme.mainText
             font.pixelSize: 12
