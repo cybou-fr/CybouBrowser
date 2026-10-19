@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>CYBOU</Name>
+    <Version>0.3.0</Version>
+    <Title>CYBOU Browser</Title>
+    <Publisher>CYBOU</Publisher>
+    <ProductUrl>https://github.com/</ProductUrl>
+    <StartMenuDir>CYBOU</StartMenuDir>
+    <TargetDir>@HomeDir@/AppData/Local/Programs/CYBOU</TargetDir>
+    <MaintenanceToolName>CYBOUUninstall</MaintenanceToolName>
+    <RemoveTargetDir>true</RemoveTargetDir>
+    <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
+    <WizardStyle>Modern</WizardStyle>
+    <InstallerApplicationIcon>../../assets/cybou</InstallerApplicationIcon>
+    <InstallerWindowIcon>../../assets/cybou.png</InstallerWindowIcon>
+</Installer>
