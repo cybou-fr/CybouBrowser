@@ -250,6 +250,8 @@ int main(int argc, char *argv[])
             });
         }
     });
+    // Earlier runs leave "name (N).ext" copies behind; the engine gives up after 100 unique names, which would fail a later download test.
+    QDir("build/test-downloads").removeRecursively();
     QDir().mkpath("build/test-downloads");
 
     if (securityTest || runAll) {
