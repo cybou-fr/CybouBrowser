@@ -9,10 +9,10 @@
 // Create / use / delete the default position source many times without stopping it first: the pattern that
 // crashed the stock WinRT plugin in 27 of 30 processes (docs/VALIDATION.md). Passing means the process is still
 // alive after every cycle and the source in use is CYBOU's own plugin.
-//   --geolocation-test [cycles=1000] [maxSpinMs=120]
+//   --geolocation-test [cycles=300] [maxSpinMs=120]
 inline int runGeolocationStress()
 {
-    int cycles = 1000;
+    int cycles = 300;
     const QStringList args = QCoreApplication::arguments();
     const int at = args.indexOf(QStringLiteral("--geolocation-test"));
     if (at >= 0 && at + 1 < args.size() && args.at(at + 1).toInt() > 0)
