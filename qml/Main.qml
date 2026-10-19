@@ -481,6 +481,9 @@ ApplicationWindow {
         return {x: p.x, y: p.y}
     }
     function surfaceRenderPid() { return currentView ? currentView.renderProcessPid : 0 }
+    function surfaceFocusPage(onPage) { if (onPage) { address.focus = false; if (currentView) currentView.forceActiveFocus() } else address.forceActiveFocus() }
+    function surfaceActiveTab() { return activeTab }
+    function surfaceAddressFocused() { return address.activeFocus }
     function surfaceTabCount() { return tabs.count }
     function surfaceTabsLoaded(title) {
         let n = 0
@@ -714,6 +717,9 @@ ApplicationWindow {
         tabStrip.positionViewAtIndex(activeTab, ListView.Contain)
         saveTimer.restart()
     }
+    // Ctrl+1..8 select that tab (the last one when there are fewer), Ctrl+9 always the last.
+    function selectTabByNumber(n) { activeTab = n >= 9 ? tabs.count - 1 : Math.min(n - 1, tabs.count - 1) }
+    function cycleTab(step) { activeTab = (activeTab + step + tabs.count) % tabs.count }
     function closeTab(index) {
         const view = views.itemAt(index)
         if (pdfBusy && view === pdfTarget) { showStatus("L’export PDF est en cours."); return }
@@ -840,9 +846,26 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+T"; onActivated: addTab("") }
     Shortcut { sequence: "Ctrl+W"; onActivated: closeTab(activeTab) }
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: reopenTab() }
-    Shortcut { sequence: "Ctrl+Tab"; onActivated: activeTab = (activeTab + 1) % tabs.count }
-    Shortcut { sequence: "Ctrl+Shift+Tab"; onActivated: activeTab = (activeTab + tabs.count - 1) % tabs.count }
+    Shortcut { sequence: "Ctrl+Tab"; onActivated: cycleTab(1) }
+    Shortcut { sequence: "Ctrl+Shift+Tab"; onActivated: cycleTab(-1) }
     Shortcut { sequence: "Ctrl+R"; onActivated: if (currentView) currentView.reload() }
+    Shortcut { sequence: "F5"; onActivated: if (currentView) currentView.reload() }
+    Shortcut { sequence: "Ctrl+Shift+R"; onActivated: if (currentView) currentView.reloadAndBypassCache() }
+    Shortcut { sequence: "Ctrl+F5"; onActivated: if (currentView) currentView.reloadAndBypassCache() }
+    Shortcut { sequence: "Alt+D"; onActivated: { address.forceActiveFocus(); Qt.callLater(function() { address.selectAll() }) } }
+    Shortcut { sequence: "F6"; onActivated: { address.forceActiveFocus(); Qt.callLater(function() { address.selectAll() }) } }
+    Shortcut { sequence: "Ctrl+PgDown"; onActivated: cycleTab(1) }
+    Shortcut { sequence: "Ctrl+PgUp"; onActivated: cycleTab(-1) }
+    // Ctrl+1..8 select that tab, Ctrl+9 the last one (browser convention).
+    Shortcut { sequence: "Ctrl+1"; onActivated: selectTabByNumber(1) }
+    Shortcut { sequence: "Ctrl+2"; onActivated: selectTabByNumber(2) }
+    Shortcut { sequence: "Ctrl+3"; onActivated: selectTabByNumber(3) }
+    Shortcut { sequence: "Ctrl+4"; onActivated: selectTabByNumber(4) }
+    Shortcut { sequence: "Ctrl+5"; onActivated: selectTabByNumber(5) }
+    Shortcut { sequence: "Ctrl+6"; onActivated: selectTabByNumber(6) }
+    Shortcut { sequence: "Ctrl+7"; onActivated: selectTabByNumber(7) }
+    Shortcut { sequence: "Ctrl+8"; onActivated: selectTabByNumber(8) }
+    Shortcut { sequence: "Ctrl+9"; onActivated: selectTabByNumber(9) }
     Shortcut { sequence: "Ctrl+D"; onActivated: bookmark() }
     Shortcut { sequence: "Ctrl+H"; onActivated: showLibrary("history") }
     Shortcut { sequence: "Ctrl+J"; onActivated: showLibrary("downloads") }

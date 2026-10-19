@@ -501,6 +501,23 @@ int main(int argc, char *argv[])
                     if (count != 1) { qCritical() << "MANY_TABS_TEST FAIL: tab count after closing is" << count; app.exit(2); return; }
                     qInfo().noquote() << "MANY_TABS_TEST PASS: opened and loaded" << extraTabs << "tabs in" << openedMs << "ms, closed back to one tab";
                 }
+                {
+                    // Tab selection behind the browser-standard shortcuts (Ctrl+1..9, Ctrl+PgUp/PgDn, Ctrl+Tab). Synthetic key events do
+                    // not trigger Qt Quick Shortcuts in this harness (the existing Ctrl+T does not react either), so the functions
+                    // the shortcuts call are exercised; the key bindings themselves are one-line declarations.
+                    for (int i = 0; i < 3; ++i) QMetaObject::invokeMethod(root, "addTab", Q_ARG(QVariant, QVariant(QString())), Q_ARG(QVariant, QVariant()));
+                    QTest::qWait(300);
+                    auto activeTab = [&] { QVariant v; QMetaObject::invokeMethod(root, "surfaceActiveTab", Q_RETURN_ARG(QVariant, v)); return v.toInt(); };
+                    auto select = [&](int n) { QMetaObject::invokeMethod(root, "selectTabByNumber", Q_ARG(QVariant, QVariant(n))); QTest::qWait(50); return activeTab(); };
+                    auto cycle = [&](int step) { QMetaObject::invokeMethod(root, "cycleTab", Q_ARG(QVariant, QVariant(step))); QTest::qWait(50); return activeTab(); };
+                    const int results[] = {select(1), select(3), select(9), cycle(-1), cycle(1), cycle(1), select(2), select(8)};
+                    const int wanted[]  = {0,         2,         3,         2,         3,         0,         1,         3};
+                    for (int i = 0; i < 8; ++i)
+                        if (results[i] != wanted[i]) { qCritical() << "KEYBOARD_SHORTCUT_TEST FAIL: step" << i << "gave tab" << results[i] << "expected" << wanted[i]; app.exit(2); return; }
+                    QMetaObject::invokeMethod(root, "surfaceCloseExtraTabs");
+                    QTest::qWait(300);
+                    qInfo() << "KEYBOARD_SHORTCUT_TEST PASS: tab selection by number and cycling, wrapping and clamping (functions behind the shortcuts)";
+                }
                 qInfo() << "SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820";
                 app.exit(0); return;
             }
