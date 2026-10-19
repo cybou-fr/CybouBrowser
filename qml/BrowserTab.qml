@@ -213,6 +213,20 @@ WebEngineView {
             restrictedModeTriggered(web, web.restrictedReason)
         }
     }
+    property double lastRenderCrashAt: 0
+    // A dead renderer leaves a blank tab. Reload once; a second crash within 15 s is reported instead of looping.
+    onRenderProcessTerminated: function(status, exitCode) {
+        if (status === WebEngineView.NormalTerminationStatus) return
+        const now = Date.now()
+        const repeated = now - lastRenderCrashAt < 15000
+        lastRenderCrashAt = now
+        if (repeated) {
+            if (isCurrentTab) errorNotice(qsTr("Cette page a planté à nouveau. Elle n’a pas été rechargée automatiquement."))
+            return
+        }
+        if (isCurrentTab) statusNotice(qsTr("La page a planté ; rechargement en cours."))
+        reload()
+    }
     onLoadingChanged: function(info) {
         if (smokeMode && url.toString().startsWith("file:") && info.status === WebEngineView.LoadSucceededStatus) localLoaded()
         if (info.status === WebEngineView.LoadSucceededStatus) {
