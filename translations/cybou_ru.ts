@@ -29,6 +29,44 @@
     </message>
 </context>
 <context>
+    <name>BrowserTab</name>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>Les liens « mailto: » ne s’ouvrent pas : les applications externes sont désactivées. Adresse : %1 — clic droit › Copier l’adresse du lien.</source>
+        <translation>Ссылки «mailto:» не открываются: внешние приложения отключены. Адрес: %1 — правая кнопка › Копировать адрес ссылки.</translation>
+    </message>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>Les liens « mailto: » ne s’ouvrent pas : les applications externes sont désactivées. Clic droit › Copier l’adresse du lien.</source>
+        <translation>Ссылки «mailto:» не открываются: внешние приложения отключены. Правая кнопка › Копировать адрес ссылки.</translation>
+    </message>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>Les liens téléphoniques ne s’ouvrent pas : les applications externes sont désactivées. Numéro : %1 — clic droit › Copier l’adresse du lien.</source>
+        <translation>Телефонные ссылки не открываются: внешние приложения отключены. Номер: %1 — правая кнопка › Копировать адрес ссылки.</translation>
+    </message>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>Les liens téléphoniques ne s’ouvrent pas : les applications externes sont désactivées. Clic droit › Copier l’adresse du lien.</source>
+        <translation>Телефонные ссылки не открываются: внешние приложения отключены. Правая кнопка › Копировать адрес ссылки.</translation>
+    </message>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>Ce lien ouvrirait une application externe (« %1: »). Les applications externes sont désactivées dans CYBOU.</source>
+        <translation>Эта ссылка открыла бы внешнее приложение («%1:»). В CYBOU внешние приложения отключены.</translation>
+    </message>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>Cette page a planté à nouveau. Elle n’a pas été rechargée automatiquement.</source>
+        <translation>Страница снова аварийно завершилась. Автоматическая перезагрузка не выполнена.</translation>
+    </message>
+    <message>
+        <location filename="../qml/BrowserTab.qml" line="1"/>
+        <source>La page a planté ; rechargement en cours.</source>
+        <translation>Страница аварийно завершилась; перезагрузка.</translation>
+    </message>
+</context>
+<context>
     <name>CapabilityPopover</name>
     <message>
         <location filename="../qml/CapabilityPopover.qml" line="126"/>
@@ -518,6 +556,11 @@ Passés par exception : %5</source>
 </context>
 <context>
     <name>Main</name>
+    <message>
+        <location filename="../qml/Main.qml" line="1"/>
+        <source>La localisation est désactivée dans cette version de CYBOU.</source>
+        <translation>Определение местоположения отключено в этой версии CYBOU.</translation>
+    </message>
     <message>
         <location filename="../qml/Main.qml" line="1035"/>
         <location filename="../qml/Main.qml" line="1046"/>
