@@ -480,6 +480,7 @@ ApplicationWindow {
         const p = view.mapToItem(null, 150, 85 + index * 90)
         return {x: p.x, y: p.y}
     }
+    function surfaceRenderPid() { return currentView ? currentView.renderProcessPid : 0 }
     function surfaceDismissStatus() { statusPopup.close() }
     function surfaceStatusText() { return statusPopup.visible ? statusLabel.text : "" }
     function surfaceStatusIsPlain() { return statusLabel.textFormat === Text.PlainText }

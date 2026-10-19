@@ -21,6 +21,9 @@
 #include <QTranslator>
 #include <QtTest/QTest>
 #include <memory>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 #include <cstdio>
 #include "browserstore.h"
 #include "GeolocationStress.h"
@@ -445,6 +448,36 @@ int main(int argc, char *argv[])
                     QMetaObject::invokeMethod(root, "surfaceStatusIsPlain", Q_RETURN_ARG(QVariant, plain));
                     if (!plain.toBool()) { qCritical() << "EXTERNAL_LINK_HINT_TEST FAIL: the status label renders rich text"; app.exit(2); return; }
                     qInfo() << "EXTERNAL_LINK_HINT_TEST PASS: clicking mailto, tel and another scheme shows why nothing opens, with the cleaned address; an ordinary link stays silent; page-supplied markup is shown as text in a plain-text label";
+                }
+                {
+                    // Renderer crash: the tab must come back by itself, once, and say so.
+                    QMetaObject::invokeMethod(root, "surfaceDismissStatus"); QTest::qWait(300);
+                    QVariant pidValue;
+                    QMetaObject::invokeMethod(root, "surfaceRenderPid", Q_RETURN_ARG(QVariant, pidValue));
+                    const qint64 pid = pidValue.toLongLong();
+                    HANDLE process = pid > 0 ? OpenProcess(PROCESS_TERMINATE, FALSE, DWORD(pid)) : nullptr;
+                    if (!process) { qCritical() << "RENDER_CRASH_TEST FAIL: no renderer process to terminate" << pid; app.exit(2); return; }
+                    TerminateProcess(process, 0xDEAD); CloseHandle(process);
+                    QString notice;
+                    for (int wait = 0; wait < 60 && !notice.contains(QStringLiteral("planté")); ++wait) {
+                        QTest::qWait(100);
+                        QVariant value; QMetaObject::invokeMethod(root, "surfaceStatusText", Q_RETURN_ARG(QVariant, value)); notice = value.toString();
+                    }
+                    if (!notice.contains(QStringLiteral("planté"))) { qCritical() << "RENDER_CRASH_TEST FAIL: no crash notice, status was" << notice; app.exit(2); return; }
+                    QVariant link;
+                    for (int wait = 0; wait < 100 && (link.isNull() || !link.isValid()); ++wait) {
+                        QTest::qWait(100);
+                        QMetaObject::invokeMethod(root, "surfaceLinkPoint", Q_RETURN_ARG(QVariant, link), Q_ARG(QVariant, QVariant(0)));
+                        if (mapValue(link).isEmpty()) link = QVariant();
+                    }
+                    QVariant newPid;
+                    for (int wait = 0; wait < 100; ++wait) {
+                        QMetaObject::invokeMethod(root, "surfaceRenderPid", Q_RETURN_ARG(QVariant, newPid));
+                        if (newPid.toLongLong() > 0 && newPid.toLongLong() != pid) break;
+                        QTest::qWait(100);
+                    }
+                    if (!link.isValid() || newPid.toLongLong() <= 0 || newPid.toLongLong() == pid) { qCritical() << "RENDER_CRASH_TEST FAIL: the page was not reloaded in a new renderer" << pid << newPid; app.exit(2); return; }
+                    qInfo() << "RENDER_CRASH_TEST PASS: a terminated renderer is reported and the page reloads";
                 }
                 qInfo() << "SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820";
                 app.exit(0); return;
