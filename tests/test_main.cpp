@@ -479,6 +479,28 @@ int main(int argc, char *argv[])
                     if (!link.isValid() || newPid.toLongLong() <= 0 || newPid.toLongLong() == pid) { qCritical() << "RENDER_CRASH_TEST FAIL: the page was not reloaded in a new renderer" << pid << newPid; app.exit(2); return; }
                     qInfo() << "RENDER_CRASH_TEST PASS: a terminated renderer is reported and the page reloads";
                 }
+                {
+                    // Many tabs: open 30 pages, each must load in its own view, then closing them must leave one working tab.
+                    const QString base = engine.rootContext()->contextProperty("smokeBaseUrl").toString();
+                    constexpr int extraTabs = 30;
+                    QElapsedTimer opening; opening.start();
+                    for (int i = 0; i < extraTabs; ++i) QMetaObject::invokeMethod(root, "addTab", Q_ARG(QVariant, QVariant(base + "/external-link")), Q_ARG(QVariant, QVariant()));
+                    int loaded = 0, count = 0;
+                    for (int wait = 0; wait < 600 && loaded < extraTabs; ++wait) {
+                        QTest::qWait(100);
+                        QVariant value;
+                        QMetaObject::invokeMethod(root, "surfaceTabsLoaded", Q_RETURN_ARG(QVariant, value), Q_ARG(QVariant, QVariant(QStringLiteral("External link fixture"))));
+                        loaded = value.toInt();
+                    }
+                    { QVariant value; QMetaObject::invokeMethod(root, "surfaceTabCount", Q_RETURN_ARG(QVariant, value)); count = value.toInt(); }
+                    if (loaded < extraTabs) { qCritical() << "MANY_TABS_TEST FAIL: only" << loaded << "of" << extraTabs << "tabs loaded, tab count" << count; app.exit(2); return; }
+                    const qint64 openedMs = opening.elapsed();
+                    QMetaObject::invokeMethod(root, "surfaceCloseExtraTabs");
+                    QTest::qWait(500);
+                    { QVariant value; QMetaObject::invokeMethod(root, "surfaceTabCount", Q_RETURN_ARG(QVariant, value)); count = value.toInt(); }
+                    if (count != 1) { qCritical() << "MANY_TABS_TEST FAIL: tab count after closing is" << count; app.exit(2); return; }
+                    qInfo().noquote() << "MANY_TABS_TEST PASS: opened and loaded" << extraTabs << "tabs in" << openedMs << "ms, closed back to one tab";
+                }
                 qInfo() << "SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820";
                 app.exit(0); return;
             }

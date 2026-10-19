@@ -481,6 +481,13 @@ ApplicationWindow {
         return {x: p.x, y: p.y}
     }
     function surfaceRenderPid() { return currentView ? currentView.renderProcessPid : 0 }
+    function surfaceTabCount() { return tabs.count }
+    function surfaceTabsLoaded(title) {
+        let n = 0
+        for (let i = 0; i < tabs.count; ++i) { const v = views.itemAt(i); if (v && !v.loading && v.title === title) ++n }
+        return n
+    }
+    function surfaceCloseExtraTabs() { while (tabs.count > 1) closeTab(tabs.count - 1) }
     function surfaceDismissStatus() { statusPopup.close() }
     function surfaceStatusText() { return statusPopup.visible ? statusLabel.text : "" }
     function surfaceStatusIsPlain() { return statusLabel.textFormat === Text.PlainText }
