@@ -20,6 +20,18 @@ bash tools/package/build_installer.sh   # build/CYBOU-<version>-setup.exe, about
 Per-user install to `%LOCALAPPDATA%\Programs\CYBOU` (no administrator), Start menu and desktop shortcuts, uninstaller
 `CYBOUUninstall.exe` (also listed in the Windows uninstall list). Sources: `installer/`.
 
+## SBOM
+
+```bash
+python -I tools/package/make_sbom.py build/stage build/CYBOU-sbom.cdx.json
+```
+
+CycloneDX 1.5 JSON: every shipped file with SHA-256, grouped into components (CYBOU, Qt 6.12.0, Qt WebEngine/Chromium 140.0.7339.225,
+MSVC runtime, DirectX compiler, Mesa software OpenGL, docs). Deterministic: the same staged folder gives a byte-identical file
+(checked). Component versions of Qt and Chromium are the build's, the others are not read from the binaries and have no version.
+Not covered: Chromium's own third-party libraries inside `Qt6WebEngineCore.dll` (the engine is one component here), package
+URLs/CPE identifiers, and signing of the SBOM.
+
 ## Checked
 
 - Installer, silent (`setup.exe --root <dir> --accept-licenses --accept-messages --confirm-command install`): exit 0, 271 files,
@@ -36,6 +48,6 @@ Per-user install to `%LOCALAPPDATA%\Programs\CYBOU` (no administrator), Start me
 - Machine-wide install (the installer is per-user), upgrade-over-existing-install behaviour, user data handling on uninstall
   (the browser profile under `%APPDATA%` is not touched).
 - Code signing (needs a certificate), update channel with rollback.
-- SBOM and a complete third-party license bundle (`licenses/THIRD_PARTY_NOTICES.md` is a short notice only).
+- A complete third-party license bundle (`licenses/THIRD_PARTY_NOTICES.md` is a short notice only) and an SBOM that goes inside Chromium.
 - Reproducible build (same inputs, same hash) is not demonstrated.
 - Run on a machine that never had Qt, Visual Studio or the VC redistributable: only simulated here by `PATH`.
