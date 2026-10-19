@@ -169,7 +169,7 @@ public:
         for (auto observer : observers) observer->setHttpsOnly(enabled);
         emit preferencesChanged();
     }
-    // Opt-in, off by default. The Chromium switch is process-wide and read before the engine starts,
+    // On unless the user chose otherwise (kStrictWebRtcDefault). The Chromium switch is process-wide and read before the engine starts,
     // so the saved preference applies after a restart; strictWebRtcActive reports what this process runs with.
     bool strictWebRtc() const { return settings.value("preferences/strictWebRtc", kStrictWebRtcDefault).toBool(); }
     void setStrictWebRtc(bool enabled) {
@@ -178,6 +178,14 @@ public:
         emit preferencesChanged();
     }
     bool strictWebRtcActive() const { return m_strictWebRtcActive; }
+    // True once, for a user who never chose a WebRTC setting and runs with the default: explains the new default so a
+    // call that no longer connects is not a mystery.
+    Q_INVOKABLE bool takeStrictWebRtcNotice() {
+        if (!m_strictWebRtcActive || settings.contains("preferences/strictWebRtc") || settings.value("ui/strictWebRtcNoticeShown", false).toBool()) return false;
+        settings.setValue("ui/strictWebRtcNoticeShown", true);
+        settings.sync();
+        return true;
+    }
     static bool geolocationAvailable() { return GeolocationPolicy::available; }
     void setStrictWebRtcActive(bool active) { m_strictWebRtcActive = active; emit preferencesChanged(); }
     bool httpsFirst() const { return settings.value("preferences/httpsFirst", true).toBool(); }

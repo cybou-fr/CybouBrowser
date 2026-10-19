@@ -25,7 +25,7 @@ public:
             "preferences/httpsFirst", "preferences/restoreSession", "preferences/searchEngine",
             "preferences/strictWebRtc", "preferences/wallpaperType",
             "ui/controlBar/disableGlow", "ui/controlBar/language", "ui/controlBar/position", "ui/controlBar/reduceMotion",
-            "privacy/storedUrlsSanitized1"};
+            "privacy/storedUrlsSanitized1", "ui/strictWebRtcNoticeShown"};
         return keys;
     }
     // Keys the browser wrote in the past and no longer reads; they are deleted, not copied.

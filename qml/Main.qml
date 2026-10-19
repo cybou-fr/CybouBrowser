@@ -834,6 +834,8 @@ ApplicationWindow {
         browserStore.configureProfile(activeProfile)
         const saved = !privateMode && !smokeMode && browserStore.restoreSession ? browserStore.session() : []
         for (let i = 0; i < saved.length; ++i) restoreTab(saved[i])
+        if (!privateMode && !smokeMode && browserStore.takeStrictWebRtcNotice())
+            Qt.callLater(function() { showStatus(qsTr("WebRTC strict est activé : les appels vidéo qui exigent de l’UDP direct peuvent échouer. Réglages › Sécurité pour le désactiver.")) })
         if (initialUrlArgument.length > 0) addTab(initialUrlArgument)
         else if (!tabs.count) addTab("")
         restoring = false

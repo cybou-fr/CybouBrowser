@@ -558,6 +558,11 @@ Passés par exception : %5</source>
     <name>Main</name>
     <message>
         <location filename="../qml/Main.qml" line="1"/>
+        <source>WebRTC strict est activé : les appels vidéo qui exigent de l’UDP direct peuvent échouer. Réglages › Sécurité pour le désactiver.</source>
+        <translation>WebRTC strict включён: видеозвонки, которым нужен прямой UDP, могут не работать. Отключить: Настройки › Безопасность.</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="1"/>
         <source>La localisation est désactivée dans cette version de CYBOU.</source>
         <translation>Определение местоположения отключено в этой версии CYBOU.</translation>
     </message>
