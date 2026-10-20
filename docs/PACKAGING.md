@@ -55,6 +55,26 @@ stage, makes the ZIP and the installer, signs the installer, writes `SHA256SUMS`
 signed by CYBOU. The installer's inner payload is the same signed stage. Not checked: installing from this installer after the change
 (the install/uninstall check above was done on the earlier, unsigned build).
 
+## Updates (Qt Installer Framework repository)
+
+```bash
+export CYBOU_UPDATE_URL=file:///C:/path/to/repo      # or https://updates.example/cybou (not set up)
+CYBOU_PKG_VERSION=0.3.0-alpha.1 bash tools/package/build_repo.sh build/upd-repo   # publish a version
+bash tools/package/build_installer.sh                                               # installer that knows the repository
+```
+
+An installer built with `CYBOU_UPDATE_URL` keeps the repository address; the installed `CYBOUUninstall.exe` then runs
+`ch` (check) and `up` (update). Checked end to end with a local `file:///` repository: installed 0.3.0-alpha.1, published
+0.3.0-alpha.2 (with an extra marker file), `CYBOUUninstall.exe up --confirm-command` exit 0, the marker appeared, the installed
+package version became 0.3.0-alpha.2, executable and uninstaller intact; purge afterwards left nothing behind. Building a repository
+takes about 10 minutes (7z compression of 400 MB).
+
+**Rollback is not automatic.** The framework cannot install an older version over a newer one, and the update replaces the files in place.
+Rollback means running the previous version's setup over the same folder (keep every release's `build/release/` output); the browser
+profile under `%APPDATA%` is untouched either way. A real rollback (keep the previous version aside, switch on failure to start) is not built.
+Not done: update over HTTPS (only `file:///` was tested), signing of the update metadata beyond the framework's SHA-1 checksums
+(weak: do not treat it as authenticity), delta updates, the application checking for updates by itself.
+
 ## Checked
 
 - Installer, silent (`setup.exe --root <dir> --accept-licenses --accept-messages --confirm-command install`): exit 0, 271 files,
@@ -70,6 +90,6 @@ signed by CYBOU. The installer's inner payload is the same signed stage. Not che
 
 - Machine-wide install (the installer is per-user), upgrade-over-existing-install behaviour, user data handling on uninstall
   (the browser profile under `%APPDATA%` is not touched).
-- A trusted code-signing certificate, wiring signing into the release flow, update channel with rollback.
+- A trusted code-signing certificate, authenticated updates over HTTPS, automatic rollback.
 - A complete third-party license bundle (`licenses/THIRD_PARTY_NOTICES.md` is a short notice only) and an SBOM that goes inside Chromium.
 - Run on a machine that never had Qt, Visual Studio or the VC redistributable: only simulated here by `PATH`.
