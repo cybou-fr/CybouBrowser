@@ -8,6 +8,17 @@
 <p align="center">A native C++20 / Qt Quick / Qt WebEngine browser for visible, direct control over website capabilities.</p>
 <p align="center"><strong>Current source: 0.3.0-alpha.1 · Development only · No public release yet</strong></p>
 
+## Engineering showcase and open source
+
+CYBOU is a real browser project **and** an inspectable case study in C++20/Qt software and systems architecture. The implementation, decisions, trade-offs, test boundaries and remaining risks are available to reviewers.
+
+- [Architecture overview](docs/ARCHITECTURE_OVERVIEW.md) — components, trust boundaries and permission lifecycle
+- [Engineering decisions](docs/ENGINEERING_DECISIONS.md) — alternatives, constraints and trade-offs
+- [Engineering quality](docs/ENGINEERING_QUALITY.md) — source, tests, evidence levels and known gaps
+- [Étude de cas en français](docs/CASE_STUDY_FR.md) — concise professional overview
+
+Open source means the code can be inspected and contributed to. **It does not mean this alpha is a qualified secure browser.** See [security reporting](SECURITY.md), [contributing](CONTRIBUTING.md) and [validation](docs/VALIDATION.md).
+
 ## Current interface
 
 <p align="center">
@@ -89,6 +100,10 @@ For concrete deliverables and go/no-go rules, use [Roadmap](docs/ROADMAP.md), [V
 ## Documentation
 
 [Documentation index](docs/DOCUMENTATION_INDEX.md) · [Architecture](docs/ARCHITECTURE.md) · [Control Bar UX](docs/CONTROL_BAR_UX.md) · [Cloud Compatibility](docs/CLOUD_COMPATIBILITY_MATRIX.md) · [OWASP Security Framework](docs/SECURITY_VERIFICATION_FRAMEWORK.md)
+
+## License and third-party materials
+
+Original CYBOU Browser source code is available under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) and [third-party licensing notes](THIRD_PARTY_NOTICES.md). Qt/Chromium dependencies, provider marks and individual media assets may have separate terms. Licensing the source does **not** equal releasing a tested installer.
 
 ---
 

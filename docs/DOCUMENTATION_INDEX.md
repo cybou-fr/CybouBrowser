@@ -4,6 +4,10 @@
 
 | Document | Purpose |
 | --- | --- |
+| [Architecture Overview](ARCHITECTURE_OVERVIEW.md) | Reviewer-friendly components, trust boundaries and flows |
+| [Engineering Decisions](ENGINEERING_DECISIONS.md) | Trade-offs and pointers to binding ADRs |
+| [Engineering Quality](ENGINEERING_QUALITY.md) | Test/evidence model and reproducibility limits |
+| [Étude de cas (FR)](CASE_STUDY_FR.md) | Professional case study for clients and technical reviewers |
 | [Product Vision](PRODUCT_VISION.md) | Fixed product behavior and priorities |
 | [Architecture](ARCHITECTURE.md) | Current C++ / QML / WebEngine modules and boundaries |
 | [Capability Contract](CAPABILITY_CONTRACT.md) | Observable and controllable site capabilities |
