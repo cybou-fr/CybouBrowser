@@ -10,6 +10,8 @@ from pathlib import Path
 
 QT_VERSION = "6.12.0"
 CHROMIUM_VERSION = "140.0.7339.225"
+# Qt WebEngine cherry-picks Chrome security fixes up to this release (qWebEngineChromiumSecurityPatchVersion()).
+CHROMIUM_SECURITY_PATCH_VERSION = "152.0.7977.83"
 PRODUCT_VERSION = "0.4.0-alpha.1"
 
 def sha256(path):
@@ -74,6 +76,7 @@ def main(stage, out):
             comp["version"] = g["version"]
         if key == "qt-webengine-chromium":
             comp["properties"].append({"name": "cybou:chromium-version", "value": CHROMIUM_VERSION})
+            comp["properties"].append({"name": "cybou:chromium-security-patch-version", "value": CHROMIUM_SECURITY_PATCH_VERSION})
         components.append(comp)
     digest = hashlib.sha256("".join(f["sha256"] for g in groups.values() for f in g["files"]).encode()).hexdigest()
     bom = {"bomFormat": "CycloneDX", "specVersion": "1.5",

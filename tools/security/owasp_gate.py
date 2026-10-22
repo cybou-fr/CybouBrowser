@@ -275,15 +275,20 @@ def snapshot_age_error(name, data, today, max_age):
         return name+": retrievedOn missing; import a current snapshot"
     return name+f": snapshot is {age} days old (max {max_age})" if age>max_age else None
 
+def sbom_versions(sbom_file):
+    """(bom-ref, None) -> component version and (bom-ref, property name) -> property value."""
+    versions={}
+    for c in read_json(sbom_file).get("components",[]):
+        versions[(c.get("bom-ref"),None)]=c.get("version")
+        for prop in c.get("properties",[]): versions[(c.get("bom-ref"),prop.get("name"))]=prop.get("value")
+    return versions
+
 def check_risk(sbom_file, vulns_dir, today, max_age=7):
     """Known vulnerabilities (normalized CVE/OSV snapshot + CISA KEV) against the shipped SBOM, with VEX-style triage."""
     errors=[]; vulns_dir=Path(vulns_dir)
     if not Path(sbom_file).is_file():
         return ["SBOM missing: run tools/package/make_sbom.py on the staged package"],{}
-    versions={}
-    for c in read_json(sbom_file).get("components",[]):
-        versions[(c.get("bom-ref"),None)]=c.get("version")
-        for prop in c.get("properties",[]): versions[(c.get("bom-ref"),prop.get("name"))]=prop.get("value")
+    versions=sbom_versions(sbom_file)
     snap,kev,vex=(read_json(vulns_dir/n) if (vulns_dir/n).exists() else {} for n in ("snapshot.json","kev.json","triage.json"))
     for name,data in (("snapshot.json",snap),("kev.json",kev)):
         problem=snapshot_age_error(name,data,today,max_age)

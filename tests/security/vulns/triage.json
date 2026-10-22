@@ -1,5 +1,106 @@
 {
   "schemaVersion": 1,
-  "policy": "VEX-style decisions for vulnerability matches: status not_affected (with justification), affected, fixed (with the Qt release or backport that carries the fix) or under_investigation. A Chrome version range does not account for Qt backports, so each match is triaged here.",
-  "decisions": []
+  "policy": "VEX-style decisions for vulnerability matches: status not_affected (with justification), affected, fixed (with the Qt release or backport that carries the fix) or under_investigation. A Chrome version range does not account for Qt backports, so each match is triaged here. method records how a decision was reached: backport-commit, source-inspection or patch-level.",
+  "decisions": [
+    {
+      "vulnId": "CVE-2025-13223",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/c45b540970"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2025-14174",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build; the bug is macOS-only (ANGLE on Mac), so Windows builds were not exposed either.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/3af23d65f7"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2026-2441",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/199d0424e9"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2026-3909",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/14c4799b77"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2026-3910",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build; part 1/2 (f5e8c07b5b) was deliberately reverted in 2794a52428 because the Chrome 144-LTC security release carries only part 2/2 as the CVE fix.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/b4d8a6da93",
+        "https://github.com/qt/qtwebengine-chromium/commit/2794a52428"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2026-5281",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/7d89911593"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2026-11645",
+      "component": "chromium",
+      "status": "fixed",
+      "justification": "Backported to Qt WebEngine 6.140.0 (Qt 6.12.0) on the 140-based branch before the 2026-09-28 build.",
+      "evidence": [
+        "https://github.com/qt/qtwebengine-chromium/commit/37b6aeaa3e"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    },
+    {
+      "vulnId": "CVE-2026-85046",
+      "component": "chromium",
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present: the upstream fix (v8 e0562d87ad) guards the Turbofan and Maglev inlining of Array.prototype.sort; the V8 shipped in Qt 6.12.0 sources (src/compiler/js-call-reducer.cc, src/maglev/maglev-graph-builder.cc) has no Array.prototype.sort reduction at all. No backport commit exists. To be confirmed by running the upstream regression test regress-crbug-542403045.js against the shipped engine.",
+      "evidence": [
+        "https://github.com/v8/v8/commit/e0562d87ad9c17042b581582c99237d798572e67"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "source-inspection"
+    },
+    {
+      "vulnId": "CVE-2026-87491",
+      "component": "chromium",
+      "status": "under_investigation",
+      "justification": "Fixed in Chrome 153.0.8010.36, after the Qt 6.12.0 security patch level (152.0.7977.83). No backport on the 140-based branch up to 2026-10-20 and no upstream fix commit referenced by NVD (crbug 543557673). Exploited in the wild (CISA KEV): presume exposure until the fix is identified, backported by Qt, or shown absent.",
+      "evidence": [
+        "https://issues.chromium.org/issues/543557673"
+      ],
+      "reviewedOn": "2026-10-22",
+      "method": "backport-commit"
+    }
+  ]
 }

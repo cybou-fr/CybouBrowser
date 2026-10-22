@@ -42,11 +42,24 @@ The tool and the product are judged separately: a complete framework says nothin
 ```powershell
 python tools/security/owasp_gate.py --mode framework --out build/security-framework.json
 python tools/security/import_vulns.py --kev known_exploited_vulnerabilities.json
-python tools/security/import_vulns.py --nvd nvd-chrome.json --cpe google:chrome=chromium
+python tools/security/import_vulns.py --nvd nvd-chrome.json --cpe google:chrome=chromium --sbom build/CYBOU-sbom.cdx.json
 python tools/security/owasp_gate.py --mode risk --sbom build/CYBOU-sbom.cdx.json --out build/security-risk.json
 ```
 
-Chrome version ranges in NVD do not account for the security fixes Qt backports into its Chromium base (140.0.7339.225 for Qt 6.12). A match is therefore never dismissed by version alone: it is recorded in `triage.json` as `fixed` with the Qt release that carries the fix, `not_affected` with a justification, or `affected`, which blocks.
+Chrome version ranges in NVD do not account for the security fixes Qt backports into its Chromium base (140.0.7339.225 for Qt 6.12). Qt WebEngine 6.140.0 in Qt 6.12.0 declares a security patch level of **152.0.7977.83** (`qWebEngineChromiumSecurityPatchVersion()`, `CHROMIUM_VERSION` in the Qt sources; the sources name the base 140.0.7339.264 while the binary reports 140.0.7339.225, to be reconciled). The patch level is Qt's claim, not proof for an individual CVE. A match is therefore never dismissed by version alone: it is recorded in `triage.json` as `fixed` with the Qt release that carries the fix, `not_affected` with a justification, or `affected`, which blocks.
+
+### First known-vulnerability run (2026-10-22)
+
+CISA KEV catalog 2026.10.21 (1754 CVEs) and 7153 NVD `google:chrome` records: **3470 match** Chromium 140.0.7339.225 by version (393 critical, 1450 high), fixed upstream in Chrome 141-156. With `--sbom`, only these matches are versioned in `snapshot.json`; the complete feed stays in the ignored `snapshot.full.json`. The 9 CISA KEV matches are triaged in `tests/security/vulns/triage.json`:
+
+| CVE | Decision | Basis |
+| --- | --- | --- |
+| CVE-2025-13223, CVE-2025-14174, CVE-2026-2441, CVE-2026-3909, CVE-2026-5281, CVE-2026-11645 | fixed | `[backport]` commit on the Qt 140-based branch before the Qt 6.12.0 build |
+| CVE-2026-3910 | fixed | Part 2/2 backported; part 1/2 deliberately reverted, matching Chrome 144-LTC |
+| CVE-2026-85046 | not_affected (source inspection) | The fixed Array.prototype.sort inlining does not exist in the shipped V8; to be confirmed with the upstream regression test |
+| **CVE-2026-87491** | **under_investigation** | Fixed in Chrome 153, after the Qt patch level; no backport found. Exploited in the wild: blocks the risk gate |
+
+The remaining 3461 matches are untriaged and keep the risk gate BLOCKED.
 
 ## How to run locally (no GitHub Actions required)
 

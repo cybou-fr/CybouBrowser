@@ -223,5 +223,21 @@ class GateContractTests(unittest.TestCase):
         self.assertTrue(gate.affects(rec,"6.12.0"))
         self.assertFalse(gate.affects(rec,"6.12.1"))
 
+    def test_import_with_sbom_versions_only_matching_records(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d)
+            (base/"sbom.json").write_text(json.dumps({"components":[{"bom-ref":"qt-webengine-chromium",
+                "properties":[{"name":"cybou:chromium-version","value":"140.0.7339.225"}]}]}),encoding="utf-8")
+            cpe="cpe:2.3:a:google:chrome:*:*:*:*:*:*:*:*"
+            nvd={"vulnerabilities":[{"cve":{"id":cid,"configurations":[{"nodes":[{"cpeMatch":[{"vulnerable":True,
+                 "criteria":cpe,"versionEndExcluding":fixed}]}]}]}} for cid,fixed in [("CVE-2099-0004","141.0.1"),("CVE-2099-0005","139.0.1")]]}
+            (base/"nvd.json").write_text(json.dumps(nvd),encoding="utf-8")
+            argv=["import_vulns.py","--nvd",str(base/"nvd.json"),"--cpe","google:chrome=chromium",
+                  "--sbom",str(base/"sbom.json"),"--out",str(base/"vulns")]
+            import import_vulns as imp
+            with patch.object(sys,"argv",argv): imp.main()
+            self.assertEqual(len(gate.read_json(base/"vulns/snapshot.full.json")["records"]),2)
+            self.assertEqual([r["id"] for r in gate.read_json(base/"vulns/snapshot.json")["records"]],["CVE-2099-0004"])
+
 if __name__=="__main__":
     unittest.main()

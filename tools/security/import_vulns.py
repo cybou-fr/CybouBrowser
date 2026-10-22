@@ -6,6 +6,9 @@ Python 3.10+, standard library only. It never downloads: fetch the feeds yoursel
   python tools/security/import_vulns.py --nvd nvd-chrome.json --cpe google:chrome=chromium
   python tools/security/import_vulns.py --osv osv-records.json --component qt
 
+With --sbom, the complete snapshot goes to snapshot.full.json (not versioned, see .gitignore) and
+snapshot.json keeps only the records that match a component version in that SBOM.
+
 Feeds: CISA KEV https://www.cisa.gov/known-exploited-vulnerabilities-catalog (JSON feed),
 NVD CVE API 2.0 https://services.nvd.nist.gov/rest/json/cves/2.0, OSV https://osv.dev.
 Chrome version ranges do not account for security fixes Qt backports into its Chromium base:
@@ -16,6 +19,10 @@ import datetime as dt
 import hashlib
 import json
 from pathlib import Path
+import sys
+
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from owasp_gate import COMPONENTS, affects, sbom_versions
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -77,6 +84,7 @@ def main():
     p.add_argument("--kev"); p.add_argument("--nvd"); p.add_argument("--osv")
     p.add_argument("--cpe",action="append",default=[],help="vendor:product=component, e.g. google:chrome=chromium")
     p.add_argument("--component",help="component name for --osv records")
+    p.add_argument("--sbom",help="keep only records matching this CycloneDX SBOM in snapshot.json")
     p.add_argument("--retrieved-on",default=dt.date.today().isoformat())
     p.add_argument("--out",default=str(ROOT/"tests/security/vulns"))
     a=p.parse_args()
@@ -92,7 +100,7 @@ def main():
         if not a.component: p.error("--osv needs --component")
         new+=from_osv(read(a.osv),a.component)
     if a.nvd or a.osv:
-        snap_file=out/"snapshot.json"
+        snap_file=out/("snapshot.full.json" if a.sbom else "snapshot.json")
         snap=read(snap_file) if snap_file.exists() else {"schemaVersion":1,"records":[],"sources":[]}
         replaced={(r["id"],r["component"]) for r in new}
         snap["records"]=sorted([r for r in snap.get("records",[]) if (r["id"],r["component"]) not in replaced]+new,
@@ -100,7 +108,13 @@ def main():
         snap["sources"]=snap.get("sources",[])+[source(x) for x in (a.nvd,a.osv) if x]
         snap["retrievedOn"]=a.retrieved_on
         write(snap_file,snap)
-        print("snapshot.json:",len(new),"records imported,",len(snap["records"]),"total")
+        print(snap_file.name+":",len(new),"records imported,",len(snap["records"]),"total")
+        if a.sbom:
+            versions=sbom_versions(a.sbom)
+            matched=[r for r in snap["records"] if r["component"] in COMPONENTS
+                     and versions.get(COMPONENTS[r["component"]]) and affects(r,versions[COMPONENTS[r["component"]]])]
+            write(out/"snapshot.json",{**snap,"records":matched,"filteredBy":source(a.sbom)})
+            print("snapshot.json:",len(matched),"records match the SBOM")
 
 if __name__=="__main__":
     main()

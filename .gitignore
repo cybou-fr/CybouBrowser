@@ -5,3 +5,5 @@
 *.log
 __pycache__/
 *.pyc
+# Complete vulnerability feed snapshot; only SBOM matches are versioned
+tests/security/vulns/snapshot.full.json
