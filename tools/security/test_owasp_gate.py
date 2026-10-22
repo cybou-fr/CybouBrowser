@@ -111,7 +111,8 @@ class GateContractTests(unittest.TestCase):
             base=Path(d); control="ASVS:v5.0.0-8.2.1"
             coverage=base/"coverage.json"; evidence=base/"evidence.json"; log=base/"case.log"
             coverage.write_text(json.dumps({"requirements":[{"id":control,"disposition":"applicable",
-                                 "owner":"test-owner","caseIds":["TEST-001"]}]}),encoding="utf-8")
+                                 "owner":"test-owner","caseIds":["TEST-001"],"verificationStatus":"verified",
+                                 "assertions":["TEST-001: rejects stale token"]}]}),encoding="utf-8")
             log.write_text("PASS\n",encoding="utf-8")
             item={"caseId":"TEST-001","result":"PASS","commit":"source-a","binarySha256":"binary-a",
                   "log":str(log),"logSha256":gate.sha(log)}
@@ -138,6 +139,30 @@ class GateContractTests(unittest.TestCase):
                 {"CYB-PERM-001":{"status":"planned"}},"example-commit","binary-sha")
             self.assertEqual(s["notApplicable"],1)
             self.assertTrue(errors)
+
+    def coverage_errors(self, row, reviewers=frozenset()):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d); log=base/"case.log"; log.write_text("PASS\n",encoding="utf-8")
+            (base/"coverage.json").write_text(json.dumps({"requirements":[row]}),encoding="utf-8")
+            (base/"evidence.json").write_text(json.dumps({"evidence":[{"caseId":"TEST-001","result":"PASS",
+                "commit":"source-a","binarySha256":"binary-a","log":str(log),"logSha256":gate.sha(log)}]}),encoding="utf-8")
+            return gate.check_coverage({row["id"]},base/"coverage.json",base/"evidence.json",
+                {"TEST-001":{"status":"verified"}},"source-a","binary-a",reviewers)[0]
+
+    def test_applicable_pass_log_without_completed_verification_blocks(self):
+        row={"id":"ASVS:v5.0.0-8.2.1","disposition":"applicable","owner":"o","caseIds":["TEST-001"]}
+        for extra in [{"verificationStatus":"not_verified","assertions":["a"]},{"verificationStatus":"verified"}]:
+            with self.subTest(extra=extra):
+                self.assertTrue(any("not verified or no mapped assertions" in e for e in self.coverage_errors({**row,**extra})))
+
+    def test_na_needs_listed_reviewer_date_reference_and_specific_reason(self):
+        row={"id":"ASVS:v5.0.0-13.4.3","disposition":"not_applicable","rationale":"No CYBOU web server",
+             "reviewedBy":"Jane Reviewer","reviewedOn":"2026-10-22","reviewRef":"commit abc123"}
+        self.assertEqual(self.coverage_errors(row,{"Jane Reviewer"}),[])
+        self.assertTrue(any("not listed" in e for e in self.coverage_errors(row)))
+        for change in [{"reviewedOn":"yesterday"},{"reviewRef":""},{"proposalRationale":"No CYBOU web server"}]:
+            with self.subTest(change=change):
+                self.assertTrue(self.coverage_errors({**row,**change},{"Jane Reviewer"}))
 
 if __name__=="__main__":
     unittest.main()

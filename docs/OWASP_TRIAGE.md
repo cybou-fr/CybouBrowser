@@ -2,7 +2,7 @@
 
 Date: 2026-10-18. Source analysis and planned verification only; no control is declared verified by this review. Scope is the Windows desktop browser, including native policy, embedded renderer and local files. Web-server terminology is explicitly adapted to that boundary; this is not an assessment of websites opened by users.
 
-Of 442 pinned controls, 119 are classified applicable and 323 remain untriaged (ninth batch below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
+Of 442 pinned controls, 122 are classified applicable and 320 remain untriaged (ninth batch and the 2026-10-22 review of the flagged rows below). No N/A decisions are approved. Owner `CYBOU security maintainer (role)` is a responsibility role, not evidence that a named human has accepted the work. Independent review and named ownership remain pending.
 
 The machine-readable source of truth is `tests/security/coverage.json`. It records source references, rationale, case mappings, verification status and remaining work for each selected control. Existing tests provide partial implementation evidence; none of the broad release cases has been promoted to verified on the strength of a suite exit alone.
 
@@ -163,11 +163,29 @@ Date: 2026-10-19. The remaining domains (Authentication, OAuth/OIDC, API and web
 
 Every other untriaged row has been reviewed, and `tests/security/coverage.json` now records the engineering proposal on the row itself: `proposedDisposition: not_applicable`, a chapter-level `proposalRationale` and `proposalStatus`. These fields are **not read by the gate and are not an approval**: all 323 rows stay `untriaged` until a named reviewer records a reviewed disposition with a reason. 9 rows are marked `needs explicit review` with a note on why the proposal is not routine (for example ASVS 3.4.5 referrer policy, 5.2.4 download quotas, 12.2.2, 13.4.3, 16.4.3, 1.2.9, 11.1.4, 11.5.1, 11.6.2). The per-batch lists above remain as the narrative record; this file is the authoritative count.
 
+### Review of the 9 flagged rows (2026-10-22)
+
+An engineering review of the 9 flagged rows (not an independent audit) moved three to **applicable** and turned the other six into conditional proposals. Bulk approval of the remaining N/A proposals was rejected: 314 rows still share 18 chapter-level reasons, and each approval needs an item-specific reason tied to CYBOU's architecture.
+
+| Control | Decision | Condition or work |
+| --- | --- | --- |
+| ASVS 3.4.5 referrer policy | **Applicable** → CYB-PRIV-001 | The default referrer policy is a CYBOU privacy decision |
+| ASVS 11.1.4 cryptographic inventory | **Applicable (adapted)** → CYB-CRYPTO-001 | Inventory of the engine's cryptography and a migration plan per Qt upgrade |
+| ASVS 11.6.2 key exchange | **Applicable (inherited)** → CYB-CRYPTO-001, CYB-HTTP-001 | The engine's TLS key exchange is part of the shipped product |
+| ASVS 1.2.9 regex injection | Conditional N/A | No user or page input compiled into a regular expression (all current patterns are static) |
+| ASVS 5.2.4 file quotas | Conditional N/A | No server quotas; local disk exhaustion is tracked by CYB-FAIL-001 |
+| ASVS 11.5.1 secure random | Conditional N/A | No secret tokens or generators of its own |
+| ASVS 12.2.2 public certificates | Conditional N/A | Until the update repository is published |
+| ASVS 13.4.3 directory listing | N/A proposal | A web-server requirement |
+| ASVS 16.4.3 remote log shipping | N/A proposal | No log shipping is a deliberate privacy decision |
+
+The gate was tightened at the same time: an N/A passes only with a reviewer listed by name in `tests/security/reviewers.json` (empty today), a `reviewedOn` date, a `reviewRef` and a reason that differs from the chapter-level proposal; an applicable row passes only with `verificationStatus: verified` and named `assertions`, so a PASS log alone does not verify a requirement.
+
 | Chapter | Proposed not-applicable rows |
 | --- | --- |
 | ASVS 1 | 16 |
 | ASVS 2 | 8 |
-| ASVS 3 | 27 |
+| ASVS 3 | 26 |
 | ASVS 4 | 14 |
 | ASVS 5 | 5 |
 | ASVS 6 | 47 |
@@ -175,7 +193,7 @@ Every other untriaged row has been reviewed, and `tests/security/coverage.json` 
 | ASVS 8 | 7 |
 | ASVS 9 | 7 |
 | ASVS 10 | 36 |
-| ASVS 11 | 21 |
+| ASVS 11 | 19 |
 | ASVS 12 | 4 |
 | ASVS 13 | 16 |
 | ASVS 14 | 5 |

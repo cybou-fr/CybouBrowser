@@ -700,6 +700,24 @@
         "qml/TransportHarness.qml",
         "src/security/TlsBoundaryTests.h"
       ]
+    },
+    {
+      "id": "CYB-PRIV-001",
+      "domain": "privacy",
+      "objective": "default referrer policy: cross-origin requests and navigations never carry path or query; private/temporary-HTTP contexts and downgrades send no Referer",
+      "method": "native",
+      "tier": "P1",
+      "candidateSuite": "security",
+      "status": "planned"
+    },
+    {
+      "id": "CYB-CRYPTO-001",
+      "domain": "cryptography",
+      "objective": "cryptographic inventory of the pinned Qt WebEngine/Chromium: TLS versions, cipher suites, key-exchange groups (including hybrid post-quantum status), certificate verifier, and a recorded migration plan per Qt upgrade",
+      "method": "manual",
+      "tier": "P1",
+      "candidateSuite": "manual",
+      "status": "planned"
     }
   ]
 }

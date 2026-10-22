@@ -20,7 +20,7 @@ Avoid the misleading term **"tests all OWASP"**: OWASP publishes many projects f
 
 - `tests/security/standards.lock.json`: official version/source, pinned SHA-256 for ASVS CSV and WSTG scenario-ID inventory. SHA fields start **null** and therefore release certification is blocked until independently pinned.
 - `tests/security/cases.json`: **64 initial browser/OWASP-review case IDs**, each with a risk domain and intended method; `planned` does **not** imply implemented or passing.
-- `tests/security/coverage.json`: mapping of **every** official imported requirement/scenario ID to disposition `applicable` or `not_applicable`; mappings start empty. For applicable items: `owner` and `caseIds`; for N/A: explicit `rationale` and `reviewedBy`.
+- `tests/security/coverage.json`: mapping of **every** official imported requirement/scenario ID to disposition `applicable` or `not_applicable`; mappings start empty. For applicable items: `owner`, `caseIds`, `verificationStatus: verified` and named `assertions`; for N/A: an item-specific `rationale`, `reviewedBy` listed in `tests/security/reviewers.json`, `reviewedOn` and `reviewRef`.
 - `tests/security/evidence.json` (created by QA when genuinely tested): exact case, result, HEAD, binary SHA-256, log path and its SHA-256. `evidence.example.json` is an example only; no synthetic PASS.
 - `tools/security/owasp_gate.py`: offline gate/runner, JSON report, nonzero exit on failures.
 - [THREAT_MODEL](THREAT_MODEL.md): assets, trust boundaries, attack surfaces, failure modes.

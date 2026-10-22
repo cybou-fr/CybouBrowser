@@ -159,8 +159,8 @@
       "caseIds": [],
       "proposedDisposition": "not_applicable",
       "proposalRationale": "Injection, encoding and parsing classes the product does not contain (SQL, LDAP, XPath, LaTeX, JNDI, mail, templates, XML of its own) or generic restatements covered by applicable controls.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Becomes applicable if user input is ever compiled into a regular expression."
+      "proposalStatus": "conditional proposal, pending human approval",
+      "proposalNote": "Conditional N/A: holds while no user or page input is compiled into a regular expression (today all QRegularExpression patterns in src/ are static literals). Becomes applicable otherwise."
     },
     {
       "id": "ASVS:v5.0.0-1.2.10",
@@ -802,13 +802,17 @@
       "title": "Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the 'Referer' HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.",
       "domain": "Web Frontend Security",
       "level": "2",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": [],
-      "proposedDisposition": "not_applicable",
-      "proposalRationale": "Web-application header, cookie and hosting practices that the browser enforces rather than serves; enforcement is covered by the transport, origin and redirect cases.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Default referrer policy of the browser is a CYBOU privacy decision, not only a server practice."
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-PRIV-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/EngineHardening.h"
+      ],
+      "rationale": "The browser's default referrer policy decides what path and query data leaks to third parties; this is a CYBOU privacy decision, not only a server header practice.",
+      "remainingWork": "Decide and enforce the default policy (strict-origin-when-cross-origin or stricter), then test cross-origin, downgrade and temporary-HTTP cases."
     },
     {
       "id": "ASVS:v5.0.0-3.4.6",
@@ -1307,8 +1311,8 @@
       "caseIds": [],
       "proposedDisposition": "not_applicable",
       "proposalRationale": "Upload and archive processing on a server; the product's file intake (wallpaper, downloads) is covered by the applicable file-handling controls.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Disk exhaustion by downloads has no quota; decide whether the OS quota is accepted."
+      "proposalStatus": "conditional proposal, pending human approval",
+      "proposalNote": "Conditional N/A: per-user server quotas do not exist. Disk exhaustion by downloads is a separate local risk tracked by CYB-FAIL-001 (disk full)."
     },
     {
       "id": "ASVS:v5.0.0-5.2.5",
@@ -3000,13 +3004,18 @@
       "title": "Verify that a cryptographic inventory is maintained. This must include a documented plan that outlines the migration path to new cryptographic standards, such as post-quantum cryptography, in order to react to future threats.",
       "domain": "Cryptography",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": [],
-      "proposedDisposition": "not_applicable",
-      "proposalRationale": "Application-level cryptography; the product has none, all cryptography is the engine's and is covered through the TLS controls and the cryptographic inventory.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Post-quantum migration is an engine decision to record in the cryptographic inventory."
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-CRYPTO-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/EngineHardening.h",
+        "docs/PACKAGING.md"
+      ],
+      "rationale": "Adapted: CYBOU has no cryptography of its own, but it ships the engine's cryptography and must keep an inventory of it and a migration plan (including post-quantum key exchange) tied to Qt upgrades.",
+      "remainingWork": "Write the inventory for the pinned Qt 6.12 WebEngine and re-check it on every Qt upgrade."
     },
     {
       "id": "ASVS:v5.0.0-11.2.1",
@@ -3196,8 +3205,8 @@
       "caseIds": [],
       "proposedDisposition": "not_applicable",
       "proposalRationale": "Application-level cryptography; the product has none, all cryptography is the engine's and is covered through the TLS controls and the cryptographic inventory.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Only non-secret counters exist and no page can reach them; revisit if any capability token is exposed to page content."
+      "proposalStatus": "conditional proposal, pending human approval",
+      "proposalNote": "Conditional N/A: holds while the only identifiers are non-secret counters that no page can reach. Becomes applicable if any capability token or secret is generated."
     },
     {
       "id": "ASVS:v5.0.0-11.5.2",
@@ -3228,13 +3237,18 @@
       "title": "Verify that approved cryptographic algorithms are used for key exchange (such as Diffie-Hellman) with a focus on ensuring that key exchange mechanisms use secure parameters. This will prevent attacks on the key establishment process which could lead to adversary-in-the-middle attacks or cryptographic breaks.",
       "domain": "Cryptography",
       "level": "3",
-      "disposition": "untriaged",
-      "owner": null,
-      "caseIds": [],
-      "proposedDisposition": "not_applicable",
-      "proposalRationale": "Application-level cryptography; the product has none, all cryptography is the engine's and is covered through the TLS controls and the cryptographic inventory.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Key exchange parameters are the engine's; record in the cryptographic inventory."
+      "disposition": "applicable",
+      "owner": "CYBOU security maintainer (role)",
+      "caseIds": [
+        "CYB-CRYPTO-001",
+        "CYB-HTTP-001"
+      ],
+      "verificationStatus": "not_verified",
+      "sourceRefs": [
+        "src/security/TlsBoundaryTests.h"
+      ],
+      "rationale": "Inherited: key exchange is performed by the engine's TLS stack, but its parameters are part of the shipped product's security.",
+      "remainingWork": "Record negotiated groups in the inventory; add the protocol/cipher/key-exchange matrix to CYB-HTTP-001."
     },
     {
       "id": "ASVS:v5.0.0-11.7.1",
@@ -3380,8 +3394,8 @@
       "caseIds": [],
       "proposedDisposition": "not_applicable",
       "proposalRationale": "TLS server-side and service-to-service transport requirements; the browser is a TLS client, covered by the applicable client controls.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "Revisit when an update server or other externally facing service exists."
+      "proposalStatus": "conditional proposal, pending human approval",
+      "proposalNote": "Conditional N/A: CYBOU operates no public service. Becomes applicable when the update repository (CYBOU_UPDATE_URL) is published."
     },
     {
       "id": "ASVS:v5.0.0-12.3.1",
@@ -3686,8 +3700,8 @@
       "caseIds": [],
       "proposedDisposition": "not_applicable",
       "proposalRationale": "Back-end configuration, secrets management and hosting practices; the product has no back end.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "The engine can show file: directory listings; confirm that is acceptable browsing behaviour."
+      "proposalStatus": "conditional proposal, pending human approval",
+      "proposalNote": "N/A: a requirement for web servers; engine file: directory listings are local browsing behaviour, not server exposure."
     },
     {
       "id": "ASVS:v5.0.0-13.4.4",
@@ -4483,8 +4497,8 @@
       "caseIds": [],
       "proposedDisposition": "not_applicable",
       "proposalRationale": "Central log pipelines, authentication logging and log transmission; the product intentionally ships no logs off the machine.",
-      "proposalStatus": "needs explicit review",
-      "proposalNote": "No remote log shipping is a deliberate privacy choice; record it as a decision."
+      "proposalStatus": "conditional proposal, pending human approval",
+      "proposalNote": "N/A: no remote log shipping is a deliberate privacy decision for a local browser."
     },
     {
       "id": "ASVS:v5.0.0-16.5.1",

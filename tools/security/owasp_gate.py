@@ -19,6 +19,7 @@ ROOT=Path(__file__).resolve().parents[2]
 SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc","hsts","download","protocol","url-parser","fuzz","geolocation")
 ASVS_ID=re.compile(r"(?:v5\.0\.0-|V)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
 WSTG_ID=re.compile(r"WSTG-(?:v42-)?([A-Z]{4}-\d{2})")
+ISO_DATE=re.compile(r"\d{4}-\d{2}-\d{2}")
 
 def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -123,7 +124,7 @@ def current_pass_evidence(item, commit, binary_sha):
     except OSError:
         return False
 
-def check_coverage(requirements, coverage_file, evidence_file, cases, commit, binary_sha):
+def check_coverage(requirements, coverage_file, evidence_file, cases, commit, binary_sha, reviewers=frozenset()):
     errors=[]
     rows=read_json(coverage_file).get("requirements",[])
     mapping={}
@@ -164,11 +165,22 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
             skipped+=1
             if not row.get("rationale") or not row.get("reviewedBy"):
                 errors.append(key+": N/A requires reason and reviewer")
+            # A reviewer is only accepted when listed by name in reviewers.json, with a dated, referenced review.
+            elif row["reviewedBy"] not in reviewers:
+                errors.append(key+": N/A reviewer is not listed in reviewers.json")
+            if not ISO_DATE.fullmatch(str(row.get("reviewedOn",""))) or not row.get("reviewRef"):
+                errors.append(key+": N/A requires reviewedOn (YYYY-MM-DD) and reviewRef")
+            # The chapter-level proposal text is shared by many rows; an approval needs an item-specific reason.
+            if row.get("rationale") and row.get("rationale")==row.get("proposalRationale"):
+                errors.append(key+": N/A rationale repeats the chapter-level proposal")
         elif disposition=="applicable":
             applicable+=1
             mapped=row.get("caseIds") or []
             if not mapped or not row.get("owner"):
                 errors.append(key+": missing owner or caseIds")
+            # PASS logs prove a case ran, not that it covers this requirement: require the named assertions.
+            if row.get("verificationStatus")!="verified" or not row.get("assertions"):
+                errors.append(key+": verificationStatus not verified or no mapped assertions")
             for cid in mapped:
                 if cid not in cases:
                     errors.append(key+": unknown case "+str(cid))
@@ -204,6 +216,10 @@ def run_suites(executable, output_dir, timeout):
             results.append({"suite":suite,"status":"BLOCKED","reason":str(ex)})
     return results
 
+def reviewer_names(path):
+    if not Path(path).exists(): return frozenset()
+    return frozenset(x["name"] for x in read_json(path).get("reviewers",[]) if x.get("name"))
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--mode",choices=("baseline","inventory","release"),default="baseline")
@@ -214,6 +230,7 @@ def main():
     p.add_argument("--lock",default=str(ROOT/"tests/security/standards.lock.json"))
     p.add_argument("--cases",default=str(ROOT/"tests/security/cases.json"))
     p.add_argument("--coverage",default=str(ROOT/"tests/security/coverage.json"))
+    p.add_argument("--reviewers",default=str(ROOT/"tests/security/reviewers.json"))
     p.add_argument("--evidence",default=str(ROOT/"tests/security/evidence.json"))
     p.add_argument("--out",default=str(ROOT/"build/security-report.json"))
     a=p.parse_args()
@@ -245,7 +262,7 @@ def main():
     if a.mode in ("inventory","release"):
         requirements,problems=inventory(a.asvs_csv,a.wstg_ids,a.lock)
         report["errors"]+=problems
-        problems,stats=check_coverage(requirements,a.coverage,a.evidence,case_ids,commit,binarysha)
+        problems,stats=check_coverage(requirements,a.coverage,a.evidence,case_ids,commit,binarysha,reviewer_names(a.reviewers))
         report["errors"]+=problems
         report["coverage"]=stats
         if a.mode=="release" and not binarysha:

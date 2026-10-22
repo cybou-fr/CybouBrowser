@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "policy": "Named humans who may approve a not_applicable disposition. Add a person only by their own commit; an empty list means no N/A can pass the gate.",
+  "reviewers": []
+}
