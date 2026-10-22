@@ -197,6 +197,28 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
                    "applicable":applicable,"notApplicable":skipped,
                    "untriaged":len(absent)+sum(mapping[k].get("disposition") not in ("applicable","not_applicable") for k in requirements & set(mapping)),"extra":len(extra)}
 
+ENGINE_LINE=re.compile(r'ENGINE "?([\d.]+)"? "?([\d.]+)"? "?([\d.]+)"? "?security patch"? "?([\d.]+)"?')
+
+def engine_runtime_errors(suites, sbom_file):
+    """cybou_tests prints the runtime Qt API versions (qVersion, qWebEngineVersion, qWebEngineChromiumVersion,
+    qWebEngineChromiumSecurityPatchVersion); they must equal what the SBOM read from the staged binaries."""
+    if not Path(sbom_file).is_file():
+        return ["SBOM missing: runtime engine versions cannot be compared"],None
+    for s in suites:
+        try:
+            m=ENGINE_LINE.search(Path(s.get("log","")).read_text(encoding="utf-8",errors="replace"))
+        except OSError:
+            continue
+        if m:
+            break
+    else:
+        return ["no ENGINE line in suite logs: runtime engine versions unknown"],None
+    v=sbom_versions(sbom_file)
+    runtime=dict(zip(("qt","webengine","chromium","patch"),m.groups()))
+    shipped={"qt":v.get(("qt",None)),"webengine":v.get(("qt-webengine-chromium",None)),
+             "chromium":v.get(("qt-webengine-chromium","cybou:chromium-version")),"patch":v.get(PATCH_LEVEL["chromium"])}
+    return [f"runtime {k} {runtime[k]} differs from SBOM {shipped[k]}" for k in runtime if runtime[k]!=shipped[k]],runtime
+
 def run_suites(executable, output_dir, timeout):
     results=[]
     if not executable or not Path(executable).is_file():
@@ -217,6 +239,8 @@ def run_suites(executable, output_dir, timeout):
             results.append({"suite":suite,"status":"BLOCKED","reason":str(ex)})
     return results
 
+# execution: executable check of browser behaviour; framework: catalog/mapping completeness; process: assurance review.
+CASE_KINDS=("execution","framework","process")
 THREAT_ID=re.compile(r"(?:CWE|CAPEC)-\d+")
 VEX_STATUS=("not_affected","affected","fixed","under_investigation")
 # How a fixed/not_affected decision was reached, and how close that evidence is to the shipped bytes.
@@ -268,6 +292,7 @@ def check_framework(requirements, coverage_file, cases, threats_file):
         if not x.get("title") or not x.get("caseIds"): errors.append(tid+": threat needs title and caseIds")
         errors+=[f"{tid}: unknown case {c}" for c in x.get("caseIds",[]) if c not in cases]
     for cid,case in sorted(cases.items()):
+        if case.get("kind") not in CASE_KINDS: errors.append(f"{cid}: kind must be one of {', '.join(CASE_KINDS)}")
         sources=case.get("testSources",[])
         if case.get("status") in ("in_progress","verified") and not sources:
             errors.append(cid+": "+case["status"]+" case lists no testSources")
@@ -276,6 +301,8 @@ def check_framework(requirements, coverage_file, cases, threats_file):
     linked={c for r in rows.values() for c in r.get("caseIds",[])}|threat_cases
     # Gaps are reported, not failed: the catalog is expected to grow.
     return errors,{"threats":len(threats),"cases":len(cases),
+                   "kinds":{k:sum(v.get("kind")==k for v in cases.values()) for k in CASE_KINDS},
+                   "executionP0":sorted(c for c,v in cases.items() if v.get("kind")=="execution" and v.get("tier")=="P0"),
                    "p0WithoutThreat":sorted(c for c,v in cases.items() if v.get("tier")=="P0" and c not in threat_cases),
                    "casesWithoutLink":sorted(set(cases)-linked)}
 
@@ -308,7 +335,34 @@ def sbom_versions(sbom_file):
         for prop in c.get("properties",[]): versions[(c.get("bom-ref"),prop.get("name"))]=prop.get("value")
     return versions
 
-def check_risk(sbom_file, vulns_dir, today, max_age=7, strict=False):
+def qt_source_identity(qt_src):
+    """(Qt WebEngine version, Chromium security patch level) of a Qt WebEngine source tree, or None."""
+    try:
+        conf=(Path(qt_src)/".cmake.conf").read_text(encoding="utf-8")
+        chromium=(Path(qt_src)/"CHROMIUM_VERSION").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    version=re.search(r'QT_REPO_MODULE_VERSION "([^"]+)"',conf)
+    level=re.search(r"security patches up to Chromium version:\s*(\S+)",chromium)
+    return (version.group(1) if version else None, level.group(1) if level else None)
+
+def source_binding_errors(rid, decision, versions, qt_src):
+    """A source-inspection decision names the Qt WebEngine tree and the hashed files it read. The tree must be the
+    release the SBOM ships (version and patch level) and, where the tree is present, the files must hash the same.
+    Returns (errors, verified)."""
+    b=decision.get("sourceBinding") or {}
+    shipped=(versions.get(("qt-webengine-chromium",None)),versions.get(PATCH_LEVEL["chromium"]))
+    if not b.get("files"):
+        return [f"{rid}: source-inspection needs sourceBinding with hashed files"],False
+    if (b.get("webengine"),b.get("patchLevel"))!=shipped:
+        return [f"{rid}: inspected Qt WebEngine {b.get('webengine')}/{b.get('patchLevel')} is not the shipped {shipped[0]}/{shipped[1]}"],False
+    if qt_source_identity(qt_src)!=shipped:
+        return [],False
+    root=Path(qt_src)/"src/3rdparty/chromium"
+    bad=[f["path"] for f in b["files"] if not (root/f["path"]).is_file() or sha(root/f["path"])!=f.get("sha256")]
+    return ([f"{rid}: inspected file differs from the Qt source tree: {', '.join(bad)}"] if bad else []),not bad
+
+def check_risk(sbom_file, vulns_dir, today, max_age=7, strict=False, qt_src=None):
     """Known vulnerabilities (normalized CVE/OSV snapshot + CISA KEV) against the shipped SBOM, with VEX-style triage.
     strict (release): every resolution must rest on binary or source evidence, not on a branch commit or a vendor claim."""
     errors=[]; vulns_dir=Path(vulns_dir)
@@ -346,8 +400,15 @@ def check_risk(sbom_file, vulns_dir, today, max_age=7, strict=False):
         if status is None and level and rid in backports and patch_level_covers(rec,version,level):
             status="patch-level"
         evidence=("branch+declared" if status=="patch-level" else
-                  EVIDENCE_LEVEL.get(d.get("method")) if status in ("fixed","not_affected") else None)
-        findings.append({"id":rid,"component":comp,"version":version,"kev":in_kev,"status":status,"evidence":evidence})
+                  EVIDENCE_LEVEL.get(d.get("method")) if status in ("fixed","not_affected","affected") else None)
+        verified=None
+        if d.get("method")=="source-inspection":
+            problems,verified=source_binding_errors(rid,d,versions,qt_src)
+            errors+=problems
+            if strict and not verified and not problems:
+                errors.append(f"{rid}: source binding not verified here (Qt WebEngine sources of the shipped release not found)")
+        findings.append({"id":rid,"component":comp,"version":version,"kev":in_kev,"status":status,"evidence":evidence,
+                         "sourceVerified":verified})
         resolved=status in ("fixed","not_affected","patch-level")
         if status in ("fixed","not_affected") and (d.get("method") not in EVIDENCE_LEVEL or not d.get("evidence")):
             errors.append(f"{rid}: {status} needs a method ({', '.join(EVIDENCE_LEVEL)}) and evidence links")
@@ -391,6 +452,7 @@ def main():
     p.add_argument("--sbom",default=str(ROOT/"build/CYBOU-sbom.cdx.json"))
     p.add_argument("--vulns",default=str(ROOT/"tests/security/vulns"))
     p.add_argument("--max-snapshot-age",type=int,default=7)
+    p.add_argument("--qt-src",help="Qt WebEngine source tree of the shipped release (default: C:/Qt/<qt>/Src/qtwebengine)")
     p.add_argument("--out",default=str(ROOT/"build/security-report.json"))
     a=p.parse_args()
     if a.mode=="baseline": a.mode="test"
@@ -419,6 +481,8 @@ def main():
         report["suites"]=run_suites(a.exe,out.parent/"security-logs",a.timeout)
         if any(x["status"]!="PASS" for x in report["suites"]):
             report["errors"].append("Baseline suites not all PASS")
+        problems,report["engineRuntime"]=engine_runtime_errors(report["suites"],a.sbom)
+        report["errors"]+=problems
     if a.mode in ("inventory","release"):
         requirements,problems=inventory(a.asvs_csv,a.wstg_ids,a.lock)
         report["errors"]+=problems
@@ -439,7 +503,11 @@ def main():
             problems.append("docs/NA_REPORT.md is stale: run tools/security/na_report.py")
         report["errors"]+=problems
     if a.mode in ("risk","release"):
-        problems,report["risk"]=check_risk(a.sbom,a.vulns,dt.date.today(),a.max_snapshot_age,strict=a.mode=="release")
+        qt_src=a.qt_src
+        if not qt_src and Path(a.sbom).is_file():
+            qt_src=f"C:/Qt/{sbom_versions(a.sbom).get(('qt',None))}/Src/qtwebengine"
+        problems,report["risk"]=check_risk(a.sbom,a.vulns,dt.date.today(),a.max_snapshot_age,
+                                           strict=a.mode=="release",qt_src=qt_src)
         report["errors"]+=problems
     out.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("CYBOU security gate:", "PASS" if not report["errors"] else "BLOCKED",

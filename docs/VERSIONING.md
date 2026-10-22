@@ -10,7 +10,7 @@
 | --- | --- |
 | 0.3.0-alpha.N — passed | Implemented functional foundation; verification incomplete |
 | **0.4.0-alpha.N — current** | Risk-based R2: pinned ASVS 5.0.0/WSTG 4.2 inventory; browser risk register (`cases.json`) with tier and method; every applicable requirement mapped to an owner and cases; every other requirement carries a recorded N/A proposal with reason; fail-closed gate that rejects unreviewed N/A and unverified requirements. Human approval of each N/A is a 1.0.0-rc gate, not a 0.4.0 one |
-| **0.5.0-alpha.N** | Adversarial native/browser security and hardware tests, fuzzing and remediation |
+| **0.5.0-alpha.N** | R3: every P0 **execution** case (16 today: permissions and iframe, media revoke, HTTPS/HTTP consent, origin/CORS, WebSocket, sandbox and profile boundaries, UI text, update integrity) has an executable negative test with stated preconditions, expected result, real assertions and reproducible evidence; known critical vulnerabilities in the shipped engine are triaged, none hidden behind version-only reasoning; the framework stays extensible. Framework and process cases (OWASP review, Top 10, SCVS, SAMM, SBOM) do not gate 0.5.0 |
 | **0.6.0-beta.N** | Windows feature freeze, integration, usability/accessibility, stability and package testing |
 | **1.0.0-rc.N** | Every N/A approved item by item by a named reviewer, candidate-specific security proof, external review, signed package and full release gates |
 | **1.0.0** | First supported public Windows x64 release |

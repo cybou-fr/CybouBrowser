@@ -57,7 +57,7 @@ CISA KEV catalog 2026.10.21 (1754 CVEs) and 7153 NVD `google:chrome` records: **
 | CVE-2025-13223, CVE-2025-14174, CVE-2026-2441, CVE-2026-3909, CVE-2026-5281, CVE-2026-11645 | fixed | `[backport]` commit on the Qt 140-based branch before the Qt 6.12.0 build |
 | CVE-2026-3910 | fixed | Part 2/2 backported; part 1/2 deliberately reverted, matching Chrome 144-LTC |
 | CVE-2026-85046 | not_affected (source inspection) | The fixed Array.prototype.sort inlining does not exist in the shipped V8; to be confirmed with the upstream regression test |
-| **CVE-2026-87491** | **under_investigation** | Fixed in Chrome 153, after the Qt patch level; no backport found. Exploited in the wild: blocks the risk gate |
+| **CVE-2026-87491** | **affected** (source inspection, 2026-10-22) | Upstream fix v8 `36079c36283a` replaces the `WasmGetOwnProperty` builtin, which can run getters while Turboshaft treats it as side-effect free; the shipped V8 has the pre-fix code unchanged and Qt has no backport. Reachable from WebAssembly. Exploited in the wild: blocks the risk gate until a Qt WebEngine with the fix ships or WebAssembly is disabled as a stopgap |
 
 **Automatic `patch-level` status.** A match without an explicit decision is resolved as `patch-level` only when both facts hold: every affecting range is fixed upstream at or below the security patch level recorded in the SBOM, and `tests/security/vulns/qt-backports.json` lists a non-reverted `[Backport] CVE-...` commit for it on the Qt branch before the shipped build. The index is built by `tools/security/qt_backports.py --until <build time>` (1192 CVEs from 2100 commits up to 2026-09-28; `GITHUB_TOKEN` lifts the anonymous API limit). An explicit triage decision always wins.
 
@@ -70,7 +70,9 @@ CISA KEV catalog 2026.10.21 (1754 CVEs) and 7153 NVD `google:chrome` records: **
 | `branch` (`method: backport-commit`) | A backport commit exists on the Qt branch before the build; its presence in the binary is not shown | risk only |
 | `branch+declared` (`patch-level`) | Vendor patch level plus a backport commit | risk only |
 
-`fixed` and `not_affected` need a `method` and `evidence` links; `not_affected` also needs a justification. `--mode release` rejects `branch` and `branch+declared`, so the current 1100 resolutions keep a release BLOCKED until they are confirmed at source or binary level. `snapshot.json`, `kev.json` and `qt-backports.json` carry a `contentSha256` written at import; an edit after import blocks the risk gate. The framework gate also regenerates the [N/A report](NA_REPORT.md): each N/A category rests on architecture facts (patterns the product sources must not contain, defined in `tests/security/na-categories.json`); a broken fact or a stale report fails the gate. It also checks that every `testSources` file of a case exists and that cases marked in progress or verified name their implementation.
+`fixed` and `not_affected` need a `method` and `evidence` links; `not_affected` also needs a justification. `--mode release` rejects `branch` and `branch+declared`, so the current 1100 resolutions keep a release BLOCKED until they are confirmed at source or binary level. `snapshot.json`, `kev.json` and `qt-backports.json` carry a `contentSha256` written at import; an edit after import blocks the risk gate. A `source-inspection` decision carries a `sourceBinding`: the Qt WebEngine version and patch level of the inspected tree and the SHA-256 of every file read. The gate rejects a binding that names another release than the SBOM, and where that release's source tree is present (`--qt-src`, default `C:/Qt/<qt>/Src/qtwebengine`, identified by its `.cmake.conf` and `CHROMIUM_VERSION`) it re-hashes the files; release mode requires that verification. In `test` and `release` mode the `ENGINE` line that `cybou_tests` prints from the Qt runtime API (`qVersion`, `qWebEngineVersion`, `qWebEngineChromiumVersion`, `qWebEngineChromiumSecurityPatchVersion`) must equal the versions the SBOM read from the staged binaries, which closes the gap between parsed binaries and the running engine.
+
+The framework gate also regenerates the [N/A report](NA_REPORT.md): each N/A category rests on architecture facts (patterns the product sources must not contain, defined in `tests/security/na-categories.json`); a broken fact or a stale report fails the gate. It also checks that every `testSources` file of a case exists and that cases marked in progress or verified name their implementation.
 
 | Status of the 3470 matches | Count | Critical / high |
 | --- | --- | --- |
@@ -121,7 +123,7 @@ Daily development may run narrow suites, but before milestone promotion run full
 ## Gates
 
 - **0.4:** official inventories pinned; every control decided or carrying a reasoned proposal; threat catalog and known-vulnerability gate in place; `--mode framework` passes.
-- **0.5:** priority negative cases implemented, fuzz harness and safe fixture runner, no unreviewed P0 threats.
+- **0.5:** every P0 `execution` case has an executable negative test with preconditions, expected result, assertions and evidence; known critical engine vulnerabilities triaged. `framework` and `process` cases (`kind` in `cases.json`) gate later stages.
 - **0.6:** planned 1.0 functionality frozen, browser and desktop integration suites reliable; coverage and failures independently reviewed.
 - **RC:** every applicable requirement has fresh evidence, review/N/A signed off, no outstanding critical/high, actual executable sandbox, updates and packaging validated, external audit complete or explicit release BLOCKED.
 - **1.0:** same candidate passes all checks and support process. No blanket certification language.

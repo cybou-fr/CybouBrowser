@@ -89,18 +89,50 @@
         "https://github.com/v8/v8/commit/e0562d87ad9c17042b581582c99237d798572e67"
       ],
       "reviewedOn": "2026-10-22",
-      "method": "source-inspection"
+      "method": "source-inspection",
+      "sourceBinding": {
+        "webengine": "6.140.0",
+        "patchLevel": "152.0.7977.83",
+        "tree": "Qt 6.12.0 Src/qtwebengine",
+        "files": [
+          {
+            "path": "v8/src/compiler/js-call-reducer.cc",
+            "sha256": "666963d283fd36b0c268391a135bbabcaf2d0d83a781b24ad76c29ec88dfe0e0"
+          },
+          {
+            "path": "v8/src/maglev/maglev-graph-builder.cc",
+            "sha256": "012266c5c081e7014e529e6865a151bc4e59921e8136173bfbd5a442d6ff9c67"
+          }
+        ]
+      }
     },
     {
       "vulnId": "CVE-2026-87491",
       "component": "chromium",
-      "status": "under_investigation",
-      "justification": "Fixed in Chrome 153.0.8010.36, after the Qt 6.12.0 security patch level (152.0.7977.83). No backport on the 140-based branch up to 2026-10-20 and no upstream fix commit referenced by NVD (crbug 543557673). Exploited in the wild (CISA KEV): presume exposure until the fix is identified, backported by Qt, or shown absent.",
+      "status": "affected",
+      "justification": "vulnerable_code_present: the upstream fix (v8 36079c36283a, 'Fix side effects of WasmGetOwnProperty builtin', crbug 543557673) replaces a Torque builtin that calls GetPropertyWithReceiver, and so can run JavaScript getters, while Turboshaft treats the call as free of side effects (kEffects = CanReadHeapMemory). The V8 shipped in Qt 6.12.0 contains that pre-fix builtin unchanged (src/builtins/wasm.tq) and the same descriptor; no Qt backport exists up to 2026-10-20. Reachable only from WebAssembly code (Liftoff and Turboshaft call the builtin). The upstream regression test needs --sandbox-testing and is an exploit primitive, so it is not run.",
       "evidence": [
+        "https://github.com/v8/v8/commit/36079c36283aaf3d0cee0797e46ddc278988f7f2",
         "https://issues.chromium.org/issues/543557673"
       ],
       "reviewedOn": "2026-10-22",
-      "method": "backport-commit"
+      "method": "source-inspection",
+      "mitigation": "Pending: a newer Qt WebEngine with the backport, or disabling WebAssembly in the engine (--js-flags=--no-expose-wasm) as a stopgap, at the cost of sites that need WebAssembly.",
+      "sourceBinding": {
+        "webengine": "6.140.0",
+        "patchLevel": "152.0.7977.83",
+        "tree": "Qt 6.12.0 Src/qtwebengine",
+        "files": [
+          {
+            "path": "v8/src/builtins/wasm.tq",
+            "sha256": "cb4950e64e0c127b3fdf2cbcc1deab0c7fc913cb4517e7e9ffb9b89cb15cf47a"
+          },
+          {
+            "path": "v8/src/compiler/turboshaft/builtin-call-descriptors.h",
+            "sha256": "42b6e06e54834baf5b5ad5ab23f125596ab3fd84b466416d26c66a2c735f0c4e"
+          }
+        ]
+      }
     }
   ]
 }

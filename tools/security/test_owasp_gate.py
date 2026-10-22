@@ -253,6 +253,38 @@ class GateContractTests(unittest.TestCase):
         errors,stats=self.risk_errors([hit],[tested],strict=True)
         self.assertEqual((errors,stats["byEvidence"]["binary"]),([],1))
 
+    def test_source_inspection_is_bound_to_shipped_release_and_file_hashes(self):
+        versions={("qt-webengine-chromium",None):"6.140.0",("qt-webengine-chromium","cybou:chromium-security-patch-version"):"152.0.7977.83"}
+        with tempfile.TemporaryDirectory() as d:
+            src=Path(d)/"qtwebengine"; f=src/"src/3rdparty/chromium/v8/a.cc"; f.parent.mkdir(parents=True)
+            f.write_text("code\n",encoding="utf-8")
+            (src/".cmake.conf").write_text('set(QT_REPO_MODULE_VERSION "6.140.0")\n',encoding="utf-8")
+            (src/"CHROMIUM_VERSION").write_text("Patched with security patches up to Chromium version: 152.0.7977.83\n",encoding="utf-8")
+            good={"sourceBinding":{"webengine":"6.140.0","patchLevel":"152.0.7977.83","files":[{"path":"v8/a.cc","sha256":gate.sha(f)}]}}
+            self.assertEqual(gate.source_binding_errors("X",good,versions,src),([],True))
+            self.assertEqual(gate.source_binding_errors("X",good,versions,Path(d)/"absent"),([],False))
+            other={"sourceBinding":{**good["sourceBinding"],"webengine":"6.139.1"}}
+            self.assertTrue(gate.source_binding_errors("X",other,versions,src)[0])
+            f.write_text("patched\n",encoding="utf-8")
+            errors,verified=gate.source_binding_errors("X",good,versions,src)
+            self.assertFalse(verified); self.assertTrue(any("differs" in e for e in errors))
+            self.assertTrue(gate.source_binding_errors("X",{},versions,src)[0])
+
+    def test_runtime_engine_versions_must_match_sbom(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d); log=base/"s.log"; sbom=base/"sbom.json"
+            sbom.write_text(json.dumps({"components":[{"bom-ref":"qt","version":"6.12.0"},
+                {"bom-ref":"qt-webengine-chromium","version":"6.140.0","properties":[
+                 {"name":"cybou:chromium-version","value":"140.0.7339.225"},
+                 {"name":"cybou:chromium-security-patch-version","value":"152.0.7977.83"}]}]}),encoding="utf-8")
+            log.write_text('ENGINE 6.12.0 6.140.0 140.0.7339.225 security patch 152.0.7977.83\n',encoding="utf-8")
+            errors,runtime=gate.engine_runtime_errors([{"log":str(log)}],sbom)
+            self.assertEqual((errors,runtime["patch"]),([],"152.0.7977.83"))
+            log.write_text('ENGINE "6.12.0" "6.140.0" "140.0.7339.264" "security patch" "152.0.7977.83"\n',encoding="utf-8")
+            self.assertEqual(gate.engine_runtime_errors([{"log":str(log)}],sbom)[0],["runtime chromium 140.0.7339.264 differs from SBOM 140.0.7339.225"])
+            log.write_text("no engine line\n",encoding="utf-8")
+            self.assertTrue(gate.engine_runtime_errors([{"log":str(log)}],sbom)[0])
+
     def test_feed_edited_after_import_is_detected(self):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d)
@@ -268,12 +300,13 @@ class GateContractTests(unittest.TestCase):
             base=Path(d)
             (base/"coverage.json").write_text(json.dumps({"requirements":[]}),encoding="utf-8")
             (base/"threats.json").write_text(json.dumps({"threats":[{"id":"CWE-20","title":"t","caseIds":["A"]}]}),encoding="utf-8")
-            cases={"A":{"status":"in_progress"},"B":{"status":"planned","testSources":["src/does-not-exist.h"]},
-                   "C":{"status":"in_progress","testSources":["tools/security/owasp_gate.py"]}}
+            cases={"A":{"status":"in_progress","kind":"execution"},"B":{"status":"planned","kind":"execution","testSources":["src/does-not-exist.h"]},
+                   "C":{"status":"in_progress","kind":"execution","testSources":["tools/security/owasp_gate.py"]},"D":{"status":"planned","kind":"audit"}}
             errors,_=gate.check_framework(set(),base/"coverage.json",cases,base/"threats.json")
             self.assertIn("A: in_progress case lists no testSources",errors)
             self.assertIn("B: test source missing: src/does-not-exist.h",errors)
             self.assertFalse(any(e.startswith("C:") for e in errors))
+            self.assertTrue(any(e.startswith("D: kind must be") for e in errors))
 
     def test_na_report_facts_hold_and_report_is_current(self):
         import na_report

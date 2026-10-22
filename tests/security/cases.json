@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policy": "Cases are an inventory of required scenarios, not claims of passing tests. Missing evidence blocks release.",
+  "policy": "Cases are an inventory of required scenarios, not claims of passing tests. Missing evidence blocks release. kind separates what is tested and how it gates: execution cases are executable checks of browser behaviour and gate 0.5.0 (P0); framework cases check the completeness of catalogs and mappings; process cases are assurance reviews (SBOM, Top 10, SCVS, SAMM, patch cadence) that gate release candidates, not alpha development.",
   "cases": [
     {
       "id": "CYB-PERM-001",
@@ -9,7 +9,8 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-PERM-002",
@@ -18,7 +19,8 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-PERM-003",
@@ -27,7 +29,8 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-PERM-004",
@@ -36,7 +39,8 @@
       "method": "hardware",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-PERM-005",
@@ -45,7 +49,8 @@
       "method": "hardware",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-PERM-006",
@@ -54,7 +59,8 @@
       "method": "ui",
       "tier": "P0",
       "candidateSuite": "surface",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-HTTP-001",
@@ -81,7 +87,8 @@
         "OCSP/CRL revocation and TLS protocol/cipher matrix",
         "multi-hop downgrade chains, UI presentation and DNS/network boundary changes",
         "public-service and packaged-distribution qualification"
-      ]
+      ],
+      "kind": "execution"
     },
     {
       "id": "CYB-HTTP-002",
@@ -108,7 +115,8 @@
       "remainingScenarios": [
         "mixed TLS/downgrade chains and error presentation through UI",
         "DNS/CNAME, public/private address transitions and renderer/download stress"
-      ]
+      ],
+      "kind": "execution"
     },
     {
       "id": "CYB-HTTP-003",
@@ -137,7 +145,8 @@
         "suspended renderer and in-flight download stress",
         "HTTPS downgrade, method-preserving redirects and public-to-private DNS boundary matrix",
         "TLS revocation and protocol/cipher qualification"
-      ]
+      ],
+      "kind": "execution"
     },
     {
       "id": "CYB-PNA-001",
@@ -146,7 +155,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-PNA-002",
@@ -156,7 +166,8 @@
       "tier": "P1",
       "candidateSuite": "smoke",
       "status": "planned",
-      "implementationGap": "Source review 2026-10-18: checkDnsRebind/recordResolution have test callers only; production interceptor uses URL classification, not actual WebEngine DNS answers/connected addresses. Chromium runtime enforcement remains to be verified."
+      "implementationGap": "Source review 2026-10-18: checkDnsRebind/recordResolution have test callers only; production interceptor uses URL classification, not actual WebEngine DNS answers/connected addresses. Chromium runtime enforcement remains to be verified.",
+      "kind": "execution"
     },
     {
       "id": "CYB-NET-001",
@@ -165,7 +176,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-NET-002",
@@ -174,7 +186,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-NET-003",
@@ -183,7 +196,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-NET-004",
@@ -192,7 +206,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-NET-005",
@@ -201,7 +216,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-SBX-001",
@@ -210,7 +226,8 @@
       "method": "runtime",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-SBX-002",
@@ -219,7 +236,8 @@
       "method": "integration",
       "tier": "P0",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-SBX-003",
@@ -228,7 +246,8 @@
       "method": "integration",
       "tier": "P0",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-INPUT-001",
@@ -237,7 +256,8 @@
       "method": "fuzz",
       "tier": "P1",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-INPUT-002",
@@ -246,7 +266,8 @@
       "method": "fuzz",
       "tier": "P1",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-INPUT-003",
@@ -255,7 +276,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-RULE-001",
@@ -264,7 +286,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-CLOUD-001",
@@ -273,7 +296,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-CLOUD-002",
@@ -282,7 +306,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-CLOUD-003",
@@ -291,7 +316,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-CLOUD-004",
@@ -300,7 +326,8 @@
       "method": "manual",
       "tier": "P1",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-CLOUD-005",
@@ -309,7 +336,8 @@
       "method": "static",
       "tier": "P1",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-UI-001",
@@ -318,7 +346,8 @@
       "method": "ui",
       "tier": "P1",
       "candidateSuite": "surface",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-UI-002",
@@ -327,7 +356,8 @@
       "method": "ui",
       "tier": "P1",
       "candidateSuite": "surface",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-UI-003",
@@ -336,7 +366,8 @@
       "method": "ui",
       "tier": "P1",
       "candidateSuite": "surface",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-UI-004",
@@ -350,7 +381,8 @@
         "tools/security/qml_text_lint.py",
         "tools/security/test_qml_text_lint.py",
         "src/security/TextInjectionProbe.h"
-      ]
+      ],
+      "kind": "execution"
     },
     {
       "id": "CYB-UPD-001",
@@ -359,7 +391,8 @@
       "method": "manual",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-UPD-002",
@@ -368,7 +401,8 @@
       "method": "manual",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-UPD-003",
@@ -377,7 +411,8 @@
       "method": "manual",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-LOG-001",
@@ -386,7 +421,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-LOG-002",
@@ -395,7 +431,8 @@
       "method": "manual",
       "tier": "P1",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-FAIL-001",
@@ -404,7 +441,8 @@
       "method": "integration",
       "tier": "P1",
       "candidateSuite": "smoke",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-FAIL-002",
@@ -413,7 +451,8 @@
       "method": "stress",
       "tier": "P1",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-FUZZ-001",
@@ -422,7 +461,8 @@
       "method": "fuzz",
       "tier": "P1",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-FUZZ-002",
@@ -431,7 +471,8 @@
       "method": "fuzz",
       "tier": "P1",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-OWASP-001",
@@ -440,7 +481,8 @@
       "method": "inventory",
       "tier": "P0",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "framework"
     },
     {
       "id": "CYB-OWASP-002",
@@ -449,7 +491,8 @@
       "method": "inventory",
       "tier": "P0",
       "candidateSuite": "planned",
-      "status": "planned"
+      "status": "planned",
+      "kind": "framework"
     },
     {
       "id": "CYB-OWASP-003",
@@ -458,7 +501,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-OWASP-004",
@@ -467,7 +511,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A01",
@@ -476,7 +521,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A02",
@@ -485,7 +531,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A03",
@@ -494,7 +541,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A04",
@@ -503,7 +551,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A05",
@@ -512,7 +561,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A06",
@@ -521,7 +571,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A07",
@@ -530,7 +581,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A08",
@@ -539,7 +591,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A09",
@@ -548,7 +601,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-TOP10-2025-A10",
@@ -557,7 +611,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SCVS-001",
@@ -566,7 +621,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SCVS-002",
@@ -575,7 +631,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SCVS-003",
@@ -584,7 +641,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SCVS-004",
@@ -593,7 +651,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SCVS-005",
@@ -602,7 +661,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SAMM-GOV",
@@ -611,7 +671,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SAMM-DSN",
@@ -620,7 +681,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SAMM-IMP",
@@ -629,7 +691,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SAMM-VER",
@@ -638,7 +701,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-SAMM-OPS",
@@ -647,7 +711,8 @@
       "method": "review",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     },
     {
       "id": "CYB-ORIGIN-001",
@@ -670,7 +735,8 @@
       ],
       "testSources": [
         "src/security/NetworkBoundaryTests.h"
-      ]
+      ],
+      "kind": "execution"
     },
     {
       "id": "CYB-WS-001",
@@ -707,7 +773,8 @@
         "src/browserstore.h",
         "qml/TransportHarness.qml",
         "src/security/TlsBoundaryTests.h"
-      ]
+      ],
+      "kind": "execution"
     },
     {
       "id": "CYB-PRIV-001",
@@ -716,7 +783,8 @@
       "method": "native",
       "tier": "P1",
       "candidateSuite": "security",
-      "status": "planned"
+      "status": "planned",
+      "kind": "execution"
     },
     {
       "id": "CYB-CRYPTO-001",
@@ -725,7 +793,8 @@
       "method": "manual",
       "tier": "P1",
       "candidateSuite": "manual",
-      "status": "planned"
+      "status": "planned",
+      "kind": "process"
     }
   ]
 }
