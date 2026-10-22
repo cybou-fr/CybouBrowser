@@ -19,12 +19,34 @@ Avoid the misleading term **"tests all OWASP"**: OWASP publishes many projects f
 ## Sources of truth in this repository
 
 - `tests/security/standards.lock.json`: official version/source, pinned SHA-256 for ASVS CSV and WSTG scenario-ID inventory. SHA fields start **null** and therefore release certification is blocked until independently pinned.
-- `tests/security/cases.json`: **64 initial browser/OWASP-review case IDs**, each with a risk domain and intended method; `planned` does **not** imply implemented or passing.
+- `tests/security/cases.json`: browser risk case catalog (69 cases today), each with a domain, tier and intended method; `planned` does **not** imply implemented or passing. Tiers rank work in the catalog: 42 P0 cases are 42 priority scenarios, not a count of all risks; the catalog grows as threats are found.
+- `tests/security/threats.json`: curated MITRE CWE weakness classes and CAPEC attack patterns for a desktop browser, each linked to the cases that must exercise it.
+- `tests/security/vulns/`: offline known-vulnerability inputs for the risk gate: `snapshot.json` (normalized NVD/OSV records), `kev.json` (CISA KEV IDs) and `triage.json` (VEX-style decisions). `tools/security/import_vulns.py` normalizes downloaded feeds; the gate itself never goes online.
 - `tests/security/coverage.json`: mapping of **every** official imported requirement/scenario ID to disposition `applicable` or `not_applicable`; mappings start empty. For applicable items: `owner`, `caseIds`, `verificationStatus: verified` and named `assertions`; for N/A: an item-specific `rationale`, `reviewedBy` listed in `tests/security/reviewers.json`, `reviewedOn` and `reviewRef`.
 - `tests/security/evidence.json` (created by QA when genuinely tested): exact case, result, HEAD, binary SHA-256, log path and its SHA-256. `evidence.example.json` is an example only; no synthetic PASS.
 - `tools/security/owasp_gate.py`: offline gate/runner, JSON report, nonzero exit on failures.
 - [THREAT_MODEL](THREAT_MODEL.md): assets, trust boundaries, attack surfaces, failure modes.
 - [RELEASE_CRITERIA](RELEASE_CRITERIA.md): security gate for RC/1.0.0.
+
+## Four gates
+
+The tool and the product are judged separately: a complete framework says nothing about whether the browser is secure.
+
+| Mode | Question it answers | Needs |
+| --- | --- | --- |
+| `framework` | Is the testing toolkit complete and consistent? Every pinned OWASP control decided or carrying a reasoned proposal, every link to a case resolves, the threat catalog is well formed. Gaps (P0 cases without a threat, unlinked cases) are reported, not failed. | Repository only |
+| `test` (was `baseline`) | Do the native suites run and pass on this build? | `cybou_tests.exe` |
+| `risk` | Does a known vulnerability (NVD/OSV, CISA KEV) match a component version in the SBOM, and is each match triaged? Feeds older than `--max-snapshot-age` days (7) block. | SBOM, `tests/security/vulns/` |
+| `release` | All of the above, plus current-revision evidence for every case, verified applicable rows and reviewer-approved N/A rows. | Clean tree, candidate binary |
+
+```powershell
+python tools/security/owasp_gate.py --mode framework --out build/security-framework.json
+python tools/security/import_vulns.py --kev known_exploited_vulnerabilities.json
+python tools/security/import_vulns.py --nvd nvd-chrome.json --cpe google:chrome=chromium
+python tools/security/owasp_gate.py --mode risk --sbom build/CYBOU-sbom.cdx.json --out build/security-risk.json
+```
+
+Chrome version ranges in NVD do not account for the security fixes Qt backports into its Chromium base (140.0.7339.225 for Qt 6.12). A match is therefore never dismissed by version alone: it is recorded in `triage.json` as `fixed` with the Qt release that carries the fix, `not_affected` with a justification, or `affected`, which blocks.
 
 ## How to run locally (no GitHub Actions required)
 
@@ -65,7 +87,7 @@ Daily development may run narrow suites, but before milestone promotion run full
 
 ## Gates
 
-- **0.4:** official inventories pinned and complete triage; framework schema tests and initial automatable mapping.
+- **0.4:** official inventories pinned; every control decided or carrying a reasoned proposal; threat catalog and known-vulnerability gate in place; `--mode framework` passes.
 - **0.5:** priority negative cases implemented, fuzz harness and safe fixture runner, no unreviewed P0 threats.
 - **0.6:** planned 1.0 functionality frozen, browser and desktop integration suites reliable; coverage and failures independently reviewed.
 - **RC:** every applicable requirement has fresh evidence, review/N/A signed off, no outstanding critical/high, actual executable sandbox, updates and packaging validated, external audit complete or explicit release BLOCKED.

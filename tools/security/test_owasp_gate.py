@@ -164,5 +164,64 @@ class GateContractTests(unittest.TestCase):
             with self.subTest(change=change):
                 self.assertTrue(self.coverage_errors({**row,**change},{"Jane Reviewer"}))
 
+    def test_framework_gate_passes_on_repository_catalogs(self):
+        requirements,errors=self.pinned_inventory()
+        cases,_,_=gate.case_index(gate.ROOT/"tests/security/cases.json")
+        errors,stats=gate.check_framework(requirements,gate.ROOT/"tests/security/coverage.json",
+                                         cases,gate.ROOT/"tests/security/threats.json")
+        self.assertEqual(errors,[])
+        self.assertGreater(stats["threats"],0)
+
+    def test_framework_gate_rejects_broken_threat_links(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d)
+            (base/"coverage.json").write_text(json.dumps({"requirements":[{"id":"ASVS:v5.0.0-1.1.1","disposition":"untriaged"}]}),encoding="utf-8")
+            (base/"threats.json").write_text(json.dumps({"threats":[{"id":"CWE-416","title":"t","caseIds":["NOPE"]},
+                                                                     {"id":"bad","title":"t","caseIds":["TEST-001"]}]}),encoding="utf-8")
+            errors,_=gate.check_framework({"ASVS:v5.0.0-1.1.1"},base/"coverage.json",{"TEST-001":{}},base/"threats.json")
+            for text in ["needs a recorded proposal","unknown case NOPE","malformed or duplicate threat id: bad"]:
+                self.assertTrue(any(text in e for e in errors),text)
+
+    def risk_errors(self, records, decisions, kev=(), retrieved="2026-10-20"):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d)
+            (base/"sbom.json").write_text(json.dumps({"components":[{"bom-ref":"qt-webengine-chromium","version":"6.12.0",
+                "properties":[{"name":"cybou:chromium-version","value":"140.0.7339.225"}]}]}),encoding="utf-8")
+            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":retrieved,"records":records}),encoding="utf-8")
+            (base/"kev.json").write_text(json.dumps({"retrievedOn":retrieved,"cveIds":list(kev)}),encoding="utf-8")
+            (base/"triage.json").write_text(json.dumps({"decisions":decisions}),encoding="utf-8")
+            return gate.check_risk(base/"sbom.json",base,gate.dt.date(2026,10,22))
+
+    def test_risk_gate_matches_sbom_versions_and_requires_triage(self):
+        hit={"id":"CVE-2099-0001","component":"chromium","ranges":[{"introduced":"0","fixed":"141.0.7390.54"}]}
+        miss={"id":"CVE-2099-0002","component":"chromium","ranges":[{"introduced":"0","fixed":"139.0.1"}]}
+        errors,stats=self.risk_errors([hit,miss],[])
+        self.assertEqual(stats["matches"],1)
+        self.assertTrue(any("not triaged" in e for e in errors))
+        fixed={"vulnId":"CVE-2099-0001","component":"chromium","status":"fixed","justification":"backported in Qt 6.12.0"}
+        self.assertEqual(self.risk_errors([hit,miss],[fixed])[0],[])
+        errors,stats=self.risk_errors([hit],[{**fixed,"status":"affected"}],kev=["CVE-2099-0001"])
+        self.assertTrue(any("CISA KEV" in e for e in errors))
+        self.assertEqual(stats["kev"],1)
+        self.assertTrue(any("not_affected needs" in e for e in self.risk_errors([hit],[{**fixed,"status":"not_affected","justification":""}])[0]))
+
+    def test_risk_gate_blocks_stale_or_missing_feeds(self):
+        self.assertTrue(any("days old" in e for e in self.risk_errors([],[],retrieved="2026-09-01")[0]))
+        with tempfile.TemporaryDirectory() as d:
+            self.assertTrue(gate.check_risk(Path(d)/"none.json",d,gate.dt.date(2026,10,22))[0])
+
+    def test_nvd_and_osv_records_normalize_to_gate_ranges(self):
+        import import_vulns as imp
+        nvd={"vulnerabilities":[{"cve":{"id":"CVE-2099-0003","descriptions":[{"lang":"en","value":"x"}],
+             "configurations":[{"nodes":[{"cpeMatch":[{"vulnerable":True,"criteria":"cpe:2.3:a:google:chrome:*:*:*:*:*:*:*:*",
+             "versionEndExcluding":"141.0.7390.54"}]}]}]}}]}
+        rec=imp.from_nvd(nvd,{"google:chrome":"chromium"})[0]
+        self.assertTrue(gate.affects(rec,"140.0.7339.225"))
+        self.assertFalse(gate.affects(rec,"141.0.7390.54"))
+        osv={"id":"OSV-1","affected":[{"ranges":[{"type":"ECOSYSTEM","events":[{"introduced":"6.0"},{"last_affected":"6.12.0"}]}]}]}
+        rec=imp.from_osv(osv,"qt")[0]
+        self.assertTrue(gate.affects(rec,"6.12.0"))
+        self.assertFalse(gate.affects(rec,"6.12.1"))
+
 if __name__=="__main__":
     unittest.main()

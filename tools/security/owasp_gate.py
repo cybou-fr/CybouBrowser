@@ -216,13 +216,111 @@ def run_suites(executable, output_dir, timeout):
             results.append({"suite":suite,"status":"BLOCKED","reason":str(ex)})
     return results
 
+THREAT_ID=re.compile(r"(?:CWE|CAPEC)-\d+")
+VEX_STATUS=("not_affected","affected","fixed","under_investigation")
+# Vulnerability-feed package names -> (SBOM bom-ref, SBOM property holding the version, or None for "version").
+COMPONENTS={"chromium":("qt-webengine-chromium","cybou:chromium-version"),
+            "qt":("qt",None),"qtwebengine":("qt-webengine-chromium",None)}
+
+def check_framework(requirements, coverage_file, cases, threats_file):
+    """Completeness of the framework itself: every control decided or proposed, links resolve, threats mapped.
+    No executable or evidence is needed; that is the job of the test and release gates."""
+    errors=[]
+    rows={r.get("id"):r for r in read_json(coverage_file).get("requirements",[])}
+    if set(rows)!=requirements:
+        errors.append(f"coverage differs from pinned standards ({len(requirements-set(rows))} missing, {len(set(rows)-requirements)} extra)")
+    for key,row in sorted(rows.items()):
+        d=row.get("disposition")
+        if d=="applicable":
+            if not row.get("owner") or not row.get("caseIds"): errors.append(key+": applicable row needs owner and caseIds")
+            errors+=[f"{key}: unknown case {c}" for c in row.get("caseIds",[]) if c not in cases]
+        elif d=="not_applicable":
+            if not row.get("rationale"): errors.append(key+": N/A row needs a rationale")
+        elif not row.get("proposedDisposition") or not (row.get("proposalRationale") or row.get("proposalNote")):
+            errors.append(key+": undecided row needs a recorded proposal and reason")
+    threats=read_json(threats_file).get("threats",[]) if Path(threats_file).exists() else []
+    if not threats: errors.append("threat catalog missing or empty")
+    seen=set()
+    for x in threats:
+        tid=str(x.get("id"))
+        if not THREAT_ID.fullmatch(tid) or tid in seen: errors.append("malformed or duplicate threat id: "+tid)
+        seen.add(tid)
+        if not x.get("title") or not x.get("caseIds"): errors.append(tid+": threat needs title and caseIds")
+        errors+=[f"{tid}: unknown case {c}" for c in x.get("caseIds",[]) if c not in cases]
+    threat_cases={c for x in threats for c in x.get("caseIds",[])}
+    linked={c for r in rows.values() for c in r.get("caseIds",[])}|threat_cases
+    # Gaps are reported, not failed: the catalog is expected to grow.
+    return errors,{"threats":len(threats),"cases":len(cases),
+                   "p0WithoutThreat":sorted(c for c,v in cases.items() if v.get("tier")=="P0" and c not in threat_cases),
+                   "casesWithoutLink":sorted(set(cases)-linked)}
+
+def version_key(v):
+    return tuple(int(x) if x.isdigit() else x for x in re.split(r"[.\-]",str(v)))
+
+def affects(record, version):
+    if version in record.get("versions",[]): return True
+    for r in record.get("ranges",[]):
+        lo,hi,last=r.get("introduced","0"),r.get("fixed"),r.get("lastAffected")
+        try:
+            v=version_key(version)
+            if v>=version_key(lo) and (hi is None or v<version_key(hi)) and (last is None or v<=version_key(last)): return True
+        except TypeError:
+            continue
+    return False
+
+def snapshot_age_error(name, data, today, max_age):
+    try:
+        age=(today-dt.date.fromisoformat(str(data.get("retrievedOn")))).days
+    except ValueError:
+        return name+": retrievedOn missing; import a current snapshot"
+    return name+f": snapshot is {age} days old (max {max_age})" if age>max_age else None
+
+def check_risk(sbom_file, vulns_dir, today, max_age=7):
+    """Known vulnerabilities (normalized CVE/OSV snapshot + CISA KEV) against the shipped SBOM, with VEX-style triage."""
+    errors=[]; vulns_dir=Path(vulns_dir)
+    if not Path(sbom_file).is_file():
+        return ["SBOM missing: run tools/package/make_sbom.py on the staged package"],{}
+    versions={}
+    for c in read_json(sbom_file).get("components",[]):
+        versions[(c.get("bom-ref"),None)]=c.get("version")
+        for prop in c.get("properties",[]): versions[(c.get("bom-ref"),prop.get("name"))]=prop.get("value")
+    snap,kev,vex=(read_json(vulns_dir/n) if (vulns_dir/n).exists() else {} for n in ("snapshot.json","kev.json","triage.json"))
+    for name,data in (("snapshot.json",snap),("kev.json",kev)):
+        problem=snapshot_age_error(name,data,today,max_age)
+        if problem: errors.append(problem)
+    kev_ids=set(kev.get("cveIds",[]))
+    triage={(d.get("vulnId"),d.get("component")):d for d in vex.get("decisions",[])}
+    findings=[]
+    for rec in snap.get("records",[]):
+        rid,comp=rec.get("id"),rec.get("component")
+        if comp not in COMPONENTS:
+            errors.append(f"{rid}: unknown component {comp}"); continue
+        version=versions.get(COMPONENTS[comp])
+        if not version:
+            errors.append(f"{rid}: SBOM has no version for {comp}"); continue
+        if not affects(rec,version): continue
+        in_kev=bool({rid,*rec.get("aliases",[])}&kev_ids)
+        d=triage.get((rid,comp),{})
+        status=d.get("status")
+        findings.append({"id":rid,"component":comp,"version":version,"kev":in_kev,"status":status})
+        if status not in VEX_STATUS or status=="under_investigation":
+            errors.append(f"{rid}: {comp} {version} matches and is not triaged")
+        elif status=="not_affected" and not d.get("justification"):
+            errors.append(f"{rid}: not_affected needs a justification")
+        elif status=="affected":
+            errors.append(f"{rid}: known vulnerability affects shipped {comp} {version}"+(" (CISA KEV)" if in_kev else ""))
+    return errors,{"records":len(snap.get("records",[])),"matches":len(findings),
+                   "kev":sum(f["kev"] for f in findings),"findings":findings}
+
 def reviewer_names(path):
     if not Path(path).exists(): return frozenset()
     return frozenset(x["name"] for x in read_json(path).get("reviewers",[]) if x.get("name"))
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--mode",choices=("baseline","inventory","release"),default="baseline")
+    # framework: the tooling is complete; test: suites run; risk: known vulnerabilities; release: all of them, strictly.
+    # baseline and inventory are the earlier names of test and of the coverage/evidence check.
+    p.add_argument("--mode",choices=("framework","test","risk","release","baseline","inventory"),default="test")
     p.add_argument("--exe",help="Path to cybou_tests executable")
     p.add_argument("--asvs-csv",default=str(ROOT/"tests/security/standards/asvs-5.0.0.csv"),help="Official OWASP ASVS 5.0.0 CSV (offline)")
     p.add_argument("--wstg-ids",default=str(ROOT/"tests/security/standards/wstg-4.2-ids.txt"),help="Pinned canonical WSTG v4.2 IDs, one per line")
@@ -232,8 +330,13 @@ def main():
     p.add_argument("--coverage",default=str(ROOT/"tests/security/coverage.json"))
     p.add_argument("--reviewers",default=str(ROOT/"tests/security/reviewers.json"))
     p.add_argument("--evidence",default=str(ROOT/"tests/security/evidence.json"))
+    p.add_argument("--threats",default=str(ROOT/"tests/security/threats.json"))
+    p.add_argument("--sbom",default=str(ROOT/"build/CYBOU-sbom.cdx.json"))
+    p.add_argument("--vulns",default=str(ROOT/"tests/security/vulns"))
+    p.add_argument("--max-snapshot-age",type=int,default=7)
     p.add_argument("--out",default=str(ROOT/"build/security-report.json"))
     a=p.parse_args()
+    if a.mode=="baseline": a.mode="test"
     out=Path(a.out)
     out.parent.mkdir(parents=True,exist_ok=True)
     commit=revision()
@@ -255,7 +358,7 @@ def main():
         report["workingTreeDirty"]=None
     if a.mode=="release" and report["workingTreeDirty"] is not False:
         report["errors"].append("Release requires a verified clean working tree")
-    if a.mode in ("baseline","release"):
+    if a.mode in ("test","release"):
         report["suites"]=run_suites(a.exe,out.parent/"security-logs",a.timeout)
         if any(x["status"]!="PASS" for x in report["suites"]):
             report["errors"].append("Baseline suites not all PASS")
@@ -267,6 +370,14 @@ def main():
         report["coverage"]=stats
         if a.mode=="release" and not binarysha:
             report["errors"].append("Release candidate binary hash missing")
+    if a.mode in ("framework","release"):
+        requirements,problems=inventory(a.asvs_csv,a.wstg_ids,a.lock)
+        report["errors"]+=problems
+        problems,report["framework"]=check_framework(requirements,a.coverage,case_ids,a.threats)
+        report["errors"]+=problems
+    if a.mode in ("risk","release"):
+        problems,report["risk"]=check_risk(a.sbom,a.vulns,dt.date.today(),a.max_snapshot_age)
+        report["errors"]+=problems
     out.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("CYBOU security gate:", "PASS" if not report["errors"] else "BLOCKED",
           "|",len(report["errors"]),"issues | report:",out)

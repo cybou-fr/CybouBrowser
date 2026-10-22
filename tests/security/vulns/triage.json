@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "policy": "VEX-style decisions for vulnerability matches: status not_affected (with justification), affected, fixed (with the Qt release or backport that carries the fix) or under_investigation. A Chrome version range does not account for Qt backports, so each match is triaged here.",
+  "decisions": []
+}

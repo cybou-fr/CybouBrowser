@@ -72,6 +72,8 @@ def main(stage, out):
                                 "hashes": [{"alg": "SHA-256", "content": f["sha256"]}]} for f in g["files"]]}
         if g["version"]:
             comp["version"] = g["version"]
+        if key == "qt-webengine-chromium":
+            comp["properties"].append({"name": "cybou:chromium-version", "value": CHROMIUM_VERSION})
         components.append(comp)
     digest = hashlib.sha256("".join(f["sha256"] for g in groups.values() for f in g["files"]).encode()).hexdigest()
     bom = {"bomFormat": "CycloneDX", "specVersion": "1.5",

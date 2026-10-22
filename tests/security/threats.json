@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "policy": "Curated threat catalog: MITRE CWE weakness classes and CAPEC attack patterns relevant to a desktop browser, each linked to browser risk cases. A link says which cases must exercise the threat, not that it is mitigated. Titles follow the official CWE/CAPEC lists and must be re-checked when the lists are imported. The catalog is open: new threats and cases are added as they are found.",
+  "sources": {
+    "cwe": "https://cwe.mitre.org/",
+    "capec": "https://capec.mitre.org/"
+  },
+  "threats": [
+    {
+      "id": "CWE-416",
+      "title": "Use After Free",
+      "caseIds": [
+        "CYB-SBX-001",
+        "CYB-UPD-001",
+        "CYB-FUZZ-001"
+      ]
+    },
+    {
+      "id": "CWE-787",
+      "title": "Out-of-bounds Write",
+      "caseIds": [
+        "CYB-SBX-001",
+        "CYB-UPD-001",
+        "CYB-FUZZ-001"
+      ]
+    },
+    {
+      "id": "CWE-125",
+      "title": "Out-of-bounds Read",
+      "caseIds": [
+        "CYB-SBX-001",
+        "CYB-UPD-001"
+      ]
+    },
+    {
+      "id": "CWE-269",
+      "title": "Improper Privilege Management",
+      "caseIds": [
+        "CYB-SBX-001",
+        "CYB-SBX-003",
+        "CYB-CLOUD-005"
+      ]
+    },
+    {
+      "id": "CWE-346",
+      "title": "Origin Validation Error",
+      "caseIds": [
+        "CYB-PERM-001",
+        "CYB-PERM-002",
+        "CYB-ORIGIN-001",
+        "CYB-WS-001"
+      ]
+    },
+    {
+      "id": "CWE-863",
+      "title": "Incorrect Authorization",
+      "caseIds": [
+        "CYB-PERM-003",
+        "CYB-NET-003",
+        "CYB-HTTP-003"
+      ]
+    },
+    {
+      "id": "CWE-295",
+      "title": "Improper Certificate Validation",
+      "caseIds": [
+        "CYB-HTTP-001"
+      ]
+    },
+    {
+      "id": "CWE-319",
+      "title": "Cleartext Transmission of Sensitive Information",
+      "caseIds": [
+        "CYB-HTTP-002",
+        "CYB-HTTP-003"
+      ]
+    },
+    {
+      "id": "CWE-601",
+      "title": "URL Redirection to Untrusted Site ('Open Redirect')",
+      "caseIds": [
+        "CYB-INPUT-002",
+        "CYB-HTTP-002"
+      ]
+    },
+    {
+      "id": "CWE-352",
+      "title": "Cross-Site Request Forgery (CSRF)",
+      "caseIds": [
+        "CYB-PNA-001"
+      ]
+    },
+    {
+      "id": "CWE-1021",
+      "title": "Improper Restriction of Rendered UI Layers or Frames",
+      "caseIds": [
+        "CYB-UI-002"
+      ]
+    },
+    {
+      "id": "CWE-451",
+      "title": "User Interface (UI) Misrepresentation of Critical Information",
+      "caseIds": [
+        "CYB-INPUT-002",
+        "CYB-UI-002",
+        "CYB-UI-004"
+      ]
+    },
+    {
+      "id": "CWE-79",
+      "title": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
+      "caseIds": [
+        "CYB-UI-004"
+      ]
+    },
+    {
+      "id": "CWE-22",
+      "title": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ]
+    },
+    {
+      "id": "CWE-20",
+      "title": "Improper Input Validation",
+      "caseIds": [
+        "CYB-INPUT-001",
+        "CYB-FUZZ-001",
+        "CYB-FUZZ-002"
+      ]
+    },
+    {
+      "id": "CWE-200",
+      "title": "Exposure of Sensitive Information to an Unauthorized Actor",
+      "caseIds": [
+        "CYB-PRIV-001",
+        "CYB-SBX-002"
+      ]
+    },
+    {
+      "id": "CWE-532",
+      "title": "Insertion of Sensitive Information into Log File",
+      "caseIds": [
+        "CYB-LOG-001",
+        "CYB-LOG-002"
+      ]
+    },
+    {
+      "id": "CWE-400",
+      "title": "Uncontrolled Resource Consumption",
+      "caseIds": [
+        "CYB-FAIL-001",
+        "CYB-FAIL-002"
+      ]
+    },
+    {
+      "id": "CWE-494",
+      "title": "Download of Code Without Integrity Check",
+      "caseIds": [
+        "CYB-UPD-003",
+        "CYB-RULE-001"
+      ]
+    },
+    {
+      "id": "CWE-1104",
+      "title": "Use of Unmaintained Third Party Components",
+      "caseIds": [
+        "CYB-UPD-001",
+        "CYB-SCVS-002"
+      ]
+    },
+    {
+      "id": "CAPEC-94",
+      "title": "Adversary in the Middle (AiTM)",
+      "caseIds": [
+        "CYB-HTTP-001",
+        "CYB-HTTP-002"
+      ]
+    },
+    {
+      "id": "CAPEC-275",
+      "title": "DNS Rebinding",
+      "caseIds": [
+        "CYB-PNA-001",
+        "CYB-PNA-002"
+      ]
+    },
+    {
+      "id": "CAPEC-103",
+      "title": "Clickjacking",
+      "caseIds": [
+        "CYB-UI-002"
+      ]
+    },
+    {
+      "id": "CAPEC-63",
+      "title": "Cross-Site Scripting (XSS)",
+      "caseIds": [
+        "CYB-UI-004"
+      ]
+    },
+    {
+      "id": "CAPEC-126",
+      "title": "Path Traversal",
+      "caseIds": [
+        "CYB-INPUT-003"
+      ]
+    },
+    {
+      "id": "CAPEC-98",
+      "title": "Phishing",
+      "caseIds": [
+        "CYB-INPUT-002"
+      ]
+    }
+  ]
+}

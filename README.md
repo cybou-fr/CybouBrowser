@@ -78,9 +78,10 @@ The production executable is §cybou.exe§; §cybou_tests.exe§ is the separate 
 ```powershell
 python tools/security/test_owasp_gate.py
 python tools/security/owasp_gate.py --mode baseline --exe build/Release/cybou_tests.exe --out build/security-baseline.json
+python tools/security/owasp_gate.py --mode framework --out build/security-framework.json
 ```
 
-The baseline executes security, controlbar, transport, tracker, surface and smoke suites and saves results. The `--mode release` gate also requires pinned full OWASP ASVS/WSTG inventories, explicitly reviewed applicability, real test logs tied to source/binary hashes and all browser-specific cases. **It is presently blocked by missing coverage/evidence; no 1.0.0 GO decision has been made.** No test result is asserted here without an available current-build report.
+The baseline executes security, controlbar, transport, tracker, surface and smoke suites and saves results. `--mode framework` checks the testing toolkit itself (OWASP inventory, CWE/CAPEC threat catalog, case links) and `--mode risk` matches known vulnerabilities (NVD/OSV, CISA KEV) against the SBOM; see [Security Verification Framework](docs/SECURITY_VERIFICATION_FRAMEWORK.md). The `--mode release` gate also requires pinned full OWASP ASVS/WSTG inventories, explicitly reviewed applicability, real test logs tied to source/binary hashes and all browser-specific cases. **It is presently blocked by missing coverage/evidence; no 1.0.0 GO decision has been made.** No test result is asserted here without an available current-build report.
 
 See [Security Verification Framework](docs/SECURITY_VERIFICATION_FRAMEWORK.md), [Test Plan](docs/TEST_PLAN.md), [Validation Status](docs/VALIDATION.md), [Threat Model](docs/THREAT_MODEL.md) and [1.0.0 Release Criteria](docs/RELEASE_CRITERIA.md).
 
