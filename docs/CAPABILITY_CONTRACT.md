@@ -1,6 +1,6 @@
 # CYBOU — 11 возможностей Control Bar
 
-**0.3.0-alpha.1. Код присутствует; полный security gate не пройден.**
+**0.3.0-alpha.2. Код присутствует; полный security gate не пройден.**
 
 Каждый контроль постоянно виден в одной навигационной строке ([CONTROL_BAR_UX](CONTROL_BAR_UX.md)). Effective policy ≠ pending request ≠ grant ≠ confirmed block ≠ hardware use.
 

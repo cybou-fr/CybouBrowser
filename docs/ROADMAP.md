@@ -1,6 +1,6 @@
 # CYBOU Browser — Roadmap to 1.0.0
 
-**Current source: 0.3.0-alpha.1 · no public release · security qualification incomplete.** Work takes place on `main`.
+**Current source: 0.3.0-alpha.2 · no public release · security qualification incomplete.** Work takes place on `main`.
 
 ## Actual code baseline
 
@@ -18,7 +18,7 @@ No third-party extension platform or partner-granted browser privileges are perm
 
 ## Source audit — 2026-10-18
 
-This review covers the local Windows implementation and test infrastructure. Implemented behavior is distinct from release qualification. Current milestone remains **0.3.0-alpha.1**; there is no stable release candidate.
+This review covers the local Windows implementation and test infrastructure. Implemented behavior is distinct from release qualification. Current milestone remains **0.3.0-alpha.2**; there is no stable release candidate.
 
 | Work item | Code evidence | State / remaining work |
 | --- | --- | --- |
@@ -46,7 +46,7 @@ R1 passed locally: Release built, six gate self-tests and six native suites pass
 
 | Version | Work to complete | Exit condition |
 | --- | --- | --- |
-| **0.3.0-alpha.1 — CURRENT** | Keep implementation and limitations aligned with source | Not a release |
+| **0.3.0-alpha.2 — CURRENT** | Keep implementation and limitations aligned with source | Not a release |
 | **0.4.0-alpha.N** | Pin official ASVS 5.0.0/WSTG 4.2; inventory 100% IDs, owners, accepted applicability; automated negative fixtures, logs, coverage schema | Every standard item dispositioned, repeatable test framework, strict FAIL on missing evidence |
 | **0.5.0-alpha.N** | Fix origin/iframe/permissions lifecycle, actual media revocation, TLS/PNA/DNS/redirect issues, tracking-rule limits, sandbox process constraints; add fuzz/system/hardware tests | All P0 risk cases implemented and tested; no open unreviewed critical/high |
 | **0.6.0-beta.N** | Freeze Windows 1.0 scope; complete cloud compatibility, accessibility, localization, browser lifecycle and long-running stress | Full regression, repeated real-device tests, tested Windows build package |

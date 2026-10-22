@@ -10,7 +10,7 @@ from pathlib import Path
 
 QT_VERSION = "6.12.0"
 CHROMIUM_VERSION = "140.0.7339.225"
-PRODUCT_VERSION = "0.3.0-alpha.1"
+PRODUCT_VERSION = "0.3.0-alpha.2"
 
 def sha256(path):
     h = hashlib.sha256()

@@ -59,7 +59,7 @@ signed by CYBOU. The installer's inner payload is the same signed stage. Not che
 
 ```bash
 export CYBOU_UPDATE_URL=file:///C:/path/to/repo      # or https://updates.example/cybou (not set up)
-CYBOU_PKG_VERSION=0.3.0-alpha.1 bash tools/package/build_repo.sh build/upd-repo   # publish a version
+CYBOU_PKG_VERSION=0.3.0-alpha.2 bash tools/package/build_repo.sh build/upd-repo   # publish a version
 bash tools/package/build_installer.sh                                               # installer that knows the repository
 ```
 

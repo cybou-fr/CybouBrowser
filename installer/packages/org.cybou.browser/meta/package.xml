@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package>
     <DisplayName>CYBOU Browser</DisplayName>
-    <Description>CYBOU browser 0.3.0-alpha.1 (pre-release)</Description>
-    <Version>0.3.0-alpha.1</Version>
+    <Description>CYBOU browser 0.3.0-alpha.2 (pre-release)</Description>
+    <Version>0.3.0-alpha.2</Version>
     <ReleaseDate>2026-10-20</ReleaseDate>
     <Default>true</Default>
     <ForcedInstallation>true</ForcedInstallation>

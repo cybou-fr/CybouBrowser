@@ -1,6 +1,6 @@
 # CYBOU — current verification status
 
-**Current product source: 0.3.0-alpha.1 · no public release.**
+**Current product source: 0.3.0-alpha.2 · no public release.**
 
 This is a status ledger, **not** a test-results archive. A test is PASS only with the executable, log, commit SHA, binary SHA-256 and environment available for review. This repository does not currently contain a complete test evidence set for the current build. Therefore **the 1.0.0 release decision is BLOCKED**.
 

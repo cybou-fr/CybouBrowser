@@ -6,7 +6,7 @@
 
 <p align="center"><strong>Observe → Restrict → Control → Revoke</strong></p>
 <p align="center">A native C++20 / Qt Quick / Qt WebEngine browser for visible, direct control over website capabilities.</p>
-<p align="center"><strong>Current source: 0.3.0-alpha.1 · Development only · No public release yet</strong></p>
+<p align="center"><strong>Current source: 0.3.0-alpha.2 · Development only · No public release yet</strong></p>
 
 ## Engineering showcase and open source
 
@@ -88,7 +88,7 @@ See [Security Verification Framework](docs/SECURITY_VERIFICATION_FRAMEWORK.md), 
 
 | Source-version stage | Promotion requirement |
 | --- | --- |
-| **0.3.0-alpha.1 — NOW** | Architecture/product implementation exists; not qualified |
+| **0.3.0-alpha.2 — NOW** | Architecture/product implementation exists; not qualified |
 | **0.4.0-alpha.N** | Official OWASP inventories pinned, full applicability and reproducible test infrastructure |
 | **0.5.0-alpha.N** | Browser hardening, fuzzing, negative/system/hardware coverage and high-risk fixes |
 | **0.6.0-beta.N** | Feature freeze, end-to-end Windows qualification, accessibility and compatibility |

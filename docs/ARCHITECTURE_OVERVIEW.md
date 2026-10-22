@@ -1,7 +1,7 @@
 # CYBOU Browser — Architecture overview
 
 **Audience:** external engineers, architectural reviewers and potential collaborators.  
-**Baseline:** C++20 / Qt 6 Quick, QML, Qt WebEngine. Current project source **0.3.0-alpha.1**. Windows is the development target; this is not a release qualification document.
+**Baseline:** C++20 / Qt 6 Quick, QML, Qt WebEngine. Current project source **0.3.0-alpha.2**. Windows is the development target; this is not a release qualification document.
 
 ## Why the architecture exists
 

@@ -1,6 +1,6 @@
 # CYBOU — test plan (OWASP-indexed and browser-specific)
 
-**Current product `0.3.0-alpha.1`: NOT RELEASE QUALIFIED.** Native smoke suites exist, but full OWASP enumeration and actual independent security verification remain unfinished. This document defines **tests to implement and run**, not global PASS. Source of truth: [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md), [RELEASE_CRITERIA](RELEASE_CRITERIA.md), [VALIDATION](VALIDATION.md).
+**Current product `0.3.0-alpha.2`: NOT RELEASE QUALIFIED.** Native smoke suites exist, but full OWASP enumeration and actual independent security verification remain unfinished. This document defines **tests to implement and run**, not global PASS. Source of truth: [SECURITY_VERIFICATION_FRAMEWORK](SECURITY_VERIFICATION_FRAMEWORK.md), [RELEASE_CRITERIA](RELEASE_CRITERIA.md), [VALIDATION](VALIDATION.md).
 
 ## Local deterministic runner
 

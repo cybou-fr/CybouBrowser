@@ -1,6 +1,6 @@
 # CYBOU — active documentation
 
-**Current source: 0.3.0-alpha.1. No public release.** All pages below describe the existing code, accepted product requirements, open verification work or explicit future release gates. Git provides the change history.
+**Current source: 0.3.0-alpha.2. No public release.** All pages below describe the existing code, accepted product requirements, open verification work or explicit future release gates. Git provides the change history.
 
 | Document | Purpose |
 | --- | --- |

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(CybouBrowser VERSION 0.3.0 LANGUAGES CXX)
-# Product source version: 0.3.0-alpha.1; QML module URI version below is unrelated.
-set(CYBOU_PRERELEASE "alpha.1")
+# Product source version: 0.3.0-alpha.2; QML module URI version below is unrelated.
+set(CYBOU_PRERELEASE "alpha.2")
 # Web geolocation uses CYBOU's own Qt Positioning plugin on Windows (src/geo); the stock WinRT plugin can crash the
 # process. Turn this on to refuse every geolocation request (emergency switch, see src/security/GeolocationPolicy.h).
 option(CYBOU_DISABLE_GEOLOCATION "Refuse web geolocation requests" OFF)
