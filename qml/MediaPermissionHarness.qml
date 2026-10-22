@@ -72,6 +72,8 @@ Item {
                     expect(browserWindow.resolvePermission(true), "grant accepted"); phase = 102
                 } else if (phase === 102 && settled(view.title)) {
                     expect(view.title === "media-live", "the real devices give live tracks, got " + view.title)
+                    view.runJavaScript("JSON.stringify(window.cybouStream.getTracks().map(t=>({kind:t.kind,label:t.label,state:t.readyState,settings:t.getSettings()})))",
+                                       function(text) { console.info("MEDIA_DEVICE_TRACKS", text) })
                     since = Date.now(); phase = 103
                 } else if (phase === 103 && elapsed() >= 3000) {
                     os = osState()

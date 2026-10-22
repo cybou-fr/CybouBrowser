@@ -114,6 +114,9 @@
       ],
       "coveredScenarios": [
         "--media-device-test (opt-in, real camera and microphone): Windows CapabilityAccessManager must record the engine's use while live and its end after the Control Bar revoke"
+      ],
+      "remainingScenarios": [
+        "2026-10-22 real-device run: live tracks from the real camera and microphone, but Windows CapabilityAccessManager records no use by CYBOU; find why, and observe whether the Windows tray indicator appears"
       ]
     },
     {
