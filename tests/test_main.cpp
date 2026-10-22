@@ -254,12 +254,15 @@ int main(int argc, char *argv[])
                 const bool download = request.startsWith("GET /download ");
                 const bool transport = request.startsWith("GET /transport-document?");
                 if (request.startsWith("GET /media")) {
-                    // Camera fixture for --media-test: reports what the engine gives the page; on revoke it hides the stream
+                    // Media fixture for --media-test: reports what the engine gives the page; on revoke it hides the stream
                     // from the browser (no element, stop() replaced) so only an engine-side stop can end the capture.
-                    const QByteArray page = "<!doctype html><title>media-loading</title><script>"
-                        "window.cybouStart=()=>navigator.mediaDevices.getUserMedia({video:true}).then(s=>{window.cybouStream=s;"
+                    // cybouStart(kind): video, audio, both, or screen (getDisplayMedia needs a click: the page is one button).
+                    const QByteArray page = "<!doctype html><title>media-loading</title>"
+                        "<button id=b style='position:fixed;inset:0;width:100%;height:100%' onclick='window.cybouStart(\"screen\")'>screen</button><script>"
+                        "window.cybouStart=k=>(k==='screen'?navigator.mediaDevices.getDisplayMedia({video:true})"
+                        ":navigator.mediaDevices.getUserMedia({video:k!=='audio',audio:k!=='video'})).then(s=>{window.cybouStream=s;"
                         "MediaStreamTrack.prototype.stop=function(){};document.title='media-live'}).catch(e=>{console.warn('MEDIA_ERROR '+e.name+': '+e.message);document.title='media-'+e.name});"
-                        "window.cybouTrackState=()=>window.cybouStream?window.cybouStream.getVideoTracks()[0].readyState:'none';"
+                        "window.cybouTrackState=(kind)=>{const t=window.cybouStream&&window.cybouStream.getTracks().find(t=>t.kind===(kind||'video'));return t?t.readyState:'none'};"
                         "document.title='media-ready'</script>";
                     socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
                     socket->disconnectFromHost(); return;

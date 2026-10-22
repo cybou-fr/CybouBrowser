@@ -378,5 +378,17 @@ New gate suite `media` (`cybou_tests.exe --media-test`, `qml/MediaPermissionHarn
 
 Because the page defeats the in-page `stopMediaTracks` script, the `ended` state shows the engine-side reset in `PermissionCoordinator::revokeLease` ends the capture. The `controlbar` suite still passes with the shared harness hook.
 
-Engine behaviour recorded by the diagnostic `cybou_tests.exe --media-probe` (`MediaProbe.h`, raw engine, no CYBOU coordinator): an embedder deny reaches the page as `AbortError: Invalid state`, not `NotAllowedError`; a grant, also after a 1.5 s delay, gives a live track; a new page after a deny is asked again. Not yet covered: microphone and camera with microphone together, screen capture refusal in the engine, cross-origin iframes, a real device and the OS capture indicator.
+Engine behaviour recorded by the diagnostic `cybou_tests.exe --media-probe` (`MediaProbe.h`, raw engine, no CYBOU coordinator): an embedder deny reaches the page as `AbortError: Invalid state`, not `NotAllowedError`; a grant, also after a 1.5 s delay, gives a live track; a new page after a deny is asked again. ### Microphone, camera with microphone, and screen capture - 2026-10-22
+
+The `media` suite now runs four scenarios, each in a fresh tab, three runs out of three:
+
+| Scenario | Observed |
+| --- | --- |
+| Microphone alone | one prompt for the microphone only; grant gives a live audio track; Control Bar revoke ends it while the page hides it |
+| Camera and microphone in one request | one prompt with both pending; both tracks live; revoking the camera ended **both** tracks |
+| Screen capture after a real click (`userActivation` true) | `AbortError`, no prompt, no stream, no request event in CYBOU |
+
+**Finding and fix.** The engine backs a combined camera and microphone grant with a single decision, so resetting it for the camera also stops the microphone. CYBOU kept the microphone key in the lease, and the Control Bar showed the microphone as granted while its track had stopped. `PermissionCoordinator::revokeLease` now removes the whole lease when it resets a real engine permission; the test asserts that no device is shown as granted while its track has ended. Partial revoke still applies to leases without an engine permission object, as the unit test covers. The `security` and `controlbar` suites pass after the change.
+
+**Screen capture.** CYBOU handles no `desktopMediaRequested`, so Qt cancels `getDisplayMedia` before any permission request: screen capture cannot start, but the refusal is not visible in the Control Bar's Screen control. Not yet covered: cross-origin iframes, a real device and the OS capture indicator.
 

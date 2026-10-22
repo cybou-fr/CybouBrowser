@@ -320,7 +320,10 @@ bool PermissionCoordinator::revokeLease(QObject *view, const QString &key, bool 
             affectedViews.append(lease.context.view);
         }
 
-        if (matchAll) {
+        // One engine decision backs every key of the lease (camera and microphone asked together share it):
+        // resetting it above ends the whole grant in the engine, so all of its keys go, or the Control Bar would
+        // still show the other device as granted while its track has already stopped (measured by --media-test).
+        if (matchAll || lease.permission.isValid()) {
             m_leases.removeAt(i);
         } else {
             lease.keys.removeAll(key);
