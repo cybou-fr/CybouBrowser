@@ -145,7 +145,7 @@ include(CPack)
 
 # Test runner executable
 if(TARGET Qt6::Test)
-    qt_add_executable(cybou_tests tests/test_main.cpp src/security/SecurityTests.h src/security/ExternalProtocolTests.h)
+    qt_add_executable(cybou_tests tests/test_main.cpp src/security/SecurityTests.h src/security/ExternalProtocolTests.h src/security/OsCaptureProbe.h)
     target_link_libraries(cybou_tests PRIVATE cybou_core cybou_coreplugin Qt6::Test)
     target_compile_definitions(cybou_tests PRIVATE "CYBOU_PRODUCT_VERSION=\"${PROJECT_VERSION}-${CYBOU_PRERELEASE}\"")
 endif()

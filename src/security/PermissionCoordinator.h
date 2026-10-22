@@ -41,6 +41,10 @@ public:
     Q_INVOKABLE void revokeAll();
     Q_INVOKABLE bool revokeLease(QObject *view, const QString &key = QString(), bool deny = false);
     Q_INVOKABLE QStringList grantedKeys(QObject *view, quint64 epoch) const;
+    // True when a lease of the view for key (or any key when empty) was granted to a frame of another origin than the
+    // top document. Resetting such a grant does not stop the frame's capture in the engine (measured by --media-test),
+    // so the caller must replace the document instead.
+    Q_INVOKABLE bool hasCrossOriginLease(QObject *view, const QString &key = QString()) const;
     Q_INVOKABLE bool hasPendingFor(const QString &tab) const;
 
     // Unit test helpers to test queue, lease lifecycle and cancellation without a live browser engine:

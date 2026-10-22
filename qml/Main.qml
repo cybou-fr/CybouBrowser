@@ -331,11 +331,18 @@ ApplicationWindow {
     function revokePermissionGracefully(view, key, targetMode) {
         if (!view) return
         const isDeny = (targetMode === 2)
+        // A frame of another origin keeps capturing after its grant is reset: only a new document stops it for sure.
+        const replaceDocument = permissionCoordinator && permissionCoordinator.hasCrossOriginLease(view, key)
         if (controlState) {
             controlState.setPermissionPolicy(key, targetMode)
         }
         if (permissionCoordinator) {
             permissionCoordinator.revokeLease(view, key, isDeny)
+        }
+        if (replaceDocument) {
+            window.replaceGrantedView(view, view.url.toString())
+            window.showStatus(qsTr("Accès révoqué. La page a été rechargée pour arrêter la capture d’un cadre intégré."))
+            return
         }
         stopMediaTracks(view, key)
         window.showStatus(isDeny ? qsTr("Accès bloqué.") : qsTr("Accès révoqué."))

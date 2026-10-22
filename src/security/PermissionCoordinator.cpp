@@ -256,6 +256,13 @@ QStringList PermissionCoordinator::grantedKeys(QObject *view, quint64 epoch) con
     result.removeDuplicates(); return result;
 }
 
+bool PermissionCoordinator::hasCrossOriginLease(QObject *view, const QString &key) const {
+    for (const auto &lease : m_leases)
+        if (lease.context.view == view && (key.isEmpty() || key == QStringLiteral("all") || lease.keys.contains(key))
+            && lease.context.requestingOrigin != lease.context.topOrigin) return true;
+    return false;
+}
+
 bool PermissionCoordinator::hasPendingFor(const QString &tab) const {
     if (m_pending && m_pending->context.tabUid == tab) return true;
     for (const auto &item : m_queue) {

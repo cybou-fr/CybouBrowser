@@ -28,8 +28,20 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "planned",
-      "kind": "execution"
+      "status": "in_progress",
+      "kind": "execution",
+      "testSources": [
+        "qml/Main.qml",
+        "qml/MediaPermissionHarness.qml",
+        "src/security/PermissionCoordinator.cpp",
+        "tests/test_main.cpp"
+      ],
+      "coveredScenarios": [
+        "--media-test: cross-origin iframe (localhost in 127.0.0.1) with allow=camera: the prompt names the framed requester and top site; grant gives a live track; revoke replaces the document because resetting the grant does not stop a frame's capture; a top-level deny refuses the iframe without a prompt and records the framed requester"
+      ],
+      "remainingScenarios": [
+        "iframe without allow=camera: the engine still asks CYBOU and CYBOU prompts and lists camera as granted, though the engine gives no stream (NotAllowedError)"
+      ]
     },
     {
       "id": "CYB-PERM-003",
@@ -93,8 +105,16 @@
       "method": "ui",
       "tier": "P0",
       "candidateSuite": "surface",
-      "status": "planned",
-      "kind": "execution"
+      "status": "in_progress",
+      "kind": "execution",
+      "testSources": [
+        "qml/MediaPermissionHarness.qml",
+        "src/security/OsCaptureProbe.h",
+        "tests/test_main.cpp"
+      ],
+      "coveredScenarios": [
+        "--media-device-test (opt-in, real camera and microphone): Windows CapabilityAccessManager must record the engine's use while live and its end after the Control Bar revoke"
+      ]
     },
     {
       "id": "CYB-HTTP-001",

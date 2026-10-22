@@ -392,3 +392,19 @@ The `media` suite now runs four scenarios, each in a fresh tab, three runs out o
 
 **Screen capture.** `getDisplayMedia` reaches the embedder as `desktopMediaRequested`, not as a permission request, so it never passed through the coordinator and the Screen control showed nothing. `BrowserTab.onDesktopMediaRequested` now cancels the request and records it through `ControlBarController::noteBlockedRequest`; the test asserts exactly one blocked event with the requesting origin (three runs out of three; before the handler there were none). `controlbar`, `surface` and `smoke` pass. Not yet covered: cross-origin iframes, a real device and the OS capture indicator.
 
+### Cross-origin iframes and the real device - 2026-10-22
+
+Three iframe scenarios run in the `media` suite: `/media-top` on 127.0.0.1 frames `/media-frame` from localhost, another origin of the same server (three runs out of three):
+
+| Scenario | Observed |
+| --- | --- |
+| Iframe with `allow="camera;microphone"` | the prompt names the framed requester (localhost) in the top site; grant gives a live track |
+| Revoke from the Control Bar while the frame hides its stream | **before the fix: the frame's track stayed `live`**; now the document is replaced and the new one starts without a stream |
+| Top site camera set to blocked | the iframe is refused without a prompt; the refusal is recorded for the framed requester |
+| Iframe without an `allow` attribute | the engine still asks CYBOU; even when granted the frame gets `NotAllowedError` and no stream |
+
+**Finding and fix.** Resetting a grant that belongs to a frame of another origin does not stop that frame's capture in the engine, although it does for the top document. `revokePermissionGracefully` now asks `PermissionCoordinator::hasCrossOriginLease` and, for such a grant, replaces the document with a fresh load of the same page, which ends every capture of the old one. `controlbar`, `security`, `surface` and `smoke` pass after the change.
+
+**Open: iframe without delegation.** The engine enforces the permissions policy after asking the embedder, so no capture is possible, but CYBOU shows a prompt that cannot succeed and, if it is accepted, lists the camera as granted. CYBOU does not see the `allow` attribute, so it cannot tell such a request from a delegated one.
+
+**Real device and OS indicator.** `cybou_tests.exe --media-device-test` (opt-in, not a gate suite: it turns on the machine's real camera and microphone for about six seconds) grants a combined camera and microphone request with no fake device, then reads what Windows records in `CapabilityAccessManager` for `QtWebEngineProcess.exe` (`OsCaptureProbe.h`; `LastUsedTimeStop` is 0 while a device is in use). It asserts no use before, both devices in use while live, and both stopped three seconds after the Control Bar revoke.

@@ -630,6 +630,11 @@ Passés par exception : %5</source>
         <translation>Временный доступ отозван. Откройте страницу заново, чтобы продолжить.</translation>
     </message>
     <message>
+        <location filename="../qml/Main.qml" line="1"/>
+        <source>Accès révoqué. La page a été rechargée pour arrêter la capture d’un cadre intégré.</source>
+        <translation>Доступ отозван. Страница перезагружена, чтобы остановить захват во встроенном фрейме.</translation>
+    </message>
+    <message>
         <location filename="../qml/Main.qml" line="885"/>
         <location filename="../qml/Main.qml" line="894"/>
         <source>Nouvel onglet</source>

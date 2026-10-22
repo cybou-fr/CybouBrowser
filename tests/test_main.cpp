@@ -36,6 +36,7 @@
 #include "security/StrictWebRtcTests.h"
 #include "security/WasmTests.h"
 #include "security/MediaProbe.h"
+#include "security/OsCaptureProbe.h"
 #include "security/TextInjectionProbe.h"
 #include "security/HstsTests.h"
 #include "security/DownloadFileTests.h"
@@ -112,7 +113,9 @@ int main(int argc, char *argv[])
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
 
-    const bool mediaTest = app.arguments().contains("--media-test");
+    // --media-device-test: the real camera and microphone, checked against what Windows records. Opt-in: not a gate suite.
+    const bool mediaDeviceTest = app.arguments().contains("--media-device-test");
+    const bool mediaTest = app.arguments().contains("--media-test") || mediaDeviceTest;
     const bool controlBarTest = app.arguments().contains("--controlbar-test") || mediaTest;
     const bool transportTest = app.arguments().contains("--transport-test") || trackerTest;
     const bool surfaceTest = app.arguments().contains("--surface-test");
@@ -253,6 +256,34 @@ int main(int argc, char *argv[])
                 }
                 const bool download = request.startsWith("GET /download ");
                 const bool transport = request.startsWith("GET /transport-document?");
+                if (request.startsWith("GET /media-top")) {
+                    // Cross-origin iframe fixture: the top page (127.0.0.1) frames /media-frame from localhost, another origin of
+                    // the same server. ?allow lists camera and microphone in the iframe allow attribute. The top page relays
+                    // commands to the frame and shows the frame's results as its own title.
+                    const bool allow = request.startsWith("GET /media-top?allow");
+                    const QByteArray frame = "http://localhost:" + QByteArray::number(socket->localPort()) + "/media-frame";
+                    const QByteArray page = "<!doctype html><title>media-loading</title><iframe id=f " + QByteArray(allow ? "allow='camera;microphone' " : "")
+                        + "src='" + frame + "' style='width:400px;height:200px'></iframe><script>"
+                        "window.frameState='';addEventListener('message',e=>{if(e.data.title)document.title=e.data.title;if(e.data.state)window.frameState=e.data.state});"
+                        "window.cybouStart=k=>f.contentWindow.postMessage({cmd:'start',k},'*');"
+                        "window.cybouAskState=()=>{window.frameState='';f.contentWindow.postMessage({cmd:'state'},'*')};"
+                        "</script>";
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                    socket->disconnectFromHost(); return;
+                }
+                if (request.startsWith("GET /media-frame")) {
+                    // Framed side of /media-top: same hostile behaviour as /media (hidden stream, stop() replaced).
+                    const QByteArray page = "<!doctype html><title>frame</title><script>"
+                        "const say=m=>parent.postMessage(m,'*');"
+                        "const start=k=>navigator.mediaDevices.getUserMedia({video:k!=='audio',audio:k!=='video'}).then(s=>{window.s=s;"
+                        "MediaStreamTrack.prototype.stop=function(){};say({title:'media-live'})}).catch(e=>say({title:'media-'+e.name}));"
+                        "const track=k=>{const t=window.s&&window.s.getTracks().find(t=>t.kind===k);return t?t.readyState:'none'};"
+                        "addEventListener('message',e=>{if(e.data.cmd==='start')start(e.data.k);"
+                        "if(e.data.cmd==='state')say({state:JSON.stringify({video:track('video'),audio:track('audio')})})});"
+                        "say({title:'media-ready'})</script>";
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                    socket->disconnectFromHost(); return;
+                }
                 if (request.startsWith("GET /media")) {
                     // Media fixture for --media-test: reports what the engine gives the page; on revoke it hides the stream
                     // from the browser (no element, stop() replaced) so only an engine-side stop can end the capture.
@@ -328,6 +359,9 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("smokeMode", smokeTest);
     engine.rootContext()->setContextProperty("trackerTestMode", trackerTest);
     engine.rootContext()->setContextProperty("mediaTestMode", mediaTest);
+    engine.rootContext()->setContextProperty("mediaDeviceMode", mediaDeviceTest);
+    OsCaptureProbe osCapture;
+    engine.rootContext()->setContextProperty("osCapture", &osCapture);
     engine.rootContext()->setContextProperty("smokeBaseUrl", QString("http://127.0.0.1:%1").arg(testServer.serverPort()));
     engine.rootContext()->setContextProperty("smokeDownloadPath", QDir::current().absoluteFilePath("build/test-downloads"));
 
