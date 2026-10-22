@@ -182,15 +182,17 @@ class GateContractTests(unittest.TestCase):
             for text in ["needs a recorded proposal","unknown case NOPE","malformed or duplicate threat id: bad"]:
                 self.assertTrue(any(text in e for e in errors),text)
 
-    def risk_errors(self, records, decisions, kev=(), retrieved="2026-10-20"):
+    def risk_errors(self, records, decisions, kev=(), retrieved="2026-10-20", strict=False):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d)
             (base/"sbom.json").write_text(json.dumps({"components":[{"bom-ref":"qt-webengine-chromium","version":"6.12.0",
                 "properties":[{"name":"cybou:chromium-version","value":"140.0.7339.225"}]}]}),encoding="utf-8")
-            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":retrieved,"records":records}),encoding="utf-8")
-            (base/"kev.json").write_text(json.dumps({"retrievedOn":retrieved,"cveIds":list(kev)}),encoding="utf-8")
+            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":retrieved,"records":records,
+                "contentSha256":gate.canonical_sha(records)}),encoding="utf-8")
+            (base/"kev.json").write_text(json.dumps({"retrievedOn":retrieved,"cveIds":list(kev),
+                "contentSha256":gate.canonical_sha(list(kev))}),encoding="utf-8")
             (base/"triage.json").write_text(json.dumps({"decisions":decisions}),encoding="utf-8")
-            return gate.check_risk(base/"sbom.json",base,gate.dt.date(2026,10,22))
+            return gate.check_risk(base/"sbom.json",base,gate.dt.date(2026,10,22),strict=strict)
 
     def test_risk_gate_matches_sbom_versions_and_requires_triage(self):
         hit={"id":"CVE-2099-0001","component":"chromium","ranges":[{"introduced":"0","fixed":"141.0.7390.54"}]}
@@ -198,7 +200,8 @@ class GateContractTests(unittest.TestCase):
         errors,stats=self.risk_errors([hit,miss],[])
         self.assertEqual(stats["matches"],1)
         self.assertTrue(any("not triaged" in e for e in errors))
-        fixed={"vulnId":"CVE-2099-0001","component":"chromium","status":"fixed","justification":"backported in Qt 6.12.0"}
+        fixed={"vulnId":"CVE-2099-0001","component":"chromium","status":"fixed","justification":"backported in Qt 6.12.0",
+               "method":"backport-commit","evidence":["https://example.invalid/commit"]}
         self.assertEqual(self.risk_errors([hit,miss],[fixed])[0],[])
         errors,stats=self.risk_errors([hit],[{**fixed,"status":"affected"}],kev=["CVE-2099-0001"])
         self.assertTrue(any("CISA KEV" in e for e in errors))
@@ -212,10 +215,12 @@ class GateContractTests(unittest.TestCase):
                 {"name":"cybou:chromium-version","value":"140.0.7339.225"},
                 {"name":"cybou:chromium-security-patch-version","value":"152.0.7977.83"}]}]}),encoding="utf-8")
             rec={"id":"CVE-2099-0006","component":"chromium","ranges":[{"introduced":"0","fixed":fixed}]}
-            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":"2026-10-21","records":[rec]}),encoding="utf-8")
-            (base/"kev.json").write_text(json.dumps({"retrievedOn":"2026-10-21","cveIds":[]}),encoding="utf-8")
+            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":"2026-10-21","records":[rec],
+                "contentSha256":gate.canonical_sha([rec])}),encoding="utf-8")
+            (base/"kev.json").write_text(json.dumps({"retrievedOn":"2026-10-21","cveIds":[],"contentSha256":gate.canonical_sha([])}),encoding="utf-8")
             (base/"triage.json").write_text(json.dumps({"decisions":list(decisions)}),encoding="utf-8")
-            (base/"qt-backports.json").write_text(json.dumps({"cves":{"CVE-2099-0006":["abc"]} if backported else {}}),encoding="utf-8")
+            cves={"CVE-2099-0006":["abc"]} if backported else {}
+            (base/"qt-backports.json").write_text(json.dumps({"cves":cves,"contentSha256":gate.canonical_sha(cves)}),encoding="utf-8")
             return gate.check_risk(base/"sbom.json",base,gate.dt.date(2026,10,22))
 
     def test_patch_level_needs_both_declared_level_and_backport_commit(self):
@@ -236,6 +241,39 @@ class GateContractTests(unittest.TestCase):
                         {"title":'Revert "[backport] CVE-2099-0007 (1/2)"',"sha":"c"},{"title":"[Backport] CVE-2099-0008","sha":"d"},
                         {"title":'Revert "[Backport] CVE-2099-0008"',"sha":"e"},{"title":"[Backport] Dependency for CVE-2099-0009","sha":"f"}])
         self.assertEqual(found,{"CVE-2099-0007":["b"]})
+
+    def test_unsupported_or_weak_decisions_block(self):
+        hit={"id":"CVE-2099-0001","component":"chromium","ranges":[{"introduced":"0","fixed":"141.0.1"}]}
+        bare={"vulnId":"CVE-2099-0001","component":"chromium","status":"fixed","justification":"trust me"}
+        self.assertTrue(any("needs a method" in e for e in self.risk_errors([hit],[bare])[0]))
+        branch={**bare,"method":"backport-commit","evidence":["https://example.invalid/c"]}
+        self.assertEqual(self.risk_errors([hit],[branch])[0],[])
+        self.assertTrue(any("release needs binary or source" in e for e in self.risk_errors([hit],[branch],strict=True)[0]))
+        tested={**branch,"method":"binary-test"}
+        errors,stats=self.risk_errors([hit],[tested],strict=True)
+        self.assertEqual((errors,stats["byEvidence"]["binary"]),([],1))
+
+    def test_feed_edited_after_import_is_detected(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d)
+            (base/"sbom.json").write_text(json.dumps({"components":[]}),encoding="utf-8")
+            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":"2026-10-21","records":[],
+                "contentSha256":gate.canonical_sha([{"id":"CVE-2099-0001"}])}),encoding="utf-8")
+            (base/"kev.json").write_text(json.dumps({"retrievedOn":"2026-10-21","cveIds":["CVE-1"],"contentSha256":"0"}),encoding="utf-8")
+            errors,_=gate.check_risk(base/"sbom.json",base,gate.dt.date(2026,10,22))
+            self.assertEqual(sum("does not match contentSha256" in e for e in errors),2)
+
+    def test_framework_requires_existing_test_implementations(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d)
+            (base/"coverage.json").write_text(json.dumps({"requirements":[]}),encoding="utf-8")
+            (base/"threats.json").write_text(json.dumps({"threats":[{"id":"CWE-20","title":"t","caseIds":["A"]}]}),encoding="utf-8")
+            cases={"A":{"status":"in_progress"},"B":{"status":"planned","testSources":["src/does-not-exist.h"]},
+                   "C":{"status":"in_progress","testSources":["tools/security/owasp_gate.py"]}}
+            errors,_=gate.check_framework(set(),base/"coverage.json",cases,base/"threats.json")
+            self.assertIn("A: in_progress case lists no testSources",errors)
+            self.assertIn("B: test source missing: src/does-not-exist.h",errors)
+            self.assertFalse(any(e.startswith("C:") for e in errors))
 
     def test_risk_gate_blocks_stale_or_missing_feeds(self):
         self.assertTrue(any("days old" in e for e in self.risk_errors([],[],retrieved="2026-09-01")[0]))

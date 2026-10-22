@@ -45,7 +45,7 @@ CYBOU runs as a Windows desktop browser with a two-row window header (tabs and n
 | Network controls | Request observer, categorized local ad/tracker rules, origin-scoped temporary exceptions and network event summaries | Comprehensive blocklists, false-positive testing, DNS/PNA bypass resistance and performance under attack |
 | Private browsing | Separate off-the-record WebEngine profile | Independent process/network isolation or anonymity (not claimed) |
 | Cloud launch | Local catalog, provider overrides, official HTTPS navigation and local SVG resources | Verified login/2FA/SSO for every supplier; no extra site permissions are granted |
-| Test engineering | Six native/integration test suites, local OWASP-oriented runner and risk-case inventory | Official OWASP inventory mapping, complete executed evidence, independent security assessment |
+| Test engineering | 14 native/integration test suites, a four-mode gate (framework, test, risk, release), local OWASP-oriented runner and risk-case inventory | Official OWASP inventory mapping, complete executed evidence, independent security assessment |
 | Distribution | Windows CMake/Qt build configuration | Signed installer, security update/rollback channel and independently verified shipped sandbox |
 
 **CYBOU is not yet a publicly released or security-certified browser.** No blanket anti-phishing, full adblocking, complete JavaScript monitoring or immunity from compromised sites is claimed. Test plans are not test results.

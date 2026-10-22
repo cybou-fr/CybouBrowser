@@ -46,7 +46,7 @@ python tools/security/import_vulns.py --nvd nvd-chrome.json --cpe google:chrome=
 python tools/security/owasp_gate.py --mode risk --sbom build/CYBOU-sbom.cdx.json --out build/security-risk.json
 ```
 
-Chrome version ranges in NVD do not account for the security fixes Qt backports into its Chromium base (140.0.7339.225 for Qt 6.12). Qt WebEngine 6.140.0 in Qt 6.12.0 declares a security patch level of **152.0.7977.83** (`qWebEngineChromiumSecurityPatchVersion()`, `CHROMIUM_VERSION` in the Qt sources; the sources name the base 140.0.7339.264 while the binary reports 140.0.7339.225, to be reconciled). The patch level is Qt's claim, not proof for an individual CVE. A match is therefore never dismissed by version alone: it is recorded in `triage.json` as `fixed` with the Qt release that carries the fix, `not_affected` with a justification, or `affected`, which blocks.
+Chrome version ranges in NVD do not account for the security fixes Qt backports into its Chromium base (140.0.7339.225 for Qt 6.12). `make_sbom.py` reads the Qt, Qt WebEngine and Chromium versions from the staged binaries (Qt6Core.dll and Qt6WebEngineCore.dll version resources, and the two Chromium version strings the engine embeds), so the SBOM describes what is shipped. Qt WebEngine 6.140.0 in Qt 6.12.0 declares a security patch level of **152.0.7977.83** (`qWebEngineChromiumSecurityPatchVersion()`, `CHROMIUM_VERSION` in the Qt sources; the sources name the base 140.0.7339.264 while the binary reports 140.0.7339.225, to be reconciled). The patch level is Qt's claim, not proof for an individual CVE. A match is therefore never dismissed by version alone: it is recorded in `triage.json` as `fixed` with the Qt release that carries the fix, `not_affected` with a justification, or `affected`, which blocks.
 
 ### First known-vulnerability run (2026-10-22)
 
@@ -60,6 +60,17 @@ CISA KEV catalog 2026.10.21 (1754 CVEs) and 7153 NVD `google:chrome` records: **
 | **CVE-2026-87491** | **under_investigation** | Fixed in Chrome 153, after the Qt patch level; no backport found. Exploited in the wild: blocks the risk gate |
 
 **Automatic `patch-level` status.** A match without an explicit decision is resolved as `patch-level` only when both facts hold: every affecting range is fixed upstream at or below the security patch level recorded in the SBOM, and `tests/security/vulns/qt-backports.json` lists a non-reverted `[Backport] CVE-...` commit for it on the Qt branch before the shipped build. The index is built by `tools/security/qt_backports.py --until <build time>` (1192 CVEs from 2100 commits up to 2026-09-28; `GITHUB_TOKEN` lifts the anonymous API limit). An explicit triage decision always wins.
+
+**Evidence levels.** A resolution is only as strong as its evidence, and the gate records which level each one rests on:
+
+| Level | Meaning | Accepted by |
+| --- | --- | --- |
+| `binary` (`method: binary-test`) | Checked against the shipped engine, e.g. the upstream regression test run on it | risk, release |
+| `source` (`method: source-inspection`) | The shipped Qt sources inspected: fix present or vulnerable code absent | risk, release |
+| `branch` (`method: backport-commit`) | A backport commit exists on the Qt branch before the build; its presence in the binary is not shown | risk only |
+| `branch+declared` (`patch-level`) | Vendor patch level plus a backport commit | risk only |
+
+`fixed` and `not_affected` need a `method` and `evidence` links; `not_affected` also needs a justification. `--mode release` rejects `branch` and `branch+declared`, so the current 1100 resolutions keep a release BLOCKED until they are confirmed at source or binary level. `snapshot.json`, `kev.json` and `qt-backports.json` carry a `contentSha256` written at import; an edit after import blocks the risk gate. The framework gate also checks that every `testSources` file of a case exists and that cases marked in progress or verified name their implementation.
 
 | Status of the 3470 matches | Count | Critical / high |
 | --- | --- | --- |

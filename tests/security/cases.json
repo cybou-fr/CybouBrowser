@@ -345,7 +345,12 @@
       "method": "native",
       "tier": "P0",
       "candidateSuite": "security",
-      "status": "in_progress"
+      "status": "in_progress",
+      "testSources": [
+        "tools/security/qml_text_lint.py",
+        "tools/security/test_qml_text_lint.py",
+        "src/security/TextInjectionProbe.h"
+      ]
     },
     {
       "id": "CYB-UPD-001",
@@ -662,6 +667,9 @@
         "cross-site and third-party cookie policy",
         "null/sandboxed frame origins and redirect preflights",
         "packaged production profile regression"
+      ],
+      "testSources": [
+        "src/security/NetworkBoundaryTests.h"
       ]
     },
     {

@@ -42125,8 +42125,9 @@
     }
   ],
   "retrievedOn": "2026-10-22",
+  "contentSha256": "9f01ab06550a9028dd5f13c20c9d7b62cc4c9fbcc3cb10ec0803debf2a2cfa02",
   "filteredBy": {
     "file": "CYBOU-sbom.cdx.json",
-    "sha256": "92e3c5a11beb93dfbd5072f72dc3bd1523fb4c6e9aa5e95025a6efa3cedac228"
+    "sha256": "0b5a2111f1b071b6037f0b4d4481acd34b3251229722531703b49be25eb55f6a"
   }
 }

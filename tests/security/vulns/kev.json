@@ -5,6 +5,7 @@
     "file": "kev.json",
     "sha256": "ef8fffede5c472001da046c7751beb2a3242458896d0ce08da52b30968b8b56b"
   },
+  "contentSha256": "e15891108f0c736039c375a14b345b5b0fb6967ea3167cbe8ebfaefedb72cd84",
   "cveIds": [
     "CVE-2002-0367",
     "CVE-2004-0210",

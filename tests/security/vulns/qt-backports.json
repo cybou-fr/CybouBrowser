@@ -4,6 +4,7 @@
  "branch": "140-based",
  "until": "2026-09-28T10:05:00Z",
  "commitsScanned": 2100,
+ "contentSha256": "60c195888014fc7a3d98b4a356473f87be76160c0f23d011534b88034692cf44",
  "cves": {
   "CVE-2025-11205": [
    "7697a73dc90412798f461f45e5906362cc1823a6",

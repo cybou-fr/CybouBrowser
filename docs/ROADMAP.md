@@ -11,7 +11,7 @@
 | Permissions | Native PermissionCoordinator, per-document decisions and explicit controls | Real capture stop, combined mic/camera, iframe and stale-request adversarial tests |
 | Network | Strict HTTPS, temporary HTTP access, NavigationGuard, categorized RuleEngine, tracker exceptions | DNS/PNA/redirect/WebRTC threat tests, list updates/false positives, engine sandbox proof |
 | Cloud | Provider-neutral C++ catalog/manager, Proton default and role overrides, Nextcloud HTTPS configuration, web app launcher and local icons | Real login/2FA compatibility, redirects, no-prefetch/permission regression, clarity of product vs web-link shortcuts |
-| Test support | `cybou_tests`, six native suites, `tools/security/owasp_gate.py`, machine-readable risk cases | Pinned ASVS/WSTG inventory and mappings, evidence and independent pentest |
+| Test support | `cybou_tests`, 14 native suites, `tools/security/owasp_gate.py`, machine-readable risk cases | Pinned ASVS/WSTG inventory and mappings, evidence and independent pentest |
 | Distribution | CMake Windows executable; release-candidate script with signing, CycloneDX SBOM, `/Brepro` reproducibility check, ZIP and IFW installer; online update checked with a local repository ([PACKAGING](PACKAGING.md)) | Trusted (non-self-signed) signing, published update server, rollback, independent review and response process |
 
 No third-party extension platform or partner-granted browser privileges are permitted.
@@ -29,7 +29,7 @@ This review covers the local Windows implementation and test infrastructure. Imp
 | HTTPS and tracker exceptions | `NetworkPolicy.h`, `HttpNavigationLease.h`, `TrackerExceptionRegistry.h`, `TrackerBlocker.h` | Scoped temporary exceptions and local fixtures exist; TLS/DNS/PNA/redirect adversarial coverage remains incomplete |
 | Filtering | `src/security/RuleEngine.h` | Small built-in categorized suffix list with protected endpoints; no qualified list-update pipeline or broad effectiveness claim |
 | Cloud apps | `src/cloud/`, `qml/CloudSettingsSection.qml` | Local catalog, role resolver, Nextcloud configuration and launcher implemented; real vendor login/2FA and document/media workflows unverified |
-| Test evidence | `tests/test_main.cpp`, `tools/security/owasp_gate.py` | Six suites exist; previous report had empty suite logs and two failures. Diagnostics capture, empty-log rejection and source-diff identification added; fresh results tracked in VALIDATION |
+| Test evidence | `tests/test_main.cpp`, `tools/security/owasp_gate.py` | 14 suites are wired into the runner (the 2026-10-18 baseline ran the first six); an earlier report had empty suite logs and two failures. Diagnostics capture, empty-log rejection and source-diff identification added; fresh results tracked in VALIDATION |
 | Release infrastructure | `CMakeLists.txt`, `tests/security/standards.lock.json` | Windows build exists; official ASVS/WSTG files, hashes and 442 coverage entries are now present; all applicability decisions remain untriaged. installer, signing, SBOM and update pipeline exist locally ([PACKAGING](PACKAGING.md)); R5 is not passed |
 
 ### Immediate delivery queue
@@ -40,7 +40,7 @@ This review covers the local Windows implementation and test infrastructure. Imp
 - [ ] **R4 — Windows product qualification:** cloud login/2FA, keyboard/FR/RU/DPI, many tabs, crash/session recovery and cleanup.
 - [ ] **R5 — distributable candidate:** reproducible installer, licenses/SBOM, signing, safe update/rollback, independent review and matching candidate evidence.
 
-R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 is active: import/pinning complete, nine applicability batches (122 applicable, 320 N/A proposals awaiting item-specific human approval; the 9 flagged rows were reviewed on 2026-10-22: 3 moved to applicable, 6 kept as conditional proposals) recorded in [OWASP_TRIAGE](OWASP_TRIAGE.md), evidence still pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
+R1 passed locally: Release built, six gate self-tests and six native suites passed with nonempty logs and a saved tested patch. R2 passed on 2026-10-22 as a risk-based framework stage: import/pinning complete, nine applicability batches (122 applicable, 320 N/A proposals awaiting item-specific human approval; the 9 flagged rows were reviewed on 2026-10-22: 3 moved to applicable, 6 kept as conditional proposals) recorded in [OWASP_TRIAGE](OWASP_TRIAGE.md), threat catalog and known-vulnerability gate added, evidence still pending; R3–R5 remain open. This does not authorize a 1.0 claim. See [VALIDATION](VALIDATION.md) for current executed results.
 
 ## Gates
 

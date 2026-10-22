@@ -22,7 +22,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from owasp_gate import COMPONENTS, affects, sbom_versions
+from owasp_gate import COMPONENTS, affects, canonical_sha, sbom_versions
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -91,7 +91,8 @@ def main():
     out=Path(a.out); out.mkdir(parents=True,exist_ok=True)
     if a.kev:
         ids=sorted({v["cveID"] for v in read(a.kev).get("vulnerabilities",[]) if v.get("cveID")})
-        write(out/"kev.json",{"schemaVersion":1,"retrievedOn":a.retrieved_on,"source":source(a.kev),"cveIds":ids})
+        write(out/"kev.json",{"schemaVersion":1,"retrievedOn":a.retrieved_on,"source":source(a.kev),
+                              "contentSha256":canonical_sha(ids),"cveIds":ids})
         print("kev.json:",len(ids),"CVE IDs")
     new=[]
     if a.nvd:
@@ -107,13 +108,14 @@ def main():
                                key=lambda r:(r["component"],r["id"]))
         snap["sources"]=snap.get("sources",[])+[source(x) for x in (a.nvd,a.osv) if x]
         snap["retrievedOn"]=a.retrieved_on
+        snap["contentSha256"]=canonical_sha(snap["records"])
         write(snap_file,snap)
         print(snap_file.name+":",len(new),"records imported,",len(snap["records"]),"total")
         if a.sbom:
             versions=sbom_versions(a.sbom)
             matched=[r for r in snap["records"] if r["component"] in COMPONENTS
                      and versions.get(COMPONENTS[r["component"]]) and affects(r,versions[COMPONENTS[r["component"]]])]
-            write(out/"snapshot.json",{**snap,"records":matched,"filteredBy":source(a.sbom)})
+            write(out/"snapshot.json",{**snap,"records":matched,"contentSha256":canonical_sha(matched),"filteredBy":source(a.sbom)})
             print("snapshot.json:",len(matched),"records match the SBOM")
 
 if __name__=="__main__":

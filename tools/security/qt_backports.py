@@ -14,7 +14,11 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import urllib.request
+
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from owasp_gate import canonical_sha
 
 ROOT=Path(__file__).resolve().parents[2]
 API="https://api.github.com/repos/qt/qtwebengine-chromium/commits"
@@ -54,7 +58,8 @@ def main():
     commits=[c for c in commits if c["date"]<=a.until]
     found=index(commits)
     data={"schemaVersion":1,"repository":"https://github.com/qt/qtwebengine-chromium","branch":a.branch,
-          "until":a.until,"commitsScanned":a.scanned or len(commits),"cves":{k:found[k] for k in sorted(found)}}
+          "until":a.until,"commitsScanned":a.scanned or len(commits),
+          "contentSha256":canonical_sha(found),"cves":{k:found[k] for k in sorted(found)}}
     Path(a.out).write_text(json.dumps(data,indent=1,ensure_ascii=False)+"\n",encoding="utf-8")
     print(Path(a.out).name+":",len(found),"backported CVEs from",len(commits),"commits")
 

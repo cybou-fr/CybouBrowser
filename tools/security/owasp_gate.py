@@ -218,6 +218,15 @@ def run_suites(executable, output_dir, timeout):
 
 THREAT_ID=re.compile(r"(?:CWE|CAPEC)-\d+")
 VEX_STATUS=("not_affected","affected","fixed","under_investigation")
+# How a fixed/not_affected decision was reached, and how close that evidence is to the shipped bytes.
+# binary: checked against the shipped engine (regression test); source: the shipped Qt sources inspected;
+# branch: a backport commit exists before the build, presence in the binary not shown; declared: vendor claim only.
+EVIDENCE_LEVEL={"binary-test":"binary","source-inspection":"source","backport-commit":"branch"}
+RELEASE_LEVELS=("binary","source")
+
+def canonical_sha(obj):
+    """SHA-256 of a JSON value in canonical form; feeds record it so later edits are detected."""
+    return hashlib.sha256(json.dumps(obj,sort_keys=True,ensure_ascii=False,separators=(",",":")).encode("utf-8")).hexdigest()
 # Vulnerability-feed package names -> (SBOM bom-ref, SBOM property holding the version, or None for "version").
 COMPONENTS={"chromium":("qt-webengine-chromium","cybou:chromium-version"),
             "qt":("qt",None),"qtwebengine":("qt-webengine-chromium",None)}
@@ -257,6 +266,11 @@ def check_framework(requirements, coverage_file, cases, threats_file):
         seen.add(tid)
         if not x.get("title") or not x.get("caseIds"): errors.append(tid+": threat needs title and caseIds")
         errors+=[f"{tid}: unknown case {c}" for c in x.get("caseIds",[]) if c not in cases]
+    for cid,case in sorted(cases.items()):
+        sources=case.get("testSources",[])
+        if case.get("status") in ("in_progress","verified") and not sources:
+            errors.append(cid+": "+case["status"]+" case lists no testSources")
+        errors+=[f"{cid}: test source missing: {s}" for s in sources if not (ROOT/s).is_file()]
     threat_cases={c for x in threats for c in x.get("caseIds",[])}
     linked={c for r in rows.values() for c in r.get("caseIds",[])}|threat_cases
     # Gaps are reported, not failed: the catalog is expected to grow.
@@ -293,8 +307,9 @@ def sbom_versions(sbom_file):
         for prop in c.get("properties",[]): versions[(c.get("bom-ref"),prop.get("name"))]=prop.get("value")
     return versions
 
-def check_risk(sbom_file, vulns_dir, today, max_age=7):
-    """Known vulnerabilities (normalized CVE/OSV snapshot + CISA KEV) against the shipped SBOM, with VEX-style triage."""
+def check_risk(sbom_file, vulns_dir, today, max_age=7, strict=False):
+    """Known vulnerabilities (normalized CVE/OSV snapshot + CISA KEV) against the shipped SBOM, with VEX-style triage.
+    strict (release): every resolution must rest on binary or source evidence, not on a branch commit or a vendor claim."""
     errors=[]; vulns_dir=Path(vulns_dir)
     if not Path(sbom_file).is_file():
         return ["SBOM missing: run tools/package/make_sbom.py on the staged package"],{}
@@ -303,9 +318,15 @@ def check_risk(sbom_file, vulns_dir, today, max_age=7):
     for name,data in (("snapshot.json",snap),("kev.json",kev)):
         problem=snapshot_age_error(name,data,today,max_age)
         if problem: errors.append(problem)
+    for name,data,key in (("snapshot.json",snap,"records"),("kev.json",kev,"cveIds")):
+        if data and data.get("contentSha256")!=canonical_sha(data.get(key,[])):
+            errors.append(name+": content does not match contentSha256 (edited after import or not imported)")
     kev_ids=set(kev.get("cveIds",[]))
     triage={(d.get("vulnId"),d.get("component")):d for d in vex.get("decisions",[])}
-    backports=read_json(vulns_dir/"qt-backports.json").get("cves",{}) if (vulns_dir/"qt-backports.json").exists() else {}
+    bp=read_json(vulns_dir/"qt-backports.json") if (vulns_dir/"qt-backports.json").exists() else {}
+    if bp and bp.get("contentSha256")!=canonical_sha(bp.get("cves",{})):
+        errors.append("qt-backports.json: content does not match contentSha256")
+    backports=bp.get("cves",{})
     findings=[]
     for rec in snap.get("records",[]):
         rid,comp=rec.get("id"),rec.get("component")
@@ -323,18 +344,26 @@ def check_risk(sbom_file, vulns_dir, today, max_age=7):
         # An explicit triage decision always wins; KEV entries are reported but resolved the same way.
         if status is None and level and rid in backports and patch_level_covers(rec,version,level):
             status="patch-level"
-        findings.append({"id":rid,"component":comp,"version":version,"kev":in_kev,"status":status})
-        if status=="patch-level":
+        evidence=("branch+declared" if status=="patch-level" else
+                  EVIDENCE_LEVEL.get(d.get("method")) if status in ("fixed","not_affected") else None)
+        findings.append({"id":rid,"component":comp,"version":version,"kev":in_kev,"status":status,"evidence":evidence})
+        resolved=status in ("fixed","not_affected","patch-level")
+        if status in ("fixed","not_affected") and (d.get("method") not in EVIDENCE_LEVEL or not d.get("evidence")):
+            errors.append(f"{rid}: {status} needs a method ({', '.join(EVIDENCE_LEVEL)}) and evidence links")
+        elif status=="not_affected" and not d.get("justification"):
+            errors.append(f"{rid}: not_affected needs a justification")
+        elif resolved and strict and evidence not in RELEASE_LEVELS:
+            errors.append(f"{rid}: {status} rests on {evidence} evidence; release needs binary or source evidence")
+        elif resolved:
             pass
         elif status not in VEX_STATUS or status=="under_investigation":
             errors.append(f"{rid}: {comp} {version} matches and is not triaged")
-        elif status=="not_affected" and not d.get("justification"):
-            errors.append(f"{rid}: not_affected needs a justification")
         elif status=="affected":
             errors.append(f"{rid}: known vulnerability affects shipped {comp} {version}"+(" (CISA KEV)" if in_kev else ""))
     return errors,{"records":len(snap.get("records",[])),"matches":len(findings),
                    "kev":sum(f["kev"] for f in findings),
                    "patchLevel":sum(f["status"]=="patch-level" for f in findings),
+                   "byEvidence":{lvl:sum(f["evidence"]==lvl for f in findings) for lvl in ("binary","source","branch","branch+declared")},
                    "triaged":sum(f["status"] in VEX_STATUS and f["status"]!="under_investigation" for f in findings),
                    "open":sum(f["status"] not in VEX_STATUS+("patch-level",) or f["status"]=="under_investigation" for f in findings),
                    "findings":findings}
@@ -403,7 +432,7 @@ def main():
         problems,report["framework"]=check_framework(requirements,a.coverage,case_ids,a.threats)
         report["errors"]+=problems
     if a.mode in ("risk","release"):
-        problems,report["risk"]=check_risk(a.sbom,a.vulns,dt.date.today(),a.max_snapshot_age)
+        problems,report["risk"]=check_risk(a.sbom,a.vulns,dt.date.today(),a.max_snapshot_age,strict=a.mode=="release")
         report["errors"]+=problems
     out.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("CYBOU security gate:", "PASS" if not report["errors"] else "BLOCKED",
