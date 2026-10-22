@@ -161,6 +161,8 @@ Server, account, session-server, injection-against-an-application and hosting sc
 
 Date: 2026-10-19. The remaining domains (Authentication, OAuth/OIDC, API and web service, Authorization, Self-contained tokens) were reviewed. Only two controls have a browser counterpart and are now **applicable**: ASVS 4.1.2 (HTTP-to-HTTPS upgrade: CYBOU's HTTPS-First) and ASVS 4.4.1 (all WebSockets over TLS). Applicable controls now total 119 of 442.
 
+The grounds for every proposed N/A row, the architecture facts they rest on (checked against the product sources by the framework gate) and the conditions for reconsidering them are in the generated [N/A report](NA_REPORT.md).
+
 Every other untriaged row has been reviewed, and `tests/security/coverage.json` now records the engineering proposal on the row itself: `proposedDisposition: not_applicable`, a chapter-level `proposalRationale` and `proposalStatus`. These fields are **not read by the gate and are not an approval**: all 323 rows stay `untriaged` until a named reviewer records a reviewed disposition with a reason. 9 rows are marked `needs explicit review` with a note on why the proposal is not routine (for example ASVS 3.4.5 referrer policy, 5.2.4 download quotas, 12.2.2, 13.4.3, 16.4.3, 1.2.9, 11.1.4, 11.5.1, 11.6.2). The per-batch lists above remain as the narrative record; this file is the authoritative count.
 
 ### Review of the 9 flagged rows (2026-10-22)

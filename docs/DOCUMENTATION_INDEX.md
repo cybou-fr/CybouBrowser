@@ -22,6 +22,7 @@
 | [Test Plan](TEST_PLAN.md) | Executable suites and additional required campaigns |
 | [Security Verification Framework](SECURITY_VERIFICATION_FRAMEWORK.md) | OWASP imports, case coverage, execution evidence |
 | [OWASP Triage](OWASP_TRIAGE.md) | Browser-specific applicability, mappings and remaining verification gaps |
+| [N/A report](NA_REPORT.md) | Generated engineering grounds for the 320 proposed not-applicable rows, with gate-checked architecture facts and revisit conditions |
 | [Validation](VALIDATION.md) | Current verification status, without unsupported PASS claims |
 | [Release Criteria](RELEASE_CRITERIA.md) | Formal GO/NO-GO |
 | [ADR 0005](ADR/0005-origin-scoped-tracker-exceptions.md) | Current origin/profile tracker-exception policy |

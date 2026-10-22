@@ -70,7 +70,7 @@ CISA KEV catalog 2026.10.21 (1754 CVEs) and 7153 NVD `google:chrome` records: **
 | `branch` (`method: backport-commit`) | A backport commit exists on the Qt branch before the build; its presence in the binary is not shown | risk only |
 | `branch+declared` (`patch-level`) | Vendor patch level plus a backport commit | risk only |
 
-`fixed` and `not_affected` need a `method` and `evidence` links; `not_affected` also needs a justification. `--mode release` rejects `branch` and `branch+declared`, so the current 1100 resolutions keep a release BLOCKED until they are confirmed at source or binary level. `snapshot.json`, `kev.json` and `qt-backports.json` carry a `contentSha256` written at import; an edit after import blocks the risk gate. The framework gate also checks that every `testSources` file of a case exists and that cases marked in progress or verified name their implementation.
+`fixed` and `not_affected` need a `method` and `evidence` links; `not_affected` also needs a justification. `--mode release` rejects `branch` and `branch+declared`, so the current 1100 resolutions keep a release BLOCKED until they are confirmed at source or binary level. `snapshot.json`, `kev.json` and `qt-backports.json` carry a `contentSha256` written at import; an edit after import blocks the risk gate. The framework gate also regenerates the [N/A report](NA_REPORT.md): each N/A category rests on architecture facts (patterns the product sources must not contain, defined in `tests/security/na-categories.json`); a broken fact or a stale report fails the gate. It also checks that every `testSources` file of a case exists and that cases marked in progress or verified name their implementation.
 
 | Status of the 3470 matches | Count | Critical / high |
 | --- | --- | --- |

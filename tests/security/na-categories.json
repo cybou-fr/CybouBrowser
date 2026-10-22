@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "policy": "Engineering grounds for the proposed not_applicable rows of coverage.json, one category per row (matched by proposalRationale). Each category names the architecture facts it rests on; the framework gate checks every fact against the product sources, so a code change that breaks a fact fails the gate and reopens the category. This is an engineering report, not an approval: the rows stay proposals until item-by-item review at the 1.0.0-rc gate.",
+  "productSources": {
+    "include": ["src/", "qml/"],
+    "excludeRegex": "(Tests|Probe|Fixture)[^/]*\\.h$",
+    "note": "Test fixtures and diagnostic probes are compiled only into cybou_tests and may open sockets or use helpers the product must not."
+  },
+  "facts": {
+    "no-server": {
+      "claim": "The product opens no listening socket: no TCP, UDP, local or HTTP/WebSocket server.",
+      "forbid": "QTcpServer|QLocalServer|QHttpServer|QWebSocketServer|QUdpSocket|QSslServer|\\.listen\\("
+    },
+    "no-own-http-client": {
+      "claim": "All network traffic is page traffic made by the engine; the product sends no requests of its own (no telemetry, back end or log upload).",
+      "forbid": "QNetworkAccessManager|QNetworkRequest|QNetworkReply|WinHttp|curl_easy"
+    },
+    "no-credential-storage": {
+      "claim": "The product stores no password, secret or token of its own; credentials met in URLs are stripped or refused.",
+      "forbid": "QKeychain|CredWrite|CredRead|CryptProtectData|setValue\\([^;]*(password|secret|token)"
+    },
+    "no-oauth-client": {
+      "claim": "The product is not an OAuth/OIDC client or server: it never requests, exchanges or stores grants.",
+      "forbid": "client_secret|grant_type|code_verifier|/oauth2?/token|openid-configuration"
+    },
+    "no-token-handling": {
+      "claim": "The product neither issues nor parses self-contained tokens.",
+      "forbid": "fromBase64|JsonWebToken|jwt_decode|QJsonWebToken"
+    },
+    "no-session-issuance": {
+      "claim": "The product sets no cookies and issues no sessions; it only filters the engine's cookie store.",
+      "forbid": "QNetworkCookie\\(|\\bsetCookie\\(|Set-Cookie"
+    },
+    "no-own-crypto": {
+      "claim": "The product has no cryptography, hashing or random generation of its own; all of it is the engine's.",
+      "forbid": "QCryptographicHash|QMessageAuthenticationCode|QPasswordDigestor|QRandomGenerator|QSslKey|openssl/|bcrypt"
+    },
+    "no-query-languages": {
+      "claim": "The product builds no SQL, LDAP, XPath, XML, template or script from data; it embeds no script engine of its own.",
+      "forbid": "QSql|QXmlStreamReader|QDomDocument|QXmlQuery|ldap_|QJSEngine|QQmlExpression"
+    },
+    "no-dynamic-regex": {
+      "claim": "Every regular expression is a fixed literal; no user or page input is compiled into one.",
+      "forbid": "QRegularExpression\\(\\s*[^Q\"\\s)]|std::regex\\(\\s*[^\"\\s)]"
+    },
+    "no-media-server": {
+      "claim": "The product configures no STUN/TURN server and relays no media; WebRTC is the engine's endpoint only.",
+      "forbid": "stun:|turn:|iceServers|libjingle"
+    },
+    "no-archive-extraction": {
+      "claim": "The product unpacks no archive and processes no uploaded file on behalf of others.",
+      "forbid": "QZipReader|minizip|QuaZip|libarchive|unzip"
+    },
+    "no-secret-env": {
+      "claim": "The product reads no secret from the environment; the only variable read is the engine flag list.",
+      "forbid": "qgetenv\\(\\s*\"(?!QTWEBENGINE_CHROMIUM_FLAGS\")|qEnvironmentVariable|\\b_?w?getenv(_s)?\\("
+    },
+    "no-log-sink": {
+      "claim": "The product installs no log handler and writes no log to a system or remote sink.",
+      "forbid": "qInstallMessageHandler|ReportEvent|syslog\\(|OutputDebugString"
+    },
+    "no-thread-pool": {
+      "claim": "The product runs no worker pool of its own that requests could starve.",
+      "forbid": "QThreadPool|QtConcurrent|std::thread|QThread\\b"
+    }
+  },
+  "categories": [
+    {
+      "id": "wstg-webapp",
+      "title": "WSTG scenarios for testing a web application",
+      "proposalRationale": "Scenario for testing a web application served to browsers; no counterpart in the browser itself beyond the scenarios already classified applicable.",
+      "reason": "WSTG tests a server application through a browser: fingerprinting it, probing its configuration, accounts, sessions and input handling. CYBOU is the client in that picture and serves nothing, so these scenarios have no target. The WSTG scenarios with a browser-side counterpart (client-side, transport, redirects) are already applicable.",
+      "facts": ["no-server", "no-own-http-client"],
+      "architecture": ["docs/ARCHITECTURE_OVERVIEW.md", "src/security/NavigationGuard.h", "src/controlbar/RequestObserver.h"],
+      "equivalentCases": ["CYB-HTTP-001", "CYB-HTTP-002", "CYB-ORIGIN-001", "CYB-INPUT-002"],
+      "revisit": "CYBOU ships a web service or a local web UI (an update server, a sync service, a settings page served over HTTP)."
+    },
+    {
+      "id": "authentication",
+      "title": "Authentication of users of a service",
+      "proposalRationale": "Authentication of users of a service (passwords, MFA, recovery, IdP trust); the product has no accounts and authenticates nobody.",
+      "reason": "These controls govern how a service verifies its users. CYBOU has no accounts, no login of its own and no password manager; sign-in to cloud services happens on the providers' own pages inside ordinary tabs. The browser-side duty is not to leak or mishandle credentials, which is covered by URL credential stripping and the logging cases.",
+      "facts": ["no-credential-storage", "no-server", "no-oauth-client"],
+      "architecture": ["src/security/NetworkPolicy.h", "src/security/StoredUrl.h", "docs/ADR/0007-selectable-cloud-services.md"],
+      "equivalentCases": ["CYB-LOG-001", "CYB-CLOUD-004", "CYB-SBX-002"],
+      "revisit": "CYBOU adds accounts, sync, a password or passkey manager, or any sign-in of its own."
+    },
+    {
+      "id": "oauth-oidc",
+      "title": "OAuth and OpenID Connect roles",
+      "proposalRationale": "OAuth/OIDC roles (client, authorization server, resource server, OpenID Provider); the browser is only the user agent that carries redirects.",
+      "reason": "Each control targets a client, an authorization server, a resource server or an OpenID Provider. CYBOU plays none of these roles; it only carries the redirects as a user agent. What the user agent owes the flow (no token leakage into stored history, correct redirect handling) is covered elsewhere.",
+      "facts": ["no-oauth-client", "no-token-handling"],
+      "architecture": ["src/security/StoredUrl.h", "src/security/NavigationGuard.h"],
+      "equivalentCases": ["CYB-HTTP-002", "CYB-INPUT-002", "CYB-LOG-002"],
+      "revisit": "CYBOU itself signs in to a provider (sync, cloud API access) or keeps tokens on the user's behalf."
+    },
+    {
+      "id": "web-headers",
+      "title": "Response headers, cookies and hosting practices",
+      "proposalRationale": "Web-application header, cookie and hosting practices that the browser enforces rather than serves; enforcement is covered by the transport, origin and redirect cases.",
+      "reason": "These controls ask a site to send security headers, set cookie attributes and host content safely. A browser does not send them; it enforces them. Enforcement belongs to the engine and is exercised by the transport, origin and redirect cases.",
+      "facts": ["no-server", "no-session-issuance"],
+      "architecture": ["src/security/EngineHardening.h", "src/security/NetworkPolicy.h", "src/browserstore.h"],
+      "equivalentCases": ["CYB-HTTP-001", "CYB-ORIGIN-001", "CYB-SBX-002", "CYB-PRIV-001"],
+      "revisit": "CYBOU serves any page (local web UI, internal scheme with its own headers) or sets cookies itself."
+    },
+    {
+      "id": "app-crypto",
+      "title": "Application-level cryptography",
+      "proposalRationale": "Application-level cryptography; the product has none, all cryptography is the engine's and is covered through the TLS controls and the cryptographic inventory.",
+      "reason": "CYBOU encrypts, signs, hashes and generates random values nowhere in its own code. All cryptography is the engine's TLS and web platform, recorded in the cryptographic inventory (CYB-CRYPTO-001) and the applicable TLS controls.",
+      "facts": ["no-own-crypto"],
+      "architecture": ["docs/OWASP_TRIAGE.md", "src/security/TlsBoundaryTests.h"],
+      "equivalentCases": ["CYB-CRYPTO-001", "CYB-HTTP-001"],
+      "revisit": "CYBOU encrypts local data, signs or verifies anything at runtime (for example update packages), or generates a secret."
+    },
+    {
+      "id": "sessions",
+      "title": "Server-issued session lifecycle",
+      "proposalRationale": "Server-issued session lifecycle and administration; the product issues and manages no application sessions.",
+      "reason": "Session controls govern how a service creates, rotates and ends its sessions. CYBOU issues none. Its own short-lived state (temporary HTTP consent, permission grants) has its own browser-specific cases.",
+      "facts": ["no-session-issuance", "no-server"],
+      "architecture": ["src/security/PermissionCoordinator.cpp", "docs/CAPABILITY_CONTRACT.md"],
+      "equivalentCases": ["CYB-PERM-003", "CYB-HTTP-003", "CYB-SBX-002"],
+      "revisit": "CYBOU issues a session or long-lived grant that another party can present back to it."
+    },
+    {
+      "id": "injection",
+      "title": "Injection and parsing classes absent from the product",
+      "proposalRationale": "Injection, encoding and parsing classes the product does not contain (SQL, LDAP, XPath, LaTeX, JNDI, mail, templates, XML of its own) or generic restatements covered by applicable controls.",
+      "reason": "CYBOU builds no SQL, LDAP, XPath, XML, mail or template output from data and embeds no script engine of its own. Untrusted strings it does handle (URLs, titles, file names) are covered by the applicable input and plain-text rendering controls.",
+      "facts": ["no-query-languages", "no-dynamic-regex"],
+      "architecture": ["src/security/StoredUrl.h", "tools/security/qml_text_lint.py"],
+      "equivalentCases": ["CYB-INPUT-001", "CYB-UI-004", "CYB-FUZZ-001"],
+      "revisit": "CYBOU adds a database, an XML or template format of its own, a script engine, or compiles input into a regular expression."
+    },
+    {
+      "id": "backend-config",
+      "title": "Back-end configuration and secrets management",
+      "proposalRationale": "Back-end configuration, secrets management and hosting practices; the product has no back end.",
+      "reason": "These controls cover servers, their secrets vaults, environment configuration and hosting. CYBOU has no back end and reads no secret from its environment. Its own build and release secrets are covered by the supply-chain cases.",
+      "facts": ["no-server", "no-secret-env"],
+      "architecture": ["docs/PACKAGING.md", "src/security/EngineHardening.h"],
+      "equivalentCases": ["CYB-UPD-002", "CYB-SCVS-003"],
+      "revisit": "CYBOU operates a server, including the update repository, or reads configuration secrets at runtime."
+    },
+    {
+      "id": "http-api",
+      "title": "HTTP server, API and GraphQL",
+      "proposalRationale": "HTTP server, API and GraphQL implementation requirements; the product serves no HTTP and exposes no API.",
+      "reason": "CYBOU opens no listening socket and exposes no HTTP, WebSocket or GraphQL interface. The two HTTP-related controls with a browser counterpart (4.1.2 and the WebSocket handshake) are applicable.",
+      "facts": ["no-server"],
+      "architecture": ["docs/ARCHITECTURE_OVERVIEW.md"],
+      "equivalentCases": ["CYB-WS-001", "CYB-HTTP-002"],
+      "revisit": "CYBOU exposes any local or remote interface (automation, remote debugging, a companion app API)."
+    },
+    {
+      "id": "webrtc-server",
+      "title": "TURN, media and signalling servers",
+      "proposalRationale": "TURN, media and signalling server requirements; the browser is a WebRTC endpoint, covered by the applicable endpoint controls.",
+      "reason": "CYBOU configures no STUN or TURN server and relays no media. As a WebRTC endpoint it is covered by the strict WebRTC policy and the endpoint controls.",
+      "facts": ["no-media-server", "no-server"],
+      "architecture": ["src/security/EngineHardening.h", "docs/VALIDATION.md"],
+      "equivalentCases": ["CYB-PERM-004", "CYB-PNA-001"],
+      "revisit": "CYBOU provides calling, relaying or signalling of its own."
+    },
+    {
+      "id": "business-logic",
+      "title": "Server-side business transactions",
+      "proposalRationale": "Server-side business-transaction mechanics (multi-user approval, locking, transactions, rate of business operations); the product has no such flows beyond those already mapped.",
+      "reason": "Multi-user approval, locking and business-rate limits belong to multi-user services. CYBOU's own flows (permission prompts, downloads) are single-user and covered by applicable controls.",
+      "facts": ["no-server", "no-own-http-client"],
+      "architecture": ["src/security/PermissionCoordinator.cpp"],
+      "equivalentCases": ["CYB-PERM-003", "CYB-FAIL-002"],
+      "revisit": "CYBOU adds shared or multi-user state."
+    },
+    {
+      "id": "backend-authz",
+      "title": "Back-end authorization models",
+      "proposalRationale": "Back-end authorization models (field-level, multi-tenant, administrative); not present in the product.",
+      "reason": "Field-level, multi-tenant and administrative authorization belong to services with several principals. CYBOU's authorization decisions are site permissions, covered by the permission cases.",
+      "facts": ["no-server"],
+      "architecture": ["src/security/EffectivePermissionPolicy.h", "docs/SECURITY_MODEL.md"],
+      "equivalentCases": ["CYB-PERM-001", "CYB-PERM-002"],
+      "revisit": "CYBOU adds administrative roles, managed policies or multiple user principals."
+    },
+    {
+      "id": "tokens",
+      "title": "Self-contained tokens",
+      "proposalRationale": "Self-contained token issuance and validation; the product issues and validates no tokens.",
+      "reason": "CYBOU neither issues nor validates JWTs or similar tokens. Its consent identifiers are non-secret counters that no page can reach.",
+      "facts": ["no-token-handling", "no-oauth-client"],
+      "architecture": ["src/security/PermissionCoordinator.cpp", "docs/OWASP_TRIAGE.md"],
+      "equivalentCases": ["CYB-PERM-003"],
+      "revisit": "CYBOU issues or accepts a token, including one exposed to page content."
+    },
+    {
+      "id": "backend-coding",
+      "title": "Back-end coding practices",
+      "proposalRationale": "Back-end coding practices (mass assignment, proxy IP forwarding, prototype pollution, parameter pollution, thread starvation) not present in the product.",
+      "reason": "Mass assignment, proxy headers, parameter pollution and request-thread starvation are server patterns. CYBOU binds no request data to objects, sits behind no proxy and runs no worker pool of its own; its JavaScript is the engine's.",
+      "facts": ["no-server", "no-thread-pool"],
+      "architecture": ["docs/ARCHITECTURE_OVERVIEW.md"],
+      "equivalentCases": ["CYB-FAIL-002", "CYB-FUZZ-002"],
+      "revisit": "CYBOU adds a server, a worker pool or binds external data to its objects."
+    },
+    {
+      "id": "server-files",
+      "title": "Server-side upload and archive processing",
+      "proposalRationale": "Upload and archive processing on a server; the product's file intake (wallpaper, downloads) is covered by the applicable file-handling controls.",
+      "reason": "Upload quotas and archive extraction apply to services receiving files from many users. CYBOU unpacks nothing; its own file intake (downloads, wallpaper) is covered by the applicable file controls, and local disk exhaustion by CYB-FAIL-001.",
+      "facts": ["no-archive-extraction", "no-server"],
+      "architecture": ["src/security/DownloadPolicy.h"],
+      "equivalentCases": ["CYB-INPUT-003", "CYB-FAIL-001"],
+      "revisit": "CYBOU extracts archives, imports files from another program, or receives files from other parties."
+    },
+    {
+      "id": "server-caching",
+      "title": "Server-side caching and data exposure",
+      "proposalRationale": "Server-side caching and data-exposure mechanics; the product's own data handling is covered by the applicable controls.",
+      "reason": "These controls cover what a server caches and returns. CYBOU returns nothing to anyone; the data it keeps locally (history, bookmarks, profiles) is covered by the applicable data-protection controls.",
+      "facts": ["no-server", "no-own-http-client"],
+      "architecture": ["src/browserstore.h", "docs/DATA_CLASSIFICATION.md"],
+      "equivalentCases": ["CYB-SBX-002", "CYB-LOG-002"],
+      "revisit": "CYBOU sends or serves its local data (sync, export to a service)."
+    },
+    {
+      "id": "tls-server",
+      "title": "TLS server and service-to-service transport",
+      "proposalRationale": "TLS server-side and service-to-service transport requirements; the browser is a TLS client, covered by the applicable client controls.",
+      "reason": "CYBOU terminates no TLS and calls no back-end service. As a TLS client it is covered by the strict HTTPS and certificate controls.",
+      "facts": ["no-server", "no-own-http-client"],
+      "architecture": ["src/security/NavigationGuard.h", "src/security/TlsBoundaryTests.h"],
+      "equivalentCases": ["CYB-HTTP-001"],
+      "revisit": "The update repository or any CYBOU service goes public (ASVS 12.2.2 first)."
+    },
+    {
+      "id": "log-pipelines",
+      "title": "Central log pipelines and log transmission",
+      "proposalRationale": "Central log pipelines, authentication logging and log transmission; the product intentionally ships no logs off the machine.",
+      "reason": "Shipping logs to a separate system protects a breached server's audit trail. A private local browser deliberately keeps diagnostics on the machine and authenticates nobody, so there is nothing to ship; what it may record locally is covered by the logging cases.",
+      "facts": ["no-log-sink", "no-own-http-client"],
+      "architecture": ["docs/DATA_CLASSIFICATION.md", "tools/security/minidump_summary.py"],
+      "equivalentCases": ["CYB-LOG-001", "CYB-LOG-002"],
+      "revisit": "CYBOU adds crash reporting, telemetry or any upload of diagnostics."
+    }
+  ]
+}

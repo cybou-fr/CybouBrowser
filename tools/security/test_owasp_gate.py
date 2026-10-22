@@ -275,6 +275,25 @@ class GateContractTests(unittest.TestCase):
             self.assertIn("B: test source missing: src/does-not-exist.h",errors)
             self.assertFalse(any(e.startswith("C:") for e in errors))
 
+    def test_na_report_facts_hold_and_report_is_current(self):
+        import na_report
+        text,errors=na_report.build()
+        self.assertEqual(errors,[])
+        self.assertEqual(na_report.REPORT.read_text(encoding="utf-8"),text)
+
+    def test_na_report_detects_broken_fact_and_bad_links(self):
+        import na_report
+        data=gate.read_json(na_report.CATEGORIES)
+        data["facts"]["no-dynamic-regex"]["forbid"]="QRegularExpression"   # present in product sources
+        hits,_=na_report.check_facts(data)
+        self.assertTrue(hits["no-dynamic-regex"])
+        data["categories"][0]["equivalentCases"].append("CYB-NOPE")
+        data["categories"][0]["architecture"].append("docs/missing.md")
+        rows=[{"id":"X","disposition":"untriaged","proposedDisposition":"not_applicable","proposalRationale":"unknown"}]
+        errors=na_report.validate(data,rows,{c:{} for c in ("CYB-HTTP-001","CYB-HTTP-002","CYB-ORIGIN-001","CYB-INPUT-002")})
+        for text in ["X: N/A proposal has no category","unknown case CYB-NOPE","architecture file missing: docs/missing.md"]:
+            self.assertTrue(any(text in e for e in errors),text)
+
     def test_risk_gate_blocks_stale_or_missing_feeds(self):
         self.assertTrue(any("days old" in e for e in self.risk_errors([],[],retrieved="2026-09-01")[0]))
         with tempfile.TemporaryDirectory() as d:

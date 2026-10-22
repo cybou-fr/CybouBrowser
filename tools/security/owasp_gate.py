@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(Path(__file__).resolve().parent))
 SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc","hsts","download","protocol","url-parser","fuzz","geolocation")
 ASVS_ID=re.compile(r"(?:v5\.0\.0-|V)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
 WSTG_ID=re.compile(r"WSTG-(?:v42-)?([A-Z]{4}-\d{2})")
@@ -430,6 +431,12 @@ def main():
         requirements,problems=inventory(a.asvs_csv,a.wstg_ids,a.lock)
         report["errors"]+=problems
         problems,report["framework"]=check_framework(requirements,a.coverage,case_ids,a.threats)
+        report["errors"]+=problems
+        # N/A grounds: architecture facts must hold in the product sources and docs/NA_REPORT.md must be current.
+        import na_report
+        text,problems=na_report.build()
+        if not na_report.REPORT.is_file() or na_report.REPORT.read_text(encoding="utf-8")!=text:
+            problems.append("docs/NA_REPORT.md is stale: run tools/security/na_report.py")
         report["errors"]+=problems
     if a.mode in ("risk","release"):
         problems,report["risk"]=check_risk(a.sbom,a.vulns,dt.date.today(),a.max_snapshot_age,strict=a.mode=="release")
