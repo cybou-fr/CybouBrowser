@@ -522,11 +522,14 @@ ApplicationWindow {
     function testDraft(value) { address.text = value }
     function testLocalTextFile() { for (const item of downloadItems) if (item.downloadFileName.endsWith(".txt")) return browserStore.fileUrl(downloadPath(item)); return "" }
     function testBrowse() { address.focus = false; if (currentView) currentView.forceActiveFocus(); refreshAddress() }
-    function beginControlBarTest() { controlHarness.begin() }
-    function pollControlBarTest() { return controlHarness.step() }
-    function takeControlBarScreenshot() { return controlHarness.takeScreenshot() }
-    function takeControlBarInput() { return controlHarness.takeInput() }
+    // --media-test reuses the Control Bar test driver with the camera permission harness.
+    readonly property var activeHarness: (typeof mediaTestMode !== "undefined" && mediaTestMode) ? mediaHarness : controlHarness
+    function beginControlBarTest() { activeHarness.begin() }
+    function pollControlBarTest() { return activeHarness.step() }
+    function takeControlBarScreenshot() { return activeHarness.takeScreenshot() }
+    function takeControlBarInput() { return activeHarness.takeInput() }
     ControlBarHarness { id: controlHarness; browserWindow: window; controller: controlState; bar: controlBar; coordinator: permissionCoordinator }
+    MediaPermissionHarness { id: mediaHarness; browserWindow: window; controller: controlState; coordinator: permissionCoordinator }
     property int smokeStage: 0
     property int smokePdfResult: 0
     property bool smokeLocalLoaded: false

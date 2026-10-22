@@ -363,3 +363,20 @@ Gate suite `geolocation` (`cybou_tests.exe --geolocation-test`, 300 create/use/d
 ### WebRTC strict is now on by default
 
 Owner decision: `preferences/strictWebRtc` defaults to true (`kStrictWebRtcDefault` in `EngineHardening.h`, used by `BrowserStore` and `main.cpp`); users who saved a choice keep it. The flag-composition function still defaults to off so the engine tests control it explicitly. `webrtc` suite after the change: control 88 STUN checks at loopback, strict 0 (PASS); security, smoke, surface pass. Real-call impact is still not measured (no TURN endpoint or provider account): calls that need direct UDP may degrade or fail. CYB-PNA-001/002 and ASVS 17.1.1 move from "default exposed" to "closed by default, user can reopen"; they stay open pending a call-quality measurement and an engine with WebRTC Local Network Access.
+
+## Camera permission and revoke in the real engine - 2026-10-22
+
+New gate suite `media` (`cybou_tests.exe --media-test`, `qml/MediaPermissionHarness.qml`; Qt 6.12.0 / Qt WebEngine 6.140.0, Chromium fake camera `--use-fake-device-for-media-stream`, the permission prompt stays real). It runs in the product window and drives the product functions: the tab's request reaches `PermissionCoordinator` as in normal use, and the decision and revoke go through `resolvePermission` and `revokePermissionGracefully`, the Control Bar actions. Measured, three runs out of three:
+
+| Step | Expected | Observed |
+| --- | --- | --- |
+| Page calls `getUserMedia({video:true})` | Held pending in the Control Bar, no stream | pending, no stream |
+| Deny | No stream, no lease, recorded as blocked | `AbortError` ("Invalid state"), no lease, blocked |
+| New tab, grant | Live track, a lease, nothing stored persistently | `live`, lease present, `listAllPermissions()` empty |
+| Revoke from the Control Bar while the page hides the stream (no element, `MediaStreamTrack.prototype.stop` replaced) | Capture ends | track `ended` after 1.5 s |
+| Page asks again after revoke | No stream without a new decision | refused (`AbortError`) |
+
+Because the page defeats the in-page `stopMediaTracks` script, the `ended` state shows the engine-side reset in `PermissionCoordinator::revokeLease` ends the capture. The `controlbar` suite still passes with the shared harness hook.
+
+Engine behaviour recorded by the diagnostic `cybou_tests.exe --media-probe` (`MediaProbe.h`, raw engine, no CYBOU coordinator): an embedder deny reaches the page as `AbortError: Invalid state`, not `NotAllowedError`; a grant, also after a 1.5 s delay, gives a live track; a new page after a deny is asked again. Not yet covered: microphone and camera with microphone together, screen capture refusal in the engine, cross-origin iframes, a real device and the OS capture indicator.
+

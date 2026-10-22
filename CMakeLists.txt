@@ -76,6 +76,7 @@ qt_add_qml_module(cybou_core URI Cybou VERSION 1.0
         qml/ControlBarIcon.qml
         qml/CapabilityPopover.qml
         qml/ControlBarHarness.qml
+        qml/MediaPermissionHarness.qml
         qml/TransportHarness.qml
         qml/TrackerHarness.qml
         qml/GlassButton.qml

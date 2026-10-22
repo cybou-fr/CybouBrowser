@@ -35,6 +35,7 @@
 #include "security/WebRtcProbe.h"
 #include "security/StrictWebRtcTests.h"
 #include "security/WasmTests.h"
+#include "security/MediaProbe.h"
 #include "security/TextInjectionProbe.h"
 #include "security/HstsTests.h"
 #include "security/DownloadFileTests.h"
@@ -93,6 +94,9 @@ int main(int argc, char *argv[])
     bool hstsTest = false;
     for (int i = 1; i < argc; ++i) hstsTest |= QByteArray(argv[i]) == "--hsts-test";
     if (hstsTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1\" --no-proxy-server");
+    // --media-test: Chromium's fake camera gives the page a real stream without hardware; the permission prompt stays real.
+    for (int i = 1; i < argc; ++i)
+        if (QByteArray(argv[i]) == "--media-test" || QByteArray(argv[i]) == "--media-probe") qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --use-fake-device-for-media-stream");
     bool webRtcProbe = false;
     for (int i = 1; i < argc; ++i) webRtcProbe |= QByteArray(argv[i]) == "--webrtc-probe";
     // Probes measure the raw engine; every other mode runs the shipped engine configuration.
@@ -108,7 +112,8 @@ int main(int argc, char *argv[])
     app.setWindowIcon(QIcon(":/assets/cybou.png"));
     QQuickStyle::setStyle("Basic");
 
-    const bool controlBarTest = app.arguments().contains("--controlbar-test");
+    const bool mediaTest = app.arguments().contains("--media-test");
+    const bool controlBarTest = app.arguments().contains("--controlbar-test") || mediaTest;
     const bool transportTest = app.arguments().contains("--transport-test") || trackerTest;
     const bool surfaceTest = app.arguments().contains("--surface-test");
     const bool securityTest = app.arguments().contains("--security-test");
@@ -129,6 +134,7 @@ int main(int argc, char *argv[])
     if (wasmChild >= 0) return runDisableWasmChild();
     if (hstsTest) return runHstsTest();
     if (app.arguments().contains("--engine-history-probe")) return runEngineHistoryProbe();
+    if (app.arguments().contains("--media-probe")) return runMediaProbe();
     if (app.arguments().contains("--protocol-test")) return runExternalProtocolTests();
     if (app.arguments().contains("--geolocation-test")) return runGeolocationStress();
     if (app.arguments().contains("--fuzz-test")) return runFuzzTests();
@@ -247,6 +253,17 @@ int main(int argc, char *argv[])
                 }
                 const bool download = request.startsWith("GET /download ");
                 const bool transport = request.startsWith("GET /transport-document?");
+                if (request.startsWith("GET /media")) {
+                    // Camera fixture for --media-test: reports what the engine gives the page; on revoke it hides the stream
+                    // from the browser (no element, stop() replaced) so only an engine-side stop can end the capture.
+                    const QByteArray page = "<!doctype html><title>media-loading</title><script>"
+                        "window.cybouStart=()=>navigator.mediaDevices.getUserMedia({video:true}).then(s=>{window.cybouStream=s;"
+                        "MediaStreamTrack.prototype.stop=function(){};document.title='media-live'}).catch(e=>{console.warn('MEDIA_ERROR '+e.name+': '+e.message);document.title='media-'+e.name});"
+                        "window.cybouTrackState=()=>window.cybouStream?window.cybouStream.getVideoTracks()[0].readyState:'none';"
+                        "document.title='media-ready'</script>";
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                    socket->disconnectFromHost(); return;
+                }
                 const bool controls = request.startsWith("GET /controls ");
                 const bool tracker = request.startsWith("GET /tracker-document?");
                 const QByteArray trackerBody = QByteArray("<!doctype html><title>Tracker fixture</title><h1>Tracker filter fixture</h1><script>fetch('http://google-analytics.com:") + QByteArray::number(socket->localPort()) + QByteArray("/tracker-asset?private=query').then(r=>r.text()).then(()=>document.title='Tracker allowed').catch(()=>document.title='Tracker blocked')</script>");
@@ -307,6 +324,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("transportRedirectPeerBase", QString("http://127.0.0.1:%1").arg(redirectPeer.serverPort()));
     engine.rootContext()->setContextProperty("smokeMode", smokeTest);
     engine.rootContext()->setContextProperty("trackerTestMode", trackerTest);
+    engine.rootContext()->setContextProperty("mediaTestMode", mediaTest);
     engine.rootContext()->setContextProperty("smokeBaseUrl", QString("http://127.0.0.1:%1").arg(testServer.serverPort()));
     engine.rootContext()->setContextProperty("smokeDownloadPath", QDir::current().absoluteFilePath("build/test-downloads"));
 
