@@ -34,6 +34,7 @@
 #include "security/HttpsPnaProbe.h"
 #include "security/WebRtcProbe.h"
 #include "security/StrictWebRtcTests.h"
+#include "security/WasmTests.h"
 #include "security/TextInjectionProbe.h"
 #include "security/HstsTests.h"
 #include "security/DownloadFileTests.h"
@@ -82,13 +83,21 @@ int main(int argc, char *argv[])
         if (QByteArray(argv[i]).startsWith("--webrtc-strict-child=")) strictWebRtcChild = QByteArray(argv[i]).mid(22).toInt();
     }
     if (strictWebRtcTest) { QCoreApplication parentApp(argc, argv); return runStrictWebRtcTest(); }
+    bool wasmTest = false;
+    int wasmChild = -1; // 0/1 selects the child run of --wasm-test
+    for (int i = 1; i < argc; ++i) {
+        wasmTest |= QByteArray(argv[i]) == "--wasm-test";
+        if (QByteArray(argv[i]).startsWith("--wasm-child=")) wasmChild = QByteArray(argv[i]).mid(13).toInt();
+    }
+    if (wasmTest) { QCoreApplication parentApp(argc, argv); return runDisableWasmTest(); }
     bool hstsTest = false;
     for (int i = 1; i < argc; ++i) hstsTest |= QByteArray(argv[i]) == "--hsts-test";
     if (hstsTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1\" --no-proxy-server");
     bool webRtcProbe = false;
     for (int i = 1; i < argc; ++i) webRtcProbe |= QByteArray(argv[i]) == "--webrtc-probe";
     // Probes measure the raw engine; every other mode runs the shipped engine configuration.
-    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe && !webRtcProbe && strictWebRtcChild < 0) applyEngineHardening();
+    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe && !webRtcProbe && strictWebRtcChild < 0 && wasmChild < 0) applyEngineHardening();
+    if (wasmChild >= 0) applyEngineHardening(false, wasmChild == 1);
     if (strictWebRtcChild >= 0) applyEngineHardening(strictWebRtcChild == 1);
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
@@ -117,6 +126,7 @@ int main(int argc, char *argv[])
     if (httpsPnaProbe) return runHttpsPnaProbe();
     if (webRtcProbe) return runWebRtcProbe();
     if (strictWebRtcChild >= 0) return runWebRtcProbe(true);
+    if (wasmChild >= 0) return runDisableWasmChild();
     if (hstsTest) return runHstsTest();
     if (app.arguments().contains("--engine-history-probe")) return runEngineHistoryProbe();
     if (app.arguments().contains("--protocol-test")) return runExternalProtocolTests();

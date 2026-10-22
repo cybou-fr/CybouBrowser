@@ -20,7 +20,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("CYBOU");
     BrowserSettings::migrate();
     const bool strictWebRtc = BrowserSettings().value("preferences/strictWebRtc", kStrictWebRtcDefault).toBool();
-    applyEngineHardening(strictWebRtc);
+    const bool disableWasm = BrowserSettings().value("preferences/disableWasm", kDisableWasmDefault).toBool();
+    applyEngineHardening(strictWebRtc, disableWasm);
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU");
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
 
     BrowserStore store;
     store.setStrictWebRtcActive(strictWebRtc);
+    store.setDisableWasmActive(disableWasm);
 
     QTranslator controlTranslator;
     QQmlApplicationEngine engine;

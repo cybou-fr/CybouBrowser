@@ -17,9 +17,19 @@
 // Value used when the user has never chosen: the saved preference "preferences/strictWebRtc" overrides it.
 inline constexpr bool kStrictWebRtcDefault = true;
 inline constexpr const char *kStrictWebRtcSwitch = "--force-webrtc-ip-handling-policy=disable_non_proxied_udp";
+//
+// WebAssembly off (on by default since 0.4.0-alpha.1, user can turn it off): a stopgap for CVE-2026-87491, a V8 bug
+// exploited in the wild and reachable only from WebAssembly, which the Qt WebEngine shipped with Qt 6.12.0 does not fix
+// (tests/security/vulns/triage.json). The V8 in Qt 6.12 no longer has --expose-wasm (an unknown flag is ignored, as
+// --wasm-test showed); it hides the WebAssembly global only in --jitless mode. Jitless also turns off the JavaScript JIT:
+// pages run slower, sites that need WebAssembly stop working, and JIT compiler bugs become unreachable as well.
+// Process-wide like the WebRTC switch: a change applies after a restart. Remove the default once a
+// Qt WebEngine release carries the fix. Saved preference: "preferences/disableWasm".
+inline constexpr bool kDisableWasmDefault = true;
+inline constexpr const char *kDisableWasmSwitch = "--js-flags=--jitless";
 
 // Pure so the flag composition can be tested without touching the environment.
-inline QByteArray engineHardeningFlags(QByteArray flags, bool strictWebRtc = false) {
+inline QByteArray engineHardeningFlags(QByteArray flags, bool strictWebRtc = false, bool disableWasm = false) {
     const QByteArray feature = "BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults";
     const QByteArray key = "--enable-features=";
     const int at = flags.indexOf(key);
@@ -27,9 +37,11 @@ inline QByteArray engineHardeningFlags(QByteArray flags, bool strictWebRtc = fal
     else if (!flags.contains("PrivateNetworkAccessRespectPreflightResults")) flags.insert(at + key.size(), feature + ",");
     // An explicitly supplied policy always wins over the preference.
     if (strictWebRtc && !flags.contains("--force-webrtc-ip-handling-policy")) flags += QByteArray(" ") + kStrictWebRtcSwitch;
+    // Chromium takes one --js-flags; an explicitly supplied one wins, as for the WebRTC policy.
+    if (disableWasm && !flags.contains("--js-flags")) flags += QByteArray(" ") + kDisableWasmSwitch;
     return flags;
 }
 
-inline void applyEngineHardening(bool strictWebRtc = false) {
-    qputenv("QTWEBENGINE_CHROMIUM_FLAGS", engineHardeningFlags(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS"), strictWebRtc));
+inline void applyEngineHardening(bool strictWebRtc = false, bool disableWasm = false) {
+    qputenv("QTWEBENGINE_CHROMIUM_FLAGS", engineHardeningFlags(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS"), strictWebRtc, disableWasm));
 }

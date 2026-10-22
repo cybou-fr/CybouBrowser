@@ -49,6 +49,8 @@ class BrowserStore : public QObject {
     Q_PROPERTY(bool strictWebRtc READ strictWebRtc WRITE setStrictWebRtc NOTIFY preferencesChanged)
     Q_PROPERTY(bool geolocationAvailable READ geolocationAvailable CONSTANT)
     Q_PROPERTY(bool strictWebRtcActive READ strictWebRtcActive NOTIFY preferencesChanged)
+    Q_PROPERTY(bool disableWasm READ disableWasm WRITE setDisableWasm NOTIFY preferencesChanged)
+    Q_PROPERTY(bool disableWasmActive READ disableWasmActive NOTIFY preferencesChanged)
     Q_PROPERTY(QString controlBarPosition READ controlBarPosition WRITE setControlBarPosition NOTIFY preferencesChanged)
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY preferencesChanged)
     Q_PROPERTY(bool highContrast READ highContrast NOTIFY preferencesChanged)
@@ -186,6 +188,16 @@ public:
         settings.sync();
         return true;
     }
+    // On unless the user chose otherwise (kDisableWasmDefault, a CVE-2026-87491 stopgap). Process-wide V8 switch like the
+    // WebRTC policy: the preference applies after a restart, disableWasmActive reports what this process runs with.
+    bool disableWasm() const { return settings.value("preferences/disableWasm", kDisableWasmDefault).toBool(); }
+    void setDisableWasm(bool enabled) {
+        if (enabled == disableWasm()) return;
+        settings.setValue("preferences/disableWasm", enabled);
+        emit preferencesChanged();
+    }
+    bool disableWasmActive() const { return m_disableWasmActive; }
+    void setDisableWasmActive(bool active) { m_disableWasmActive = active; emit preferencesChanged(); }
     static bool geolocationAvailable() { return GeolocationPolicy::available; }
     void setStrictWebRtcActive(bool active) { m_strictWebRtcActive = active; emit preferencesChanged(); }
     bool httpsFirst() const { return settings.value("preferences/httpsFirst", true).toBool(); }
@@ -559,6 +571,7 @@ private:
     bool m_allowTestHttp = false;
     bool m_testHttp = false;
     bool m_strictWebRtcActive = false;
+    bool m_disableWasmActive = false;
     QSet<QQuickWebEngineProfile *> m_temporaryHttpProfiles;
     mutable BrowserSettings settings;
     mutable std::optional<QVariantList> m_historyCache;

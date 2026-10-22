@@ -117,7 +117,19 @@
       ],
       "reviewedOn": "2026-10-22",
       "method": "source-inspection",
-      "mitigation": "Pending: a newer Qt WebEngine with the backport, or disabling WebAssembly in the engine (--js-flags=--no-expose-wasm) as a stopgap, at the cost of sites that need WebAssembly.",
+      "mitigation": {
+        "status": "in_place_by_default",
+        "summary": "WebAssembly is unavailable in the engine by default (V8 --jitless, preference preferences/disableWasm, Settings > Security), removing the only path that reaches the vulnerable builtin. The requested --no-expose-wasm does not exist in the shipped V8 and was measured to have no effect; jitless is the shipped V8's only way to hide WebAssembly and also disables the JavaScript JIT (slower pages, JIT bugs unreachable). The user can turn it back on; the vulnerability stays in the shipped engine, so the status remains affected until a Qt WebEngine release carries the fix.",
+        "since": "0.4.0-alpha.1",
+        "switch": "--js-flags=--jitless",
+        "sources": [
+          "src/security/EngineHardening.h",
+          "src/main.cpp",
+          "qml/SettingsPanel.qml"
+        ],
+        "test": "cybou_tests --wasm-test (src/security/WasmTests.h): control child compiles a WebAssembly module; stopgap child sees no WebAssembly global. Measured 2026-10-22 on Qt 6.12.0 / Qt WebEngine 6.140.0: control object:true, stopgap undefined.",
+        "remove": "When a Qt WebEngine release with the CVE-2026-87491 backport ships: drop the default in kDisableWasmDefault and record the fix here."
+      },
       "sourceBinding": {
         "webengine": "6.140.0",
         "patchLevel": "152.0.7977.83",

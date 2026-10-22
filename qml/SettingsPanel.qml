@@ -167,6 +167,12 @@ Drawer {
                     text: qsTr("Empêche une page de se servir de WebRTC pour sonder le réseau local (paquets STUN vers des adresses locales). Désactive aussi l’UDP direct : les appels vidéo peuvent se dégrader ou échouer sans relais TCP. Activé par défaut.")
                           + (browserStore.strictWebRtc !== browserStore.strictWebRtcActive ? " " + qsTr("Redémarrez CYBOU pour appliquer ce changement.") : "")
                 }
+                CheckBox { text: qsTr("Désactiver WebAssembly · protection temporaire"); checked: browserStore.disableWasm; onToggled: browserStore.disableWasm = checked }
+                Label {
+                    Layout.fillWidth: true; wrapMode: Text.WordWrap; color: "#94A3B8"; font.pixelSize: 12
+                    text: qsTr("Protège contre une faille du moteur JavaScript exploitée activement (CVE-2026-87491) tant que la version de Qt WebEngine fournie ne la corrige pas. JavaScript s’exécute sans compilateur JIT : les pages lourdes sont plus lentes et les sites qui exigent WebAssembly (certains jeux, éditeurs ou outils de chiffrement) ne fonctionneront pas. Activé par défaut.")
+                          + (browserStore.disableWasm !== browserStore.disableWasmActive ? " " + qsTr("Redémarrez CYBOU pour appliquer ce changement.") : "")
+                }
                 Label { text: qsTr("CONFIDENTIALITÉ"); color: "#38BDF8"; font.letterSpacing: 2; font.pixelSize: 11; font.bold: true }
                 Switch {
                     id: trackerSwitch

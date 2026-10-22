@@ -17,7 +17,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc","hsts","download","protocol","url-parser","fuzz","geolocation")
+SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc","hsts","download","protocol","url-parser","fuzz","geolocation","wasm")
 ASVS_ID=re.compile(r"(?:v5\.0\.0-|V)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
 WSTG_ID=re.compile(r"WSTG-(?:v42-)?([A-Z]{4}-\d{2})")
 ISO_DATE=re.compile(r"\d{4}-\d{2}-\d{2}")

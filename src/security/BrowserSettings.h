@@ -21,7 +21,7 @@ public:
         static const QStringList keys{
             "history", "session", "bookmarks", "cloud/configuration",
             "preferences/askDownloadLocation", "preferences/blockThirdPartyCookies", "preferences/blockTrackers",
-            "preferences/customWallpaperPath", "preferences/downloadsPath", "preferences/glassBlurLevel",
+            "preferences/customWallpaperPath", "preferences/disableWasm", "preferences/downloadsPath", "preferences/glassBlurLevel",
             "preferences/httpsFirst", "preferences/restoreSession", "preferences/searchEngine",
             "preferences/strictWebRtc", "preferences/wallpaperType",
             "ui/controlBar/disableGlow", "ui/controlBar/language", "ui/controlBar/position", "ui/controlBar/reduceMotion",

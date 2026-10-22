@@ -1211,6 +1211,16 @@ Passés par exception : %5</source>
         <translation>Перезапустите CYBOU, чтобы применить это изменение.</translation>
     </message>
     <message>
+        <location filename="../qml/SettingsPanel.qml" line="1"/>
+        <source>Désactiver WebAssembly · protection temporaire</source>
+        <translation>Отключить WebAssembly · временная защита</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPanel.qml" line="1"/>
+        <source>Protège contre une faille du moteur JavaScript exploitée activement (CVE-2026-87491) tant que la version de Qt WebEngine fournie ne la corrige pas. JavaScript s’exécute sans compilateur JIT : les pages lourdes sont plus lentes et les sites qui exigent WebAssembly (certains jeux, éditeurs ou outils de chiffrement) ne fonctionneront pas. Activé par défaut.</source>
+        <translation>Защищает от активно эксплуатируемой уязвимости движка JavaScript (CVE-2026-87491), пока поставляемая версия Qt WebEngine её не исправит. JavaScript выполняется без JIT-компилятора: тяжёлые страницы работают медленнее, а сайты, которым нужен WebAssembly (некоторые игры, редакторы или инструменты шифрования), работать не будут. Включено по умолчанию.</translation>
+    </message>
+    <message>
         <location filename="../qml/SettingsPanel.qml" line="71"/>
         <source>Paramètres</source>
         <translation>Настройки</translation>
