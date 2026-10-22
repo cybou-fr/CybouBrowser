@@ -60,18 +60,20 @@
       "status": "in_progress",
       "kind": "execution",
       "testSources": [
+        "qml/BrowserTab.qml",
         "qml/Main.qml",
         "qml/MediaPermissionHarness.qml",
+        "src/controlbar/ControlBarController.cpp",
         "src/security/PermissionCoordinator.cpp",
         "tests/test_main.cpp"
       ],
       "coveredScenarios": [
         "--media-test (engine, fake camera): request held pending until decided; deny yields no stream; grant yields a live track held as a non-persistent lease; Control Bar revoke ends a capture the page hides (no element, stop() replaced); no silent regrant after revoke",
-        "--media-test: microphone grant and revoke end a hidden audio track; camera+microphone in one request share one engine decision, so revoking either ends both and the Control Bar drops both keys; screen capture is cancelled by Qt (CYBOU handles no desktopMediaRequested) after a real click, with no prompt and no stream"
+        "--media-test: microphone grant and revoke end a hidden audio track; camera+microphone in one request share one engine decision, so revoking either ends both and the Control Bar drops both keys; screen capture is cancelled by Qt (CYBOU handles no desktopMediaRequested) after a real click, with no prompt and no stream",
+        "--media-test: a refused screen capture is cancelled by BrowserTab.onDesktopMediaRequested and recorded once as blocked, with the requesting origin, in the Screen control"
       ],
       "remainingScenarios": [
-        "real hardware device and OS capture indicator",
-        "screen refusal is not shown in the Control Bar (no request event reaches CYBOU)"
+        "real hardware device and OS capture indicator"
       ]
     },
     {

@@ -201,6 +201,12 @@ WebEngineView {
         }
         askPermissionRequested(permission, web)
     }
+    // Screen capture is permanently refused (EffectivePermissionPolicy). getDisplayMedia arrives here, not as a
+    // permission request: cancel it and record the attempt so the Screen control shows it.
+    onDesktopMediaRequested: function(request) {
+        request.cancel()
+        if (controller) controller.noteBlockedRequest("screen", tabUid, url)
+    }
     onFindTextFinished: function(result) { if (isCurrentTab) findResultUpdated(result.activeMatch + " / " + result.numberOfMatches) }
     onNewWindowRequested: function(request) {
         const mode = controller ? controller.popupMode(url, tabUid) : 0

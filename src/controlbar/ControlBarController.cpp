@@ -116,6 +116,12 @@ void ControlBarController::finishPermission(const QWebEnginePermission &permissi
     }
     refresh();
 }
+void ControlBarController::noteBlockedRequest(const QString &key, const QString &tab, const QUrl &url) {
+    static const QStringList permissionKeys{"camera", "mic", "screen", "location", "notifications", "clipboard"};
+    if (!permissionKeys.contains(key)) return;
+    m_aggregator.recordPermission(key, tab, origin(url), origin(url), false, true);
+    refresh();
+}
 void ControlBarController::notePopup(const QString &tab, const QUrl &url, bool blocked) {
     m_aggregator.recordPopup(tab, origin(url), blocked);
     refresh();

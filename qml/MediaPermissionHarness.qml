@@ -163,7 +163,11 @@ Item {
                 expect(view.title !== "media-live", "screen capture produced a stream")
                 expect(!screenPending, "screen capture was offered for a decision")
                 expect(!view.grantedKeys.includes("screen"), "no screen lease")
-                results.push("screen: refused without a prompt (" + view.title + ", " + (controller.capability("screen").blocked ? "recorded as blocked" : "cancelled by Qt: CYBOU handles no desktopMediaRequested") + ")")
+                const screen = controller.capability("screen")
+                expect(screen.blocked && screen.events.length === 1 && screen.events[0].blocked && !screen.events[0].pending,
+                       "the refused screen capture is recorded once as blocked in the Control Bar: " + JSON.stringify(screen.events))
+                expect(screen.events[0].origin === browserStore.origin(smokeBaseUrl), "the attempt names the requesting site")
+                results.push("screen: refused without a prompt (" + view.title + ", " + "cancelled by CYBOU, recorded as blocked in the Screen control)")
                 phase = 50
             } else if (phase === 50) {
                 console.info("MEDIA_PERMISSION_TEST PASS", results.join(" | "))

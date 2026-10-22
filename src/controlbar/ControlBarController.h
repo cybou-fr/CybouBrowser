@@ -66,6 +66,9 @@ public:
             if (it.key().startsWith(prefix)) m_privatePolicies[toTab + "/" + suffix + it.key().mid(prefix.size())] = it.value();
     }
     Q_INVOKABLE void notePopup(const QString &tab, const QUrl &url, bool blocked);
+    // A capability request the engine raises outside QWebEnginePermission (screen capture's desktopMediaRequested),
+    // refused before any prompt: recorded as blocked so the Control Bar shows the attempt.
+    Q_INVOKABLE void noteBlockedRequest(const QString &key, const QString &tab, const QUrl &url);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE QVariantList networkSample() const;
     static QString origin(const QUrl &url);
