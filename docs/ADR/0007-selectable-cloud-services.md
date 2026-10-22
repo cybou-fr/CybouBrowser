@@ -1,6 +1,6 @@
 # ADR 0007 — выбор облачных сервисов
 
-**В исходниках 0.3.0-alpha.2 реализованы:** `CloudProviderCatalog`, `CloudServiceManager`, `CloudSettingsSection.qml`, `CloudAppLauncher.qml` и локальные SVG. **Полное тестирование входов/2FA и безопасности на конкретной Windows сборке не проведено.**
+**В исходниках 0.4.0-alpha.1 реализованы:** `CloudProviderCatalog`, `CloudServiceManager`, `CloudSettingsSection.qml`, `CloudAppLauncher.qml` и локальные SVG. **Полное тестирование входов/2FA и безопасности на конкретной Windows сборке не проведено.**
 
 ## Модель выбора
 

@@ -1,6 +1,6 @@
 # CYBOU — threat model and security boundaries
 
-**Status:** initial systematic threat inventory for `0.3.0-alpha.2`; security sign-off has **not** occurred. Revise on every architecture change.
+**Status:** initial systematic threat inventory for `0.4.0-alpha.1`; security sign-off has **not** occurred. Revise on every architecture change.
 
 ## Valuable assets
 

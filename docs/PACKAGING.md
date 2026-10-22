@@ -59,14 +59,14 @@ signed by CYBOU. The installer's inner payload is the same signed stage. Not che
 
 ```bash
 export CYBOU_UPDATE_URL=file:///C:/path/to/repo      # or https://updates.example/cybou (not set up)
-CYBOU_PKG_VERSION=0.3.0-alpha.2 bash tools/package/build_repo.sh build/upd-repo   # publish a version
+CYBOU_PKG_VERSION=0.4.0-alpha.1 bash tools/package/build_repo.sh build/upd-repo   # publish a version
 bash tools/package/build_installer.sh                                               # installer that knows the repository
 ```
 
 An installer built with `CYBOU_UPDATE_URL` keeps the repository address; the installed `CYBOUUninstall.exe` then runs
 `ch` (check) and `up` (update). Checked end to end with a local `file:///` repository: installed 0.3.0-alpha.1, published
 0.3.0-alpha.2 (with an extra marker file), `CYBOUUninstall.exe up --confirm-command` exit 0, the marker appeared, the installed
-package version became 0.3.0-alpha.2, executable and uninstaller intact; purge afterwards left nothing behind. Building a repository
+package version became 0.4.0-alpha.1, executable and uninstaller intact; purge afterwards left nothing behind. Building a repository
 takes about 10 minutes (7z compression of 400 MB).
 
 **Rollback is not automatic.** The framework cannot install an older version over a newer one, and the update replaces the files in place.

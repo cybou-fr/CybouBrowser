@@ -2,11 +2,11 @@
 
 ## Status and supported versions
 
-CYBOU Browser is currently **0.3.0-alpha.2 source under development**. It has **no publicly released, independently security-qualified version**. This repository's presence on GitHub and its Apache-2.0 license do not imply that it is safe for sensitive everyday browsing.
+CYBOU Browser is currently **0.4.0-alpha.1 source under development**. It has **no publicly released, independently security-qualified version**. This repository's presence on GitHub and its Apache-2.0 license do not imply that it is safe for sensitive everyday browsing.
 
 | Version | Security-supported release? |
 | --- | --- |
-| 0.3.0-alpha.2 and other development builds | No |
+| 0.4.0-alpha.1 and other development builds | No |
 | 1.0.0 | Not released / subject to explicit gates |
 
 See [current validation](docs/VALIDATION.md) and [release criteria](docs/RELEASE_CRITERIA.md).

@@ -1,6 +1,6 @@
 # CYBOU Browser — Roadmap to 1.0.0
 
-**Current source: 0.3.0-alpha.2 · no public release · security qualification incomplete.** Work takes place on `main`.
+**Current source: 0.4.0-alpha.1 · no public release · security qualification incomplete.** Work takes place on `main`.
 
 ## Actual code baseline
 
@@ -18,7 +18,7 @@ No third-party extension platform or partner-granted browser privileges are perm
 
 ## Source audit — 2026-10-18
 
-This review covers the local Windows implementation and test infrastructure. Implemented behavior is distinct from release qualification. Current milestone remains **0.3.0-alpha.2**; there is no stable release candidate.
+This review covers the local Windows implementation and test infrastructure. Implemented behavior is distinct from release qualification. Current milestone remains **0.4.0-alpha.1**; there is no stable release candidate.
 
 | Work item | Code evidence | State / remaining work |
 | --- | --- | --- |
@@ -35,7 +35,7 @@ This review covers the local Windows implementation and test infrastructure. Imp
 ### Immediate delivery queue
 
 - [x] **R1 — repeatable baseline (local development, 2026-10-18):** fix IDN failure, wait for the real hover delay, capture nonempty suite logs, record current source/binary identity, obtain six green suites.
-- [ ] **R2 — inventory:** official ASVS 5.0.0 (345) and WSTG 4.2 (97) inputs vendored and SHA-pinned; parsers and exact counts tested. 122 controls now classified applicable with source references and explicit verification gaps; 320 remain untriaged. Remaining: review applicability, assign owners and map cases/evidence. No automatic N/A or fabricated PASS.
+- [x] **R2 — risk-based inventory (passed 2026-10-22; R2 aims at a verifiable control system for real browser risks, not at closing every OWASP row; item-by-item N/A approval moved to the 1.0.0-rc gate):** official ASVS 5.0.0 (345) and WSTG 4.2 (97) inputs vendored and SHA-pinned; parsers and exact counts tested. 122 controls now classified applicable with source references and explicit verification gaps; 320 remain untriaged. Remaining: review applicability, assign owners and map cases/evidence. No automatic N/A or fabricated PASS.
 - [ ] **R3 — browser-specific negative fixtures (active):** local CORS/preflight/cookie and ws handshake/strict-policy fixtures implemented and passed in security suite; actual temporary HTTP profile ws-denial and live HTTP stream teardown also passed. self-signed HTTPS/WSS rejection, isolated positive WSS message and page-destruction socket teardown also passed. valid/private-CA, expiry, hostname and unknown-CA matrix now also passes with exact errors. the actual temporary-profile UI reload and both revoke paths now close live WSS as well, with a fresh 6/6 baseline. uncooperative WSS close-peer teardown and real HTTP 302 consent boundaries now pass too. 301/302/303/307/308 GET/POST consent-boundary and HTTPS→HTTP downgrade matrices also pass (64 cases). the actual three-hop 302→307 cross-origin UI consent chain now passes with stale-token rejection and profile teardown. Certificate revocation, protocol/cipher, renderer/download stress, mixed TLS/UI chains, runtime DNS/CNAME integration and packaged-profile scenarios remain open. Continue with restricted-mode origin/redirect/override lifecycle, cross-frame permissions, real capture revoke, downloads and local-network boundaries.
 - [ ] **R4 — Windows product qualification:** cloud login/2FA, keyboard/FR/RU/DPI, many tabs, crash/session recovery and cleanup.
 - [ ] **R5 — distributable candidate:** reproducible installer, licenses/SBOM, signing, safe update/rollback, independent review and matching candidate evidence.
@@ -46,11 +46,11 @@ R1 passed locally: Release built, six gate self-tests and six native suites pass
 
 | Version | Work to complete | Exit condition |
 | --- | --- | --- |
-| **0.3.0-alpha.2 — CURRENT** | Keep implementation and limitations aligned with source | Not a release |
-| **0.4.0-alpha.N** | Pin official ASVS 5.0.0/WSTG 4.2; inventory 100% IDs, owners, accepted applicability; automated negative fixtures, logs, coverage schema | Every standard item dispositioned, repeatable test framework, strict FAIL on missing evidence |
+| 0.3.0-alpha.N — passed | Keep implementation and limitations aligned with source | Not a release |
+| **0.4.0-alpha.N — CURRENT** | Risk-based R2: pinned ASVS 5.0.0/WSTG 4.2 inventory; browser risk register (`cases.json`) with tier and method; every applicable requirement mapped to an owner and cases; every other requirement carries a recorded N/A proposal with reason; fail-closed gate that rejects unreviewed N/A and unverified requirements | Met on 2026-10-22: 442/442 rows carry a decision or a reasoned proposal (122 applicable, 320 N/A proposals); `owasp_gate.py --mode release` stays BLOCKED until evidence and N/A approvals exist |
 | **0.5.0-alpha.N** | Fix origin/iframe/permissions lifecycle, actual media revocation, TLS/PNA/DNS/redirect issues, tracking-rule limits, sandbox process constraints; add fuzz/system/hardware tests | All P0 risk cases implemented and tested; no open unreviewed critical/high |
 | **0.6.0-beta.N** | Freeze Windows 1.0 scope; complete cloud compatibility, accessibility, localization, browser lifecycle and long-running stress | Full regression, repeated real-device tests, tested Windows build package |
-| **1.0.0-rc.N** | Independent security review, dependency/SBOM audit, signed binary/update/rollback, candidate-specific OWASP evidence | Every applicable pinned ASVS/WSTG requirement and browser-specific test verified; all formal release gates GO |
+| **1.0.0-rc.N** | Item-by-item approval of every N/A by a named reviewer, independent security review, dependency/SBOM audit, signed binary/update/rollback, candidate-specific OWASP evidence | Every applicable pinned ASVS/WSTG requirement and browser-specific test verified; all formal release gates GO |
 | **1.0.0** | Public Windows x64 product and maintenance process | Exact qualified candidate signed and published |
 
 No estimated date or percentage stands in place of actual completion.

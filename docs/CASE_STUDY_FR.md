@@ -1,7 +1,7 @@
 # Étude de cas — CYBOU Browser
 
 **Projet open source personnel de R&D, conçu et développé par un ingénieur logiciel indépendant.**  
-**Statut :** source 0.3.0-alpha.2, développement Windows, sans version publique qualifiée pour un usage quotidien sensible.
+**Statut :** source 0.4.0-alpha.1, développement Windows, sans version publique qualifiée pour un usage quotidien sensible.
 
 ## 1. Problème et objectif
 

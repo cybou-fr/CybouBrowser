@@ -1,6 +1,6 @@
 # CYBOU Browser — Engineering decisions and trade-offs
 
-This page is a **reviewer-friendly index of decisions**, not a replacement for source code or binding ADRs. The current baseline is 0.3.0-alpha.2. **Implemented**, **partially proven**, and **future** are intentionally different states.
+This page is a **reviewer-friendly index of decisions**, not a replacement for source code or binding ADRs. The current baseline is 0.4.0-alpha.1. **Implemented**, **partially proven**, and **future** are intentionally different states.
 
 | Decision | Why / benefit | Cost or limitation | Authority |
 | --- | --- | --- | --- |

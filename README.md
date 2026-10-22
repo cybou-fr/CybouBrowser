@@ -6,7 +6,7 @@
 
 <p align="center"><strong>Observe → Restrict → Control → Revoke</strong></p>
 <p align="center">A native C++20 / Qt Quick / Qt WebEngine browser for visible, direct control over website capabilities.</p>
-<p align="center"><strong>Current source: 0.3.0-alpha.2 · Development only · No public release yet</strong></p>
+<p align="center"><strong>Current source: 0.4.0-alpha.1 · Development only · No public release yet</strong></p>
 
 ## Engineering showcase and open source
 
@@ -88,11 +88,11 @@ See [Security Verification Framework](docs/SECURITY_VERIFICATION_FRAMEWORK.md), 
 
 | Source-version stage | Promotion requirement |
 | --- | --- |
-| **0.3.0-alpha.2 — NOW** | Architecture/product implementation exists; not qualified |
-| **0.4.0-alpha.N** | Official OWASP inventories pinned, full applicability and reproducible test infrastructure |
+| 0.3.0-alpha.N — passed | Architecture/product implementation exists; not qualified |
+| **0.4.0-alpha.N — NOW** | Risk-based R2: pinned OWASP inventories, browser risk register, every requirement decided or carrying a reasoned N/A proposal, fail-closed gate; N/A approval is a 1.0.0-rc gate |
 | **0.5.0-alpha.N** | Browser hardening, fuzzing, negative/system/hardware coverage and high-risk fixes |
 | **0.6.0-beta.N** | Feature freeze, end-to-end Windows qualification, accessibility and compatibility |
-| **1.0.0-rc.N** | Independent security review, complete current-candidate evidence and signed distribution rehearsals |
+| **1.0.0-rc.N** | Item-by-item N/A approval, independent security review, complete current-candidate evidence and signed distribution rehearsals |
 | **1.0.0** | First public Windows x64 release after all gates pass |
 
 For concrete deliverables and go/no-go rules, use [Roadmap](docs/ROADMAP.md), [Versioning](docs/VERSIONING.md) and [Release Criteria](docs/RELEASE_CRITERIA.md).

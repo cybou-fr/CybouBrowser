@@ -1,6 +1,6 @@
 # ADR 0005 — временные tracker exceptions по origin
 
-**Принято и существует в коде 0.3.0-alpha.2.** Основные компоненты: `TrackerExceptionRegistry`, сетевой interceptor, C++/QML Network-карточка.
+**Принято и существует в коде 0.4.0-alpha.1.** Основные компоненты: `TrackerExceptionRegistry`, сетевой interceptor, C++/QML Network-карточка.
 
 QWebEngine URL interceptor обрабатывает запросы на уровне **профиля** и не предоставляет достоверную привязку каждого запроса к вкладке. Поэтому scope temporary tracker exception — **HTTPS origin в текущем профиле**, а не отдельная вкладка.
 
