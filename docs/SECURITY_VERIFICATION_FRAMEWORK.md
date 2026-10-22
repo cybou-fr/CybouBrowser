@@ -59,7 +59,16 @@ CISA KEV catalog 2026.10.21 (1754 CVEs) and 7153 NVD `google:chrome` records: **
 | CVE-2026-85046 | not_affected (source inspection) | The fixed Array.prototype.sort inlining does not exist in the shipped V8; to be confirmed with the upstream regression test |
 | **CVE-2026-87491** | **under_investigation** | Fixed in Chrome 153, after the Qt patch level; no backport found. Exploited in the wild: blocks the risk gate |
 
-The remaining 3461 matches are untriaged and keep the risk gate BLOCKED.
+**Automatic `patch-level` status.** A match without an explicit decision is resolved as `patch-level` only when both facts hold: every affecting range is fixed upstream at or below the security patch level recorded in the SBOM, and `tests/security/vulns/qt-backports.json` lists a non-reverted `[Backport] CVE-...` commit for it on the Qt branch before the shipped build. The index is built by `tools/security/qt_backports.py --until <build time>` (1192 CVEs from 2100 commits up to 2026-09-28; `GITHUB_TOKEN` lifts the anonymous API limit). An explicit triage decision always wins.
+
+| Status of the 3470 matches | Count | Critical / high |
+| --- | --- | --- |
+| `patch-level` (declared level + backport commit) | 1093 | 136 / 572 |
+| Triaged by hand (KEV) | 9 | 0 / 9 |
+| Open: fixed upstream within the patch level, no `[Backport] CVE-...` commit found | 1470 | 141 / 502 |
+| Open: fixed upstream after the patch level (Chrome > 152.0.7977.83) | 898 | 116 / 367 |
+
+Open within the level does not mean unpatched: Qt also lands fixes as `Security bug <crbug>` commits, as engine version updates, or not at all for code it does not ship (Android, iOS, ChromeOS, Chrome-only features). Those need a broader matcher (crbug IDs from NVD references) or source inspection. Open after the level waits for a newer Qt WebEngine patch release. The risk gate stays BLOCKED on 2368 open matches.
 
 ## How to run locally (no GitHub Actions required)
 

@@ -205,6 +205,38 @@ class GateContractTests(unittest.TestCase):
         self.assertEqual(stats["kev"],1)
         self.assertTrue(any("not_affected needs" in e for e in self.risk_errors([hit],[{**fixed,"status":"not_affected","justification":""}])[0]))
 
+    def patch_level_stats(self, fixed, backported, decisions=()):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d)
+            (base/"sbom.json").write_text(json.dumps({"components":[{"bom-ref":"qt-webengine-chromium","properties":[
+                {"name":"cybou:chromium-version","value":"140.0.7339.225"},
+                {"name":"cybou:chromium-security-patch-version","value":"152.0.7977.83"}]}]}),encoding="utf-8")
+            rec={"id":"CVE-2099-0006","component":"chromium","ranges":[{"introduced":"0","fixed":fixed}]}
+            (base/"snapshot.json").write_text(json.dumps({"retrievedOn":"2026-10-21","records":[rec]}),encoding="utf-8")
+            (base/"kev.json").write_text(json.dumps({"retrievedOn":"2026-10-21","cveIds":[]}),encoding="utf-8")
+            (base/"triage.json").write_text(json.dumps({"decisions":list(decisions)}),encoding="utf-8")
+            (base/"qt-backports.json").write_text(json.dumps({"cves":{"CVE-2099-0006":["abc"]} if backported else {}}),encoding="utf-8")
+            return gate.check_risk(base/"sbom.json",base,gate.dt.date(2026,10,22))
+
+    def test_patch_level_needs_both_declared_level_and_backport_commit(self):
+        errors,stats=self.patch_level_stats("152.0.7977.82",True)
+        self.assertEqual((errors,stats["patchLevel"],stats["open"]),([],1,0))
+        for fixed,backported in [("152.0.7977.82",False),("153.0.8010.36",True)]:
+            with self.subTest(fixed=fixed,backported=backported):
+                errors,stats=self.patch_level_stats(fixed,backported)
+                self.assertEqual((stats["patchLevel"],stats["open"]),(0,1))
+                self.assertTrue(any("not triaged" in e for e in errors))
+        affected={"vulnId":"CVE-2099-0006","component":"chromium","status":"affected"}
+        errors,stats=self.patch_level_stats("152.0.7977.82",True,[affected])
+        self.assertTrue(any("known vulnerability affects" in e for e in errors))
+
+    def test_reverted_backport_does_not_count(self):
+        import qt_backports as qb
+        found=qb.index([{"title":"[backport] CVE-2099-0007 (1/2)","sha":"a"},{"title":"[backport] CVE-2099-0007 (2/2)","sha":"b"},
+                        {"title":'Revert "[backport] CVE-2099-0007 (1/2)"',"sha":"c"},{"title":"[Backport] CVE-2099-0008","sha":"d"},
+                        {"title":'Revert "[Backport] CVE-2099-0008"',"sha":"e"},{"title":"[Backport] Dependency for CVE-2099-0009","sha":"f"}])
+        self.assertEqual(found,{"CVE-2099-0007":["b"]})
+
     def test_risk_gate_blocks_stale_or_missing_feeds(self):
         self.assertTrue(any("days old" in e for e in self.risk_errors([],[],retrieved="2026-09-01")[0]))
         with tempfile.TemporaryDirectory() as d:

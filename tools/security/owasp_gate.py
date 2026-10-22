@@ -221,6 +221,16 @@ VEX_STATUS=("not_affected","affected","fixed","under_investigation")
 # Vulnerability-feed package names -> (SBOM bom-ref, SBOM property holding the version, or None for "version").
 COMPONENTS={"chromium":("qt-webengine-chromium","cybou:chromium-version"),
             "qt":("qt",None),"qtwebengine":("qt-webengine-chromium",None)}
+# Components whose vendor cherry-picks upstream security fixes up to a declared level (SBOM property).
+PATCH_LEVEL={"chromium":("qt-webengine-chromium","cybou:chromium-security-patch-version")}
+
+def patch_level_covers(record, version, level):
+    """Every affecting range is fixed upstream at or below the vendor's security patch level."""
+    fixes=[r.get("fixed") for r in record.get("ranges",[]) if affects({"ranges":[r]},version)]
+    try:
+        return bool(fixes) and all(f and version_key(f)<=version_key(level) for f in fixes)
+    except TypeError:
+        return False
 
 def check_framework(requirements, coverage_file, cases, threats_file):
     """Completeness of the framework itself: every control decided or proposed, links resolve, threats mapped.
@@ -295,6 +305,7 @@ def check_risk(sbom_file, vulns_dir, today, max_age=7):
         if problem: errors.append(problem)
     kev_ids=set(kev.get("cveIds",[]))
     triage={(d.get("vulnId"),d.get("component")):d for d in vex.get("decisions",[])}
+    backports=read_json(vulns_dir/"qt-backports.json").get("cves",{}) if (vulns_dir/"qt-backports.json").exists() else {}
     findings=[]
     for rec in snap.get("records",[]):
         rid,comp=rec.get("id"),rec.get("component")
@@ -307,15 +318,26 @@ def check_risk(sbom_file, vulns_dir, today, max_age=7):
         in_kev=bool({rid,*rec.get("aliases",[])}&kev_ids)
         d=triage.get((rid,comp),{})
         status=d.get("status")
+        level=versions.get(PATCH_LEVEL.get(comp))
+        # Automatic only with both facts: the vendor's declared level covers the fix and a backport commit exists.
+        # An explicit triage decision always wins; KEV entries are reported but resolved the same way.
+        if status is None and level and rid in backports and patch_level_covers(rec,version,level):
+            status="patch-level"
         findings.append({"id":rid,"component":comp,"version":version,"kev":in_kev,"status":status})
-        if status not in VEX_STATUS or status=="under_investigation":
+        if status=="patch-level":
+            pass
+        elif status not in VEX_STATUS or status=="under_investigation":
             errors.append(f"{rid}: {comp} {version} matches and is not triaged")
         elif status=="not_affected" and not d.get("justification"):
             errors.append(f"{rid}: not_affected needs a justification")
         elif status=="affected":
             errors.append(f"{rid}: known vulnerability affects shipped {comp} {version}"+(" (CISA KEV)" if in_kev else ""))
     return errors,{"records":len(snap.get("records",[])),"matches":len(findings),
-                   "kev":sum(f["kev"] for f in findings),"findings":findings}
+                   "kev":sum(f["kev"] for f in findings),
+                   "patchLevel":sum(f["status"]=="patch-level" for f in findings),
+                   "triaged":sum(f["status"] in VEX_STATUS and f["status"]!="under_investigation" for f in findings),
+                   "open":sum(f["status"] not in VEX_STATUS+("patch-level",) or f["status"]=="under_investigation" for f in findings),
+                   "findings":findings}
 
 def reviewer_names(path):
     if not Path(path).exists(): return frozenset()
