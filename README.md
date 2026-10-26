@@ -8,6 +8,10 @@
 <p align="center">A native C++20 / Qt Quick / Qt WebEngine browser for visible, direct control over website capabilities.</p>
 <p align="center"><strong>Current source: 0.4.0-alpha.1 · Development only · No public release yet</strong></p>
 
+**🇫🇷 [Étude de cas professionnelle](docs/CASE_STUDY_FR.md)** · [Portfolio de l'architecte](https://github.com/cybou-fr)
+
+**Valeur d'ingénierie :** application Windows native C++/Qt, UX de permission explicite, séparation des états et des responsabilités, modèles de menaces et tests orientés risque. Cette version alpha n'est pas une garantie de sécurité pour l'utilisateur final.
+
 ## Engineering showcase and open source
 
 CYBOU is a real browser project **and** an inspectable case study in C++20/Qt software and systems architecture. The implementation, decisions, trade-offs, test boundaries and remaining risks are available to reviewers.
