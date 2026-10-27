@@ -443,3 +443,19 @@ New gate suite `sandbox` (`cybou_tests.exe --sandbox-test`, `src/security/Sandbo
 | Control, sandbox disabled | **medium** | yes | yes |
 
 The test requires untrusted or low integrity, a job and no `--no-sandbox` for every product renderer, and a medium or high renderer in the control, so it cannot pass if the measurement cannot tell the two apart. Job membership alone is not evidence: Qt puts the renderer in a job in both cases. Only a renderer process is spawned in this configuration (GPU and network service run in the browser process). Not yet covered: the packaged `cybou.exe`, token restrictions beyond integrity, and a renderer-escape negative test.
+
+## Site data stays in its profile - 2026-10-28
+
+CYB-SBX-002, first part, in the smoke prefix of every smoke suite: the fixture `/storage` (one origin) writes a per-run marker to **cookies, localStorage, IndexedDB and Cache Storage** and reads all four back. It runs in the product's normal window and in its two private windows:
+
+| Step | Read |
+| --- | --- |
+| Normal writes, reads back | all four = normal marker (positive control) |
+| Private A reads | all four empty |
+| Private A writes, reads back | all four = private A marker (positive control) |
+| Private B reads | all four empty |
+| Normal reads again | all four = normal marker, nothing from private A |
+
+Three standalone smoke runs out of three. The positive controls matter: the first version read every store empty in private A, which would have looked like isolation, and the test refused it ("a profile cannot read its own write"). The cause was in the test (a late `runJavaScript` answer from the previous read overwrote the new result); each result now carries a run id.
+
+**Finding: Qt WebEngine crash.** Destroying a `WebEngineView` while a `view.runJavaScript(script, callback)` callback is still in flight crashes the process (reproduced with a one-line script and an immediate tab close; `frame.runJavaScript` with a callback did not crash in the same repro). In CYBOU's own code the only callback-taking call is `frame.runJavaScript` in the iframe delegation check; `view.runJavaScript` callbacks are in test code only. The probe now closes its tab only when no callback is outstanding. Not yet covered: the temporary HTTP profile, service workers and HTTP cache, history and permission decisions, private data after the window closes, renderer crash and recovery.

@@ -309,8 +309,22 @@
       "method": "integration",
       "tier": "P0",
       "candidateSuite": "smoke",
-      "status": "planned",
-      "kind": "execution"
+      "status": "in_progress",
+      "kind": "execution",
+      "testSources": [
+        "tests/test_main.cpp",
+        "qml/Main.qml"
+      ],
+      "coveredScenarios": [
+        "smoke prefix of every smoke suite: one origin writes a per-run marker to cookies, localStorage, IndexedDB and Cache Storage; normal -> private, private A -> private B and private -> normal all read empty, while each profile reads back its own write (positive control); results are tagged with a run id so a late answer from an earlier run cannot be read as a result"
+      ],
+      "remainingScenarios": [
+        "temporary HTTP profile against normal and private",
+        "service workers and HTTP cache",
+        "history and permission decisions across profiles",
+        "private data gone after the private window closes (a new private window sees none)",
+        "renderer crash and session recovery"
+      ]
     },
     {
       "id": "CYB-SBX-003",

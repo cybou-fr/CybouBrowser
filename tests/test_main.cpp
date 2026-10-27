@@ -267,6 +267,22 @@ int main(int argc, char *argv[])
                 }
                 const bool download = request.startsWith("GET /download ");
                 const bool transport = request.startsWith("GET /transport-document?");
+                if (request.startsWith("GET /storage ")) {
+                    // CYB-SBX-002 fixture: writes or reads one marker in cookies, localStorage, IndexedDB and Cache Storage.
+                    const QByteArray page = "<!doctype html><title>storage-loading</title><script>"
+                        "const idb=(write,m)=>new Promise(ok=>{const r=indexedDB.open('cybou',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');"
+                        "r.onerror=()=>ok(null);r.onsuccess=()=>{const tx=r.result.transaction('s',write?'readwrite':'readonly');const s=tx.objectStore('s');"
+                        "if(write){s.put(m,'k');tx.oncomplete=()=>{r.result.close();ok(m)}}else{const g=s.get('k');g.onsuccess=()=>{r.result.close();ok(g.result===undefined?null:g.result)};g.onerror=()=>ok(null)}}});"
+                        "window.cybouProbe=async(mode,m)=>{if(mode==='diag'){let ls;try{localStorage.setItem('x','1');ls=localStorage.getItem('x')}catch(e){ls='E:'+e.name}"
+                        "document.cookie='y=1;path=/';return {ls,cookie:document.cookie,cookieEnabled:navigator.cookieEnabled,secure:isSecureContext,origin:location.origin}}"
+                        "if(mode==='write'){document.cookie='cybou='+m+';path=/;max-age=3600';localStorage.setItem('cybou',m);"
+                        "await idb(true,m);const c=await caches.open('cybou');await c.put('/cybou-cache',new Response(m))}"
+                        "const c=await caches.open('cybou');const r=await c.match('/cybou-cache');"
+                        "return {cookie:(document.cookie.match(/cybou=([^;]+)/)||[])[1]||null,localStorage:localStorage.getItem('cybou'),indexedDB:await idb(false),cacheStorage:r?await r.text():null}};"
+                        "document.title='storage-ready'</script>";
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                    socket->disconnectFromHost(); return;
+                }
                 if (request.startsWith("GET /media-top")) {
                     // Cross-origin iframe fixture: the top page (127.0.0.1) frames /media-frame from localhost, another origin of
                     // the same server. ?allow lists camera and microphone in the iframe allow attribute. The top page relays
@@ -679,6 +695,42 @@ int main(int argc, char *argv[])
                     qCritical() << "PRIVATE_CONTROL_POLICY_TEST FAIL"; app.exit(2); return;
                 }
                 qInfo() << "PRIVATE_CONTROL_POLICY_TEST PASS";
+            }
+            {
+                // CYB-SBX-002: site data of one origin must not cross between the normal profile and two private
+                // windows, in any direction; each profile first reads back its own write (positive control).
+                const QString marker = QString::number(QDateTime::currentMSecsSinceEpoch());
+                auto probe = [](QObject *window, const QString &mode, const QString &value) -> QVariantMap {
+                    QMetaObject::invokeMethod(window, "storageProbeRun", Q_ARG(QVariant, mode), Q_ARG(QVariant, value));
+                    QString text;
+                    QTest::qWaitFor([&] { QVariant v; QMetaObject::invokeMethod(window, "storageProbePoll", Q_RETURN_ARG(QVariant, v)); text = v.toString(); return !text.isEmpty(); }, 10000);
+                    return QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap();
+                };
+                auto open = [](QObject *window) {
+                    QMetaObject::invokeMethod(window, "storageProbeOpen");
+                    return QTest::qWaitFor([window] { QVariant v; QMetaObject::invokeMethod(window, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000);
+                };
+                const QStringList stores{"cookie", "localStorage", "indexedDB", "cacheStorage"};
+                auto all = [&](const QVariantMap &r, const QString &expected) { for (const auto &s : stores) if (r.value(s).toString() != expected) return false; return true; };
+                auto none = [&](const QVariantMap &r) { if (r.contains("error")) return false; for (const auto &s : stores) if (!r.value(s).isNull()) return false; return true; };
+                QObject *normal = root, *privateA = privateWindows[0], *privateB = privateWindows[1];
+                if (!open(normal) || !open(privateA) || !open(privateB)) { qCritical() << "PROFILE_STORAGE_ISOLATION FAIL: fixture did not load"; app.exit(2); return; }
+                const auto normalOwn = probe(normal, "write", "normal-" + marker);
+                const auto privateASees = probe(privateA, "read", "");
+                const auto privateAOwn = probe(privateA, "write", "privateA-" + marker);
+                const auto privateBSees = probe(privateB, "read", "");
+                const auto normalSees = probe(normal, "read", "");
+                qInfo().noquote() << "PROFILE_STORAGE" << QJsonDocument(QJsonObject::fromVariantMap({{"normalOwn", normalOwn}, {"privateASees", privateASees},
+                    {"privateAOwn", privateAOwn}, {"privateBSees", privateBSees}, {"normalSees", normalSees}})).toJson(QJsonDocument::Compact);
+                if (!all(normalOwn, "normal-" + marker) || !all(privateAOwn, "privateA-" + marker)) {
+                    qCritical() << "PROFILE_STORAGE_ISOLATION FAIL: a profile cannot read its own write, the probe proves nothing"; app.exit(2); return;
+                }
+                if (!none(privateASees) || !none(privateBSees) || !all(normalSees, "normal-" + marker)) {
+                    qCritical() << "PROFILE_STORAGE_ISOLATION FAIL: site data crossed a profile boundary"; app.exit(2); return;
+                }
+                QTest::qWaitFor([normal] { return normal->property("storageProbeOutstanding").toInt() == 0; }, 5000);
+                QMetaObject::invokeMethod(normal, "storageProbeClose"); // the rest of the smoke run continues in the normal window
+                qInfo() << "PROFILE_STORAGE_ISOLATION PASS: cookies, localStorage, IndexedDB and Cache Storage of one origin stay in their profile: normal -> private, private -> private and private -> normal all empty; each profile reads its own write";
             }
             const QPointer<QObject> privateProfileA(profileOf(privateWindows[0]));
             const QPointer<QObject> privateProfileB(profileOf(privateWindows[1]));

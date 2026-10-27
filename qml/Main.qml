@@ -405,6 +405,34 @@ ApplicationWindow {
         settingsPanel.statusText = "Effacement demandé pour les catégories sélectionnées. Les cookies sont supprimés en arrière-plan."
         settingsPanel.refreshPermissions()
     }
+    // CYB-SBX-002 storage isolation (driven by cybou_tests): open the storage fixture in this window's profile, run
+    // an async probe in the page, and expose its JSON result for the test to poll.
+    property string storageProbeResult: ""
+    property int storageProbeRunId: 0
+    // Callbacks of view.runJavaScript still in flight: Qt WebEngine 6.140 crashes the process when a view is destroyed
+    // before its runJavaScript callback returns (reproduced 2026-10-28), so the probe tab closes only at zero.
+    property int storageProbeOutstanding: 0
+    function storageProbeOpen() { addTab(smokeBaseUrl + "/storage") }
+    function storageProbeClose() { if (currentView && currentView.url.toString() === smokeBaseUrl + "/storage") closeTab(activeTab) }
+    function storageProbeReady() { return currentView && currentView.title === "storage-ready" && !currentView.loading }
+    // Each run is numbered and its result carries the number: a late answer from an earlier run is ignored.
+    function storageProbeRun(mode, marker) {
+        storageProbeResult = ""
+        const id = ++storageProbeRunId
+        currentView.runJavaScript("window.cybouProbeResult=null;window.cybouProbe(" + JSON.stringify(mode) + "," + JSON.stringify(marker)
+                                  + ").then(r=>window.cybouProbeResult=JSON.stringify({id:" + id + ",r}),e=>window.cybouProbeResult=JSON.stringify({id:" + id + ",r:{error:String(e)}}))")
+    }
+    function storageProbePoll() {
+        const id = storageProbeRunId
+        ++storageProbeOutstanding
+        currentView.runJavaScript("window.cybouProbeResult", function(value) {
+            --storageProbeOutstanding
+            if (!value) return
+            const answer = JSON.parse(value)
+            if (answer.id === id && id === storageProbeRunId) storageProbeResult = JSON.stringify(answer.r)
+        })
+        return storageProbeResult
+    }
     function runPrivateSmokeTest() {
         return privateMode && privateProfile && privateProfile.offTheRecord && persistentProfile === null && tabs.count === 1
     }
