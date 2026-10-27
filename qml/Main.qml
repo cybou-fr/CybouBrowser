@@ -413,6 +413,7 @@ ApplicationWindow {
     // before its runJavaScript callback returns (reproduced 2026-10-28), so the probe tab closes only at zero.
     property int storageProbeOutstanding: 0
     function storageProbeOpen() { addTab(smokeBaseUrl + "/storage") }
+    function storageProbeRendererPid() { return currentView ? currentView.renderProcessPid : 0 }
     function storageProbeClose() { if (currentView && currentView.url.toString() === smokeBaseUrl + "/storage") closeTab(activeTab) }
     function storageProbeReady() { return currentView && currentView.title === "storage-ready" && !currentView.loading }
     // Each run is numbered and its result carries the number: a late answer from an earlier run is ignored.
@@ -451,6 +452,18 @@ ApplicationWindow {
         const start = first.mapToItem(null, first.width / 2, first.height / 2)
         const end = last.mapToItem(null, last.width / 2 + 10, last.height / 2)
         return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
+    }
+    // Popups (and their modal dimmers) live in the window overlay and take presses while visible, including during
+    // their exit transition; the drag test waits for an empty overlay and reports what was there if it still fails.
+    function dragSmokeOverlay() {
+        const shown = []
+        for (const child of Overlay.overlay.children) if (child.visible) shown.push(child.objectName || child.toString())
+        return shown
+    }
+    function dragSmokeHit(x, y) {
+        let item = window.contentItem, path = []
+        while (item) { path.push(item.objectName || item.toString()); const p = window.contentItem.mapToItem(item, x, y); item = item.childAt(p.x, p.y) }
+        return path.slice(-3).join(" > ")
     }
     function verifyDragSmokeTest() { return activeTab === 2 && currentView.url.toString() === smokeBaseUrl + "/drag0" }
     function prepareSuggestionsSmokeTest() {

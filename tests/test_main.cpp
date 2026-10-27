@@ -419,6 +419,9 @@ int main(int argc, char *argv[])
                 qCritical() << "PAGE_ERROR_DIALOG_TEST FAIL"; app.exit(2); return;
             }
             QMetaObject::invokeMethod(errorDialog, "close");
+            // A closing Popup stays visible through its exit transition and its modal overlay swallows presses: the tab
+            // drag below lost its press this way (TAB_DRAG_TEST FAIL with the window exposed at the right size).
+            QTest::qWaitFor([errorDialog] { return !errorDialog->property("visible").toBool(); }, 3000);
             qInfo() << "PAGE_ERROR_DIALOG_TEST PASS: tab error signal opens the actual popup";
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->resize(1360, 900);
@@ -438,6 +441,7 @@ int main(int argc, char *argv[])
             QTest::qWaitFor([&] { QTest::qWait(50); const auto next = readPoints(); const bool stable = !next.isEmpty() && next == points; points = next; return stable; }, 5000);
             const QPointF start(points["x1"].toDouble(), points["y1"].toDouble());
             const QPointF end(points["x2"].toDouble(), points["y2"].toDouble());
+            QTest::qWaitFor([root] { QVariant v; QMetaObject::invokeMethod(root, "dragSmokeOverlay", Q_RETURN_ARG(QVariant, v)); return v.toList().isEmpty() && v.value<QJSValue>().property("length").toInt() == 0; }, 5000);
             dragWindow->requestActivate();
             QTest::mousePress(dragWindow, Qt::LeftButton, Qt::NoModifier, start.toPoint(), 20);
             for (int step = 1; step <= 8; ++step)
@@ -450,6 +454,10 @@ int main(int argc, char *argv[])
                 dragWindow->grabWindow().save("build/drag-failure.png");
                 qCritical() << "TAB_DRAG_TEST FAIL" << points << "activeTab" << root->property("activeTab") << "exposed" << dragWindow->isExposed()
                             << "size" << dragWindow->size() << "focus" << dragWindow->activeFocusItem();
+                QVariant overlay, hit;
+                QMetaObject::invokeMethod(root, "dragSmokeOverlay", Q_RETURN_ARG(QVariant, overlay));
+                QMetaObject::invokeMethod(root, "dragSmokeHit", Q_RETURN_ARG(QVariant, hit), Q_ARG(QVariant, start.x()), Q_ARG(QVariant, start.y()));
+                qCritical() << "TAB_DRAG_TEST DIAG overlay" << overlay.value<QJSValue>().toVariant() << "hit" << hit.toString();
                 app.exit(2); return;
             }
             qInfo() << "TAB_DRAG_TEST PASS";
@@ -728,13 +736,72 @@ int main(int argc, char *argv[])
                 if (!none(privateASees) || !none(privateBSees) || !all(normalSees, "normal-" + marker)) {
                     qCritical() << "PROFILE_STORAGE_ISOLATION FAIL: site data crossed a profile boundary"; app.exit(2); return;
                 }
-                QTest::qWaitFor([normal] { return normal->property("storageProbeOutstanding").toInt() == 0; }, 5000);
+                // Renderer crash: kill the renderer of the normal and of a private window. The tab reloads once by itself
+                // (BrowserTab.onRenderProcessTerminated), each profile keeps its own data, and nothing crosses over.
+                auto idle = [](QObject *window) { return QTest::qWaitFor([window] { return window->property("storageProbeOutstanding").toInt() == 0; }, 5000); };
+                auto rendererPid = [](QObject *window) { QVariant v; QMetaObject::invokeMethod(window, "storageProbeRendererPid", Q_RETURN_ARG(QVariant, v)); return v.toLongLong(); };
+                for (QObject *window : {normal, privateA}) {
+                    idle(window);
+                    const qint64 pid = rendererPid(window);
+                    bool killed = false;
+#ifdef Q_OS_WIN
+                    if (HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, DWORD(pid))) { killed = TerminateProcess(process, 9); CloseHandle(process); }
+#endif
+                    const bool reloaded = killed && QTest::qWaitFor([&] {
+                        QVariant ready; QMetaObject::invokeMethod(window, "storageProbeReady", Q_RETURN_ARG(QVariant, ready));
+                        return ready.toBool() && rendererPid(window) != pid && rendererPid(window) > 0;
+                    }, 20000);
+                    if (!reloaded) { qCritical() << "RENDERER_CRASH_RECOVERY FAIL: renderer" << pid << "killed" << killed << "page not reloaded in a new renderer"; app.exit(2); return; }
+                }
+                const auto normalAfterCrash = probe(normal, "read", "");
+                const auto privateAAfterCrash = probe(privateA, "read", "");
+                qInfo().noquote() << "RENDERER_CRASH_STORAGE" << QJsonDocument(QJsonObject::fromVariantMap({{"normal", normalAfterCrash}, {"privateA", privateAAfterCrash}})).toJson(QJsonDocument::Compact);
+                if (!all(normalAfterCrash, "normal-" + marker) || !all(privateAAfterCrash, "privateA-" + marker)) {
+                    qCritical() << "RENDERER_CRASH_RECOVERY FAIL: a renderer crash lost or mixed profile data"; app.exit(2); return;
+                }
+                qInfo() << "RENDERER_CRASH_RECOVERY PASS: killed renderers of a normal and a private tab; both reloaded once in a new renderer and kept their own profile data only";
+                idle(normal); idle(privateA); idle(privateB);
                 QMetaObject::invokeMethod(normal, "storageProbeClose"); // the rest of the smoke run continues in the normal window
                 qInfo() << "PROFILE_STORAGE_ISOLATION PASS: cookies, localStorage, IndexedDB and Cache Storage of one origin stay in their profile: normal -> private, private -> private and private -> normal all empty; each profile reads its own write";
             }
             const QPointer<QObject> privateProfileA(profileOf(privateWindows[0]));
             const QPointer<QObject> privateProfileB(profileOf(privateWindows[1]));
             for (auto window : privateWindows) window->close();
+            {
+                // Private data must not outlive its windows: a new private window sees nothing of what A wrote.
+                QTest::qWaitFor([&] { return privateProfileA.isNull() && privateProfileB.isNull(); }, 10000);
+                const int before = engine.rootObjects().size();
+                store.newPrivateWindow();
+                QObject *fresh = nullptr;
+                QTest::qWaitFor([&] {
+                    for (auto object : engine.rootObjects()) if (object->property("privateMode").toBool() && !privateWindows.contains(qobject_cast<QQuickWindow *>(object))) fresh = object;
+                    return fresh != nullptr;
+                }, 10000);
+                QVariantMap freshSees, freshOwn;
+                if (fresh) {
+                    QMetaObject::invokeMethod(fresh, "storageProbeOpen");
+                    if (QTest::qWaitFor([fresh] { QVariant v; QMetaObject::invokeMethod(fresh, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000)) {
+                        QMetaObject::invokeMethod(fresh, "storageProbeRun", Q_ARG(QVariant, QStringLiteral("read")), Q_ARG(QVariant, QString()));
+                        QString text;
+                        QTest::qWaitFor([&] { QVariant v; QMetaObject::invokeMethod(fresh, "storageProbePoll", Q_RETURN_ARG(QVariant, v)); text = v.toString(); return !text.isEmpty(); }, 10000);
+                        freshSees = QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap();
+                        // Positive control: the probe works in this window, so its empty read means something.
+                        QMetaObject::invokeMethod(fresh, "storageProbeRun", Q_ARG(QVariant, QStringLiteral("write")), Q_ARG(QVariant, QStringLiteral("fresh")));
+                        QTest::qWaitFor([&] { QVariant v; QMetaObject::invokeMethod(fresh, "storageProbePoll", Q_RETURN_ARG(QVariant, v)); text = v.toString(); return !text.isEmpty(); }, 10000);
+                        freshOwn = QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap();
+                    }
+                    QTest::qWaitFor([fresh] { return fresh->property("storageProbeOutstanding").toInt() == 0; }, 5000);
+                }
+                qInfo().noquote() << "PRIVATE_AFTER_CLOSE" << before << QJsonDocument(QJsonObject::fromVariantMap({{"sees", freshSees}, {"own", freshOwn}})).toJson(QJsonDocument::Compact);
+                bool empty = fresh && !freshSees.isEmpty() && !freshSees.contains("error");
+                for (const auto &s : {"cookie", "localStorage", "indexedDB", "cacheStorage"}) empty = empty && freshSees.value(s).isNull() && freshOwn.value(s).toString() == "fresh";
+                const QPointer<QObject> freshProfile(fresh ? profileOf(fresh) : nullptr);
+                if (fresh) if (auto window = qobject_cast<QQuickWindow *>(fresh)) window->close();
+                if (!empty || !QTest::qWaitFor([&] { return freshProfile.isNull(); }, 10000)) {
+                    qCritical() << "PRIVATE_DATA_AFTER_CLOSE FAIL: a new private window saw data of closed ones, or its profile outlived it"; app.exit(2); return;
+                }
+                qInfo() << "PRIVATE_DATA_AFTER_CLOSE PASS: after both private windows closed and their profiles were destroyed, a new private window reads cookies, localStorage, IndexedDB and Cache Storage empty, and reads back its own write";
+            }
             qInfo() << "PRIVATE_WINDOW_TEST PASS";
             auto poll = new QTimer(&app);
             auto attempts = std::make_shared<int>(0);

@@ -316,14 +316,15 @@
         "qml/Main.qml"
       ],
       "coveredScenarios": [
-        "smoke prefix of every smoke suite: one origin writes a per-run marker to cookies, localStorage, IndexedDB and Cache Storage; normal -> private, private A -> private B and private -> normal all read empty, while each profile reads back its own write (positive control); results are tagged with a run id so a late answer from an earlier run cannot be read as a result"
+        "smoke prefix of every smoke suite: one origin writes a per-run marker to cookies, localStorage, IndexedDB and Cache Storage; normal -> private, private A -> private B and private -> normal all read empty, while each profile reads back its own write (positive control); results are tagged with a run id so a late answer from an earlier run cannot be read as a result",
+        "renderer crash: killing the renderer (TerminateProcess on renderProcessPid) of a normal and of a private tab reloads each once in a new renderer; afterwards each profile reads its own data and nothing of the other",
+        "after both private windows close and their profiles are destroyed, a new private window reads all four stores empty and reads back its own write (positive control)"
       ],
       "remainingScenarios": [
         "temporary HTTP profile against normal and private",
         "service workers and HTTP cache",
         "history and permission decisions across profiles",
-        "private data gone after the private window closes (a new private window sees none)",
-        "renderer crash and session recovery"
+        "session restore after a forced crash of the whole application"
       ]
     },
     {
