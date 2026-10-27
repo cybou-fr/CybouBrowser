@@ -23,6 +23,10 @@ Item {
     property bool screenPending: false
     property bool activationRead: false
     property bool activated: false
+    property double staleId: 0
+    property int tabCount: 0
+    property var requestView: null
+    property var lifecycle: []
     property bool noAllowPrompted: false
     function expect(value, text) { if (!value) throw new Error(text) }
     function takeScreenshot() { return "" }
@@ -270,18 +274,54 @@ Item {
             } else if (phase === 80 && ready(view)) {
                 tabUid = view.tabUid; view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 81
             } else if (phase === 81) {
-                // The engine still asks the embedder for a frame without allow="camera", then enforces the permissions
-                // policy itself. Grant the prompt to prove that even a grant yields no stream.
-                if (browserWindow.pendingPermission && !noAllowPrompted) {
-                    noAllowPrompted = true
-                    expect(controller.capability("camera").requester === frameOrigin(), "prompt is for the framed requester")
-                    browserWindow.resolvePermission(true); since = Date.now(); return 0
-                }
+                // The page did not delegate the camera: CYBOU reads the frame's permissions policy and refuses at once.
+                if (browserWindow.pendingPermission) throw new Error("an iframe without allow=camera was offered the camera")
                 if (!settled(view.title) && elapsed() < 6000) return 0
                 expect(settled(view.title) && view.title !== "media-live", "iframe without allow got a stream: " + view.title)
-                console.info("MEDIA_NOALLOW_RESULT", view.title, "prompted", noAllowPrompted, "leases", JSON.stringify(view.grantedKeys))
-                results.push("iframe without allow: no stream even when granted (" + view.title + ")"
-                             + (noAllowPrompted ? ", but CYBOU showed a prompt" + (view.grantedKeys.includes("camera") ? " and lists camera as granted" : "") : ", no prompt"))
+                expect(!view.grantedKeys.includes("camera"), "no camera shown as granted for an undelegated frame")
+                const refused = controller.capability("camera").events.filter(e => e.blocked && e.requester === frameOrigin())
+                expect(refused.length === 1, "the refusal is recorded once for the framed requester: " + JSON.stringify(controller.capability("camera").events))
+                results.push("iframe without allow: refused by CYBOU without a prompt (" + view.title + "), recorded, nothing shown as granted")
+                openTab(); phase = 90
+
+            // Request lifecycle: a late decision never grants a document that is gone or no longer in front.
+            } else if (phase === 90 && ready(view)) {
+                tabUid = view.tabUid; view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 91
+            } else if (phase === 91 && browserWindow.pendingPermission) {
+                staleId = coordinator.pendingRequestId
+                view.url = smokeBaseUrl + "/media?navigated"; phase = 92
+            } else if (phase === 92 && view.url.toString().endsWith("?navigated") && view.title === "media-ready" && !view.loading) {
+                expect(!coordinator.resolve(true, view, view.profile, staleId), "a decision for the previous document granted the new one")
+                expect(!browserWindow.pendingPermission && !view.grantedKeys.includes("camera"), "navigation leaves no pending request or lease")
+                lifecycle.push("navigation cancels the pending request")
+                openTab(); phase = 93
+            } else if (phase === 93 && ready(view)) {
+                tabUid = view.tabUid; view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 94
+            } else if (phase === 94 && browserWindow.pendingPermission) {
+                staleId = coordinator.pendingRequestId
+                tabCount = browserWindow.testTabCount()
+                browserWindow.closeTab(browserWindow.activeTab); phase = 95
+            } else if (phase === 95 && browserWindow.testTabCount() === tabCount - 1) {
+                expect(!browserWindow.pendingPermission, "closing the tab leaves no pending request")
+                expect(!coordinator.resolve(true, browserWindow.currentView, browserWindow.currentView.profile, staleId), "a decision for a closed tab granted another view")
+                lifecycle.push("closing the tab cancels it")
+                openTab(); phase = 96
+            } else if (phase === 96 && ready(view)) {
+                tabUid = view.tabUid; requestView = view
+                view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 97
+            } else if (phase === 97 && browserWindow.pendingPermission) {
+                staleId = coordinator.pendingRequestId
+                browserWindow.addTab(smokeBaseUrl + "/one"); since = Date.now(); phase = 98
+            } else if (phase === 98 && view !== requestView && !view.loading) {
+                // The request belongs to a background tab now: a decision taken from the front tab must not grant it.
+                expect(!browserWindow.resolvePermission(true, staleId), "a decision from another tab granted the background request")
+                since = Date.now(); phase = 99
+            } else if (phase === 99 && elapsed() >= 1500) {
+                expect(requestView.title !== "media-live", "the background tab got a stream")
+                expect(!requestView.grantedKeys.includes("camera"), "the background tab holds a camera lease")
+                if (browserWindow.pendingPermission) coordinator.cancel()
+                lifecycle.push("a decision from another tab does not grant a background request")
+                results.push("lifecycle: " + lifecycle.join(", "))
                 phase = 50
             } else if (phase === 50) {
                 console.info("MEDIA_PERMISSION_TEST PASS", results.join(" | "))

@@ -31,16 +31,18 @@
       "status": "in_progress",
       "kind": "execution",
       "testSources": [
+        "qml/BrowserTab.qml",
         "qml/Main.qml",
         "qml/MediaPermissionHarness.qml",
         "src/security/PermissionCoordinator.cpp",
         "tests/test_main.cpp"
       ],
       "coveredScenarios": [
-        "--media-test: cross-origin iframe (localhost in 127.0.0.1) with allow=camera: the prompt names the framed requester and top site; grant gives a live track; revoke replaces the document because resetting the grant does not stop a frame's capture; a top-level deny refuses the iframe without a prompt and records the framed requester"
+        "--media-test: cross-origin iframe (localhost in 127.0.0.1) with allow=camera: the prompt names the framed requester and top site; grant gives a live track; revoke replaces the document because resetting the grant does not stop a frame's capture; a top-level deny refuses the iframe without a prompt and records the framed requester",
+        "--media-test: a cross-origin iframe without allow=camera is refused by CYBOU before any prompt (BrowserTab.checkFrameDelegation reads the frame's document.featurePolicy in an isolated world), recorded for the framed requester, nothing shown as granted; the delegated iframe still prompts"
       ],
       "remainingScenarios": [
-        "iframe without allow=camera: the engine still asks CYBOU and CYBOU prompts and lists camera as granted, though the engine gives no stream (NotAllowedError)"
+        "sandboxed iframe and an iframe after navigation; frames whose permissions policy cannot be read (document.featurePolicy absent) take the prompt path"
       ]
     },
     {
@@ -59,7 +61,8 @@
         "tests/test_main.cpp"
       ],
       "coveredScenarios": [
-        "--media-test (engine, fake camera): request held pending until decided; deny yields no stream; grant yields a live track held as a non-persistent lease; Control Bar revoke ends a capture the page hides (no element, stop() replaced); no silent regrant after revoke"
+        "--media-test (engine, fake camera): request held pending until decided; deny yields no stream; grant yields a live track held as a non-persistent lease; Control Bar revoke ends a capture the page hides (no element, stop() replaced); no silent regrant after revoke",
+        "--media-test lifecycle: navigating while a request is pending cancels it and a late grant with its ID fails; closing the tab cancels it; a decision taken from another tab does not grant a background request"
       ]
     },
     {

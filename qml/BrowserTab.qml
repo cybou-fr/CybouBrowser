@@ -199,7 +199,40 @@ WebEngineView {
             permission.deny()
             return
         }
-        askPermissionRequested(permission, web)
+        checkFrameDelegation(permission)
+    }
+    // A frame of another origin may use a device only if the page delegated it (allow="camera"). The engine enforces
+    // that only after asking the embedder, so a prompt for an undelegated frame could never give it a stream, and a
+    // grant would show as active (measured by --media-test). Before asking, read the effective permissions policy of
+    // the requesting frames in an isolated world the page cannot reach. Refuse only when it is known to forbid the
+    // feature; when it cannot be read, the request takes the normal path and is decided by the user.
+    readonly property var policyFeatures: ({
+        [WebEnginePermission.PermissionType.MediaVideoCapture]: {features: ["camera"], keys: ["camera"]},
+        [WebEnginePermission.PermissionType.MediaAudioCapture]: {features: ["microphone"], keys: ["mic"]},
+        [WebEnginePermission.PermissionType.MediaAudioVideoCapture]: {features: ["camera", "microphone"], keys: ["camera", "mic"]},
+        [WebEnginePermission.PermissionType.Geolocation]: {features: ["geolocation"], keys: ["location"]}
+    })
+    function framesOf(frame, origin, found) {
+        if (!frame || !frame.isValid) return found
+        if (store.origin(frame.url.toString()) === origin) found.push(frame)
+        for (const child of frame.children) framesOf(child, origin, found)
+        return found
+    }
+    function checkFrameDelegation(permission) {
+        const policy = policyFeatures[permission.permissionType]
+        const requester = store ? store.origin(permission.origin.toString()) : ""
+        const frames = policy && requester && requester !== store.origin(url.toString()) ? framesOf(web.mainFrame, requester, []) : []
+        if (!frames.length) { askPermissionRequested(permission, web); return }
+        let remaining = frames.length, delegated = false, unknown = false
+        const script = "(function(f){var p=document.featurePolicy;return p?f.every(function(x){return p.allowsFeature(x)}):null})(" + JSON.stringify(policy.features) + ")"
+        for (const frame of frames) frame.runJavaScript(script, WebEngineScript.ApplicationWorld, function(allowed) {
+            if (allowed === true) delegated = true
+            else if (allowed !== false) unknown = true
+            if (--remaining) return
+            if (delegated || unknown) { askPermissionRequested(permission, web); return }
+            permission.deny()
+            if (controller) for (const key of policy.keys) controller.noteBlockedRequest(key, tabUid, url, permission.origin)
+        })
     }
     // Screen capture is permanently refused (EffectivePermissionPolicy). getDisplayMedia arrives here, not as a
     // permission request: cancel it and record the attempt so the Screen control shows it.
