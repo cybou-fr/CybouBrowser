@@ -35,6 +35,7 @@
 #include "security/WebRtcProbe.h"
 #include "security/StrictWebRtcTests.h"
 #include "security/WasmTests.h"
+#include "security/SandboxTests.h"
 #include "security/MediaProbe.h"
 #include "security/OsCaptureProbe.h"
 #include "security/TextInjectionProbe.h"
@@ -92,6 +93,12 @@ int main(int argc, char *argv[])
         if (QByteArray(argv[i]).startsWith("--wasm-child=")) wasmChild = QByteArray(argv[i]).mid(13).toInt();
     }
     if (wasmTest) { QCoreApplication parentApp(argc, argv); return runDisableWasmTest(); }
+    bool sandboxTest = false, sandboxChild = false;
+    for (int i = 1; i < argc; ++i) {
+        sandboxTest |= QByteArray(argv[i]) == "--sandbox-test";
+        sandboxChild |= QByteArray(argv[i]) == "--sandbox-child";
+    }
+    if (sandboxTest) { QCoreApplication parentApp(argc, argv); return runSandboxTest(); }
     bool hstsTest = false;
     for (int i = 1; i < argc; ++i) hstsTest |= QByteArray(argv[i]) == "--hsts-test";
     if (hstsTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1\" --no-proxy-server");
@@ -138,6 +145,7 @@ int main(int argc, char *argv[])
     if (webRtcProbe) return runWebRtcProbe();
     if (strictWebRtcChild >= 0) return runWebRtcProbe(true);
     if (wasmChild >= 0) return runDisableWasmChild();
+    if (sandboxChild) return runSandboxChild();
     if (hstsTest) return runHstsTest();
     if (app.arguments().contains("--engine-history-probe")) return runEngineHistoryProbe();
     if (app.arguments().contains("--media-probe")) return runMediaProbe();

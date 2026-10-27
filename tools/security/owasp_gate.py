@@ -17,7 +17,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc","hsts","download","protocol","url-parser","fuzz","geolocation","wasm","media")
+SUITES=("security","controlbar","transport","tracker","surface","smoke","pna","webrtc","hsts","download","protocol","url-parser","fuzz","geolocation","wasm","media","sandbox")
 ASVS_ID=re.compile(r"(?:v5\.0\.0-|V)?(\d{1,2}\.\d{1,2}\.\d{1,2})")
 WSTG_ID=re.compile(r"WSTG-(?:v42-)?([A-Z]{4}-\d{2})")
 ISO_DATE=re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -201,7 +201,7 @@ ENGINE_LINE=re.compile(r'ENGINE "?([\d.]+)"? "?([\d.]+)"? "?([\d.]+)"? "?securit
 
 ENGINE_CONFIG=re.compile(r"ENGINE_CONFIG strictWebRtc=(\d) disableWasm=(\d) pna=(\d) unsafe=(\S+)")
 # Suites that measure one engine switch in child processes of their own; every other suite stands for the product.
-CONFIG_SPECIFIC_SUITES=("webrtc","wasm")
+CONFIG_SPECIFIC_SUITES=("webrtc","wasm","sandbox")
 
 def engine_config_errors(suites):
     """Every product suite must report the shipped protections (strict WebRTC, WebAssembly off, private network

@@ -286,9 +286,21 @@
       "objective": "Chromium sandbox flags renderer isolation process tree",
       "method": "runtime",
       "tier": "P0",
-      "candidateSuite": "manual",
-      "status": "planned",
-      "kind": "execution"
+      "candidateSuite": "sandbox",
+      "status": "in_progress",
+      "kind": "execution",
+      "testSources": [
+        "src/security/SandboxTests.h",
+        "tests/test_main.cpp"
+      ],
+      "coveredScenarios": [
+        "--sandbox-test: a product-configured child loads a page; every QtWebEngineProcess renderer below it runs at untrusted integrity, inside a job object, without --no-sandbox (read from Windows: token integrity, IsProcessInJob, process command line). Negative control with QTWEBENGINE_DISABLE_SANDBOX=1: the renderer runs at medium integrity, so the measurement distinguishes the two; job membership alone does not (both are in a job)"
+      ],
+      "remainingScenarios": [
+        "the packaged cybou.exe from the staged installer, not only cybou_tests",
+        "GPU and utility processes (none were spawned in this configuration: GPU and network run in the browser process)",
+        "token restrictions beyond integrity (restricted SIDs, job limits, win32k lockdown) and a renderer-escape negative test"
+      ]
     },
     {
       "id": "CYB-SBX-002",

@@ -432,3 +432,14 @@ Three iframe scenarios run in the `media` suite: `/media-top` on 127.0.0.1 frame
 **Full gate, product configuration.** Three `--mode test` runs: 15/16, 15/16, 16/16. Both failures were `TAB_DRAG_TEST` (a synthetic mouse drag of a tab) in the smoke prefix of the `media` suite, before any media scenario ran; it did not recur in nine standalone and chained runs (media alone, after smoke, controlbar, transport/tracker/surface, security through url-parser, fuzz/geolocation/wasm). Classified **FLAKY**, not caused by this change: synthetic input can be lost to window focus during a long unattended run. To fix before the R3 gate, which must not accept flaky passes.
 
 **FLAKY fixed (same day).** The drag was sent right after `resize()` and `requestActivate()`, with one jump of the mouse and an immediate check, while the window and its three new tabs were still settling. The test now waits for the window to be exposed at 1360x900, re-reads the tab coordinates (`dragSmokePoints`) until two reads agree, moves the mouse in eight steps of 20 ms, and waits up to 2 s for the reorder; a failure reports exposure, size and focus. Since: 12 of 12 `--smoke-test` runs and two full `--mode test` gates at 16/16, i.e. 24 more passes of the drag inside six suites, no failure.
+
+## Renderer sandbox, read from Windows - 2026-10-27
+
+New gate suite `sandbox` (`cybou_tests.exe --sandbox-test`, `src/security/SandboxTests.h`, CYB-SBX-001). A child process with the product engine configuration (`unsafe=none` asserted) loads a page, then walks its own process tree and reads for every `QtWebEngineProcess.exe` what Windows holds: `--type` from the process command line (`NtQueryInformationProcess`), the token integrity level, job membership (`IsProcessInJob`) and any `--no-sandbox`. A second child with `QTWEBENGINE_DISABLE_SANDBOX=1` is the negative control. Three runs out of three:
+
+| Configuration | Renderer integrity | Job | `--no-sandbox` |
+| --- | --- | --- | --- |
+| Product | **untrusted** | yes | no |
+| Control, sandbox disabled | **medium** | yes | yes |
+
+The test requires untrusted or low integrity, a job and no `--no-sandbox` for every product renderer, and a medium or high renderer in the control, so it cannot pass if the measurement cannot tell the two apart. Job membership alone is not evidence: Qt puts the renderer in a job in both cases. Only a renderer process is spawned in this configuration (GPU and network service run in the browser process). Not yet covered: the packaged `cybou.exe`, token restrictions beyond integrity, and a renderer-escape negative test.
