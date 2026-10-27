@@ -100,10 +100,12 @@ int main(int argc, char *argv[])
         if (QByteArray(argv[i]) == "--media-test" || QByteArray(argv[i]) == "--media-probe") qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --use-fake-device-for-media-stream");
     bool webRtcProbe = false;
     for (int i = 1; i < argc; ++i) webRtcProbe |= QByteArray(argv[i]) == "--webrtc-probe";
-    // Probes measure the raw engine; every other mode runs the shipped engine configuration.
-    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe && !webRtcProbe && strictWebRtcChild < 0 && wasmChild < 0) applyEngineHardening();
-    if (wasmChild >= 0) applyEngineHardening(false, wasmChild == 1);
-    if (strictWebRtcChild >= 0) applyEngineHardening(strictWebRtcChild == 1);
+    // Probes measure the raw engine; the webrtc and wasm children measure one switch each; every other mode runs the
+    // product configuration (EngineHardeningConfig::product()), never the tester's saved preferences.
+    if (!privateNetworkProbe && !enginePnaProbe && !httpsPnaProbe && !webRtcProbe && strictWebRtcChild < 0 && wasmChild < 0)
+        applyEngineHardening(EngineHardeningConfig::product());
+    if (wasmChild >= 0) applyEngineHardening({false, wasmChild == 1});
+    if (strictWebRtcChild >= 0) applyEngineHardening({strictWebRtcChild == 1, false});
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU-Tests");
@@ -126,6 +128,7 @@ int main(int argc, char *argv[])
     const bool runAll = (argc == 1);
     const bool smokeTest = explicitSmoke || controlBarTest || transportTest || surfaceTest || runAll;
 
+    qInfo().noquote() << QString::fromLatin1(engineConfigLine());
     qInfo() << "ENGINE" << qVersion() << qWebEngineVersion() << qWebEngineChromiumVersion() << "security patch" << qWebEngineChromiumSecurityPatchVersion();
 
     if (privateNetworkProbe) return runPrivateNetworkProbe();

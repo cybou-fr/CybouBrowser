@@ -199,6 +199,29 @@ def check_coverage(requirements, coverage_file, evidence_file, cases, commit, bi
 
 ENGINE_LINE=re.compile(r'ENGINE "?([\d.]+)"? "?([\d.]+)"? "?([\d.]+)"? "?security patch"? "?([\d.]+)"?')
 
+ENGINE_CONFIG=re.compile(r"ENGINE_CONFIG strictWebRtc=(\d) disableWasm=(\d) pna=(\d) unsafe=(\S+)")
+# Suites that measure one engine switch in child processes of their own; every other suite stands for the product.
+CONFIG_SPECIFIC_SUITES=("webrtc","wasm")
+
+def engine_config_errors(suites):
+    """Every product suite must report the shipped protections (strict WebRTC, WebAssembly off, private network
+    preflights) and no setting that disables engine protection; otherwise its PASS does not describe the product."""
+    errors=[]; seen={}
+    for s in suites:
+        if s.get("suite") in CONFIG_SPECIFIC_SUITES or s.get("status")=="BLOCKED": continue
+        try:
+            m=ENGINE_CONFIG.search(Path(s.get("log","")).read_text(encoding="utf-8",errors="replace"))
+        except OSError:
+            m=None
+        if not m:
+            errors.append(f"{s.get('suite')}: no ENGINE_CONFIG line: engine protections of this run unknown"); continue
+        strict,wasm,pna,unsafe=m.groups()
+        seen[s["suite"]]=m.group(0)
+        off=[name for name,value in (("strictWebRtc",strict),("disableWasm",wasm),("pna",pna)) if value!="1"]
+        if off: errors.append(f"{s['suite']}: ran without product protections: {', '.join(off)}")
+        if unsafe!="none": errors.append(f"{s['suite']}: ran with unsafe engine settings: {unsafe}")
+    return errors,seen
+
 def engine_runtime_errors(suites, sbom_file):
     """cybou_tests prints the runtime Qt API versions (qVersion, qWebEngineVersion, qWebEngineChromiumVersion,
     qWebEngineChromiumSecurityPatchVersion); they must equal what the SBOM read from the staged binaries."""
@@ -482,6 +505,8 @@ def main():
         if any(x["status"]!="PASS" for x in report["suites"]):
             report["errors"].append("Baseline suites not all PASS")
         problems,report["engineRuntime"]=engine_runtime_errors(report["suites"],a.sbom)
+        report["errors"]+=problems
+        problems,report["engineConfig"]=engine_config_errors(report["suites"])
         report["errors"]+=problems
     if a.mode in ("inventory","release"):
         requirements,problems=inventory(a.asvs_csv,a.wstg_ids,a.lock)

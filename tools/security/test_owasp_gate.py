@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""Self-tests for fail-closed release gate. Standard library only."""
+#!/usr/bin/env python3\n"""Self-tests for fail-closed release gate. Standard library only."""
 import json
 from pathlib import Path
 import sys
@@ -284,6 +283,21 @@ class GateContractTests(unittest.TestCase):
             self.assertEqual(gate.engine_runtime_errors([{"log":str(log)}],sbom)[0],["runtime chromium 140.0.7339.264 differs from SBOM 140.0.7339.225"])
             log.write_text("no engine line\n",encoding="utf-8")
             self.assertTrue(gate.engine_runtime_errors([{"log":str(log)}],sbom)[0])
+
+    def test_product_suites_must_run_with_product_protections(self):
+        with tempfile.TemporaryDirectory() as d:
+            def suite(name, text):
+                log=Path(d)/(name+".log"); log.write_text(text,encoding="utf-8"); return {"suite":name,"status":"PASS","log":str(log)}
+            good="ENGINE_CONFIG strictWebRtc=1 disableWasm=1 pna=1 unsafe=none\n"
+            errors,seen=gate.engine_config_errors([suite("security",good),suite("webrtc","no line: own children\n")])
+            self.assertEqual((errors,list(seen)),([],["security"]))
+            for text,expected in [("ENGINE_CONFIG strictWebRtc=1 disableWasm=0 pna=1 unsafe=none\n","disableWasm"),
+                                  ("ENGINE_CONFIG strictWebRtc=0 disableWasm=1 pna=1 unsafe=none\n","strictWebRtc"),
+                                  ("ENGINE_CONFIG strictWebRtc=1 disableWasm=1 pna=1 unsafe=--no-sandbox\n","--no-sandbox"),
+                                  ("ENGINE 6.12.0\n","no ENGINE_CONFIG")]:
+                with self.subTest(expected=expected):
+                    errors,_=gate.engine_config_errors([suite("smoke",text)])
+                    self.assertTrue(any(expected in e for e in errors),errors)
 
     def test_feed_edited_after_import_is_detected(self):
         with tempfile.TemporaryDirectory() as d:

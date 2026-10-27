@@ -23,7 +23,7 @@ Each category names **architecture facts**: patterns the product sources must no
 | `no-dynamic-regex` | Every regular expression is a fixed literal; no user or page input is compiled into one. | holds |
 | `no-media-server` | The product configures no STUN/TURN server and relays no media; WebRTC is the engine's endpoint only. | holds |
 | `no-archive-extraction` | The product unpacks no archive and processes no uploaded file on behalf of others. | holds |
-| `no-secret-env` | The product reads no secret from the environment; the only variable read is the engine flag list. | holds |
+| `no-secret-env` | The product reads no secret from the environment; the only variables read are the engine flag list and the sandbox kill switch, which is read to refuse it. | holds |
 | `no-log-sink` | The product installs no log handler and writes no log to a system or remote sink. | holds |
 | `no-thread-pool` | The product runs no worker pool of its own that requests could starve. | holds |
 

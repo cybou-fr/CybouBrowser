@@ -1,5 +1,6 @@
 #pragma once
 #include <QByteArray>
+#include <QStringList>
 #include <QtGlobal>
 
 // Chromium switches applied before QtWebEngineQuick::initialize(). Shared by the product and
@@ -42,6 +43,36 @@ inline QByteArray engineHardeningFlags(QByteArray flags, bool strictWebRtc = fal
     return flags;
 }
 
-inline void applyEngineHardening(bool strictWebRtc = false, bool disableWasm = false) {
-    qputenv("QTWEBENGINE_CHROMIUM_FLAGS", engineHardeningFlags(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS"), strictWebRtc, disableWasm));
+// The engine protections a process runs with. product() is what CYBOU ships by default; the product applies the
+// user's saved opt-outs on top of it, and every cybou_tests suite that claims product behaviour runs with product()
+// itself, never with the tester's preferences. Diagnostics that measure a single switch build their own config.
+struct EngineHardeningConfig {
+    bool strictWebRtc = kStrictWebRtcDefault;
+    bool disableWasm = kDisableWasmDefault;
+    static EngineHardeningConfig product() { return {}; }
+};
+
+inline void applyEngineHardening(const EngineHardeningConfig &config) {
+    qputenv("QTWEBENGINE_CHROMIUM_FLAGS", engineHardeningFlags(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS"), config.strictWebRtc, config.disableWasm));
+}
+
+// Settings that switch engine protections off. A run with any of them cannot stand for the product.
+inline QStringList unsafeEngineSettings(const QByteArray &flags) {
+    QStringList found;
+    for (const char *flag : {"--no-sandbox", "--single-process", "--disable-web-security", "--disable-site-isolation-trials",
+                             "--disable-gpu-sandbox", "--allow-running-insecure-content", "--ignore-certificate-errors"})
+        if (flags.contains(flag)) found << QString::fromLatin1(flag);
+    if (qEnvironmentVariableIsSet("QTWEBENGINE_DISABLE_SANDBOX")) found << QStringLiteral("QTWEBENGINE_DISABLE_SANDBOX");
+    return found;
+}
+
+// What the flags handed to the engine actually enable, as one line the security gate reads from every suite log.
+// Computed from the final flag string, so an explicit --js-flags or WebRTC policy in the environment shows as off.
+inline QByteArray engineConfigLine() {
+    const QByteArray flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
+    const QStringList unsafe = unsafeEngineSettings(flags);
+    return "ENGINE_CONFIG strictWebRtc=" + QByteArray(flags.contains(kStrictWebRtcSwitch) ? "1" : "0")
+        + " disableWasm=" + QByteArray(flags.contains(kDisableWasmSwitch) ? "1" : "0")
+        + " pna=" + QByteArray(flags.contains("PrivateNetworkAccessRespectPreflightResults") ? "1" : "0")
+        + " unsafe=" + (unsafe.isEmpty() ? QByteArray("none") : unsafe.join(',').toLatin1());
 }

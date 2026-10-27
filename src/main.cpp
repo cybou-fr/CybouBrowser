@@ -19,9 +19,12 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("CYBOU");
     QCoreApplication::setApplicationName("CYBOU");
     BrowserSettings::migrate();
-    const bool strictWebRtc = BrowserSettings().value("preferences/strictWebRtc", kStrictWebRtcDefault).toBool();
-    const bool disableWasm = BrowserSettings().value("preferences/disableWasm", kDisableWasmDefault).toBool();
-    applyEngineHardening(strictWebRtc, disableWasm);
+    EngineHardeningConfig engineConfig = EngineHardeningConfig::product();
+    engineConfig.strictWebRtc = BrowserSettings().value("preferences/strictWebRtc", engineConfig.strictWebRtc).toBool();
+    engineConfig.disableWasm = BrowserSettings().value("preferences/disableWasm", engineConfig.disableWasm).toBool();
+    const bool strictWebRtc = engineConfig.strictWebRtc, disableWasm = engineConfig.disableWasm;
+    applyEngineHardening(engineConfig);
+    qInfo().noquote() << QString::fromLatin1(engineConfigLine()); // effective protections, including environment overrides
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName("CYBOU");
