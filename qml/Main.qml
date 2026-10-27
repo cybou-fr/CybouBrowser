@@ -413,6 +413,10 @@ ApplicationWindow {
         library.close()
         tabs.clear()
         for (let i = 0; i < 3; ++i) addTab(smokeBaseUrl + "/drag" + i)
+        activeTab = 0
+    }
+    // Centre of the first tab and just past the centre of the third, re-read by the test until the layout is stable.
+    function dragSmokePoints() {
         tabStrip.forceLayout()
         const first = tabStrip.itemAtIndex(0)
         const last = tabStrip.itemAtIndex(2)

@@ -398,20 +398,36 @@ int main(int argc, char *argv[])
             qInfo() << "PAGE_ERROR_DIALOG_TEST PASS: tab error signal opens the actual popup";
             auto dragWindow = qobject_cast<QQuickWindow *>(root);
             dragWindow->resize(1360, 900);
-            QVariant dragCoordinates;
-            QMetaObject::invokeMethod(root, "prepareDragSmokeTest", Q_RETURN_ARG(QVariant, dragCoordinates));
-            auto points = dragCoordinates.toMap();
-            if (points.isEmpty()) points = dragCoordinates.value<QJSValue>().toVariant().toMap();
+            // Synthetic input is only reliable once the window is shown at its final size and the new tabs are laid out:
+            // a drag sent earlier was lost in 2 of 3 long gate runs (2026-10-27). Wait for exposure and the size, then
+            // for the tab coordinates to stop moving, and give each step of the drag its own event-loop turn.
+            QTest::qWaitForWindowExposed(dragWindow, 5000);
+            QTest::qWaitFor([dragWindow] { return dragWindow->size() == QSize(1360, 900); }, 5000);
+            auto readPoints = [root] {
+                QVariant value;
+                QMetaObject::invokeMethod(root, "dragSmokePoints", Q_RETURN_ARG(QVariant, value));
+                auto map = value.toMap();
+                return map.isEmpty() ? value.value<QJSValue>().toVariant().toMap() : map;
+            };
+            QMetaObject::invokeMethod(root, "prepareDragSmokeTest");
+            QVariantMap points;
+            QTest::qWaitFor([&] { QTest::qWait(50); const auto next = readPoints(); const bool stable = !next.isEmpty() && next == points; points = next; return stable; }, 5000);
             const QPointF start(points["x1"].toDouble(), points["y1"].toDouble());
             const QPointF end(points["x2"].toDouble(), points["y2"].toDouble());
-            dragWindow->requestActivate(); QCoreApplication::processEvents();
-            QTest::mousePress(dragWindow, Qt::LeftButton, Qt::NoModifier, start.toPoint());
-            QTest::mouseMove(dragWindow, (start + QPointF(12, 0)).toPoint());
-            QTest::mouseMove(dragWindow, end.toPoint());
-            QTest::mouseRelease(dragWindow, Qt::LeftButton, Qt::NoModifier, end.toPoint());
-            QVariant dragged;
-            QMetaObject::invokeMethod(root, "verifyDragSmokeTest", Q_RETURN_ARG(QVariant, dragged));
-            if (!dragged.toBool()) { dragWindow->grabWindow().save("build/drag-failure.png"); qCritical() << "TAB_DRAG_TEST FAIL" << points << root->property("activeTab") << "popup" << dragWindow->activeFocusItem(); app.exit(2); return; }
+            dragWindow->requestActivate();
+            QTest::mousePress(dragWindow, Qt::LeftButton, Qt::NoModifier, start.toPoint(), 20);
+            for (int step = 1; step <= 8; ++step)
+                QTest::mouseMove(dragWindow, (start + (end - start) * step / 8.0).toPoint(), 20);
+            QTest::mouseRelease(dragWindow, Qt::LeftButton, Qt::NoModifier, end.toPoint(), 20);
+            const bool dragged = QTest::qWaitFor([root] {
+                QVariant ok; QMetaObject::invokeMethod(root, "verifyDragSmokeTest", Q_RETURN_ARG(QVariant, ok)); return ok.toBool();
+            }, 2000);
+            if (!dragged) {
+                dragWindow->grabWindow().save("build/drag-failure.png");
+                qCritical() << "TAB_DRAG_TEST FAIL" << points << "activeTab" << root->property("activeTab") << "exposed" << dragWindow->isExposed()
+                            << "size" << dragWindow->size() << "focus" << dragWindow->activeFocusItem();
+                app.exit(2); return;
+            }
             qInfo() << "TAB_DRAG_TEST PASS";
             dragWindow->showNormal();
             dragWindow->resize(1100, 720);
