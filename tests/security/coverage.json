@@ -3395,7 +3395,7 @@
       "proposedDisposition": "not_applicable",
       "proposalRationale": "TLS server-side and service-to-service transport requirements; the browser is a TLS client, covered by the applicable client controls.",
       "proposalStatus": "conditional proposal, pending human approval",
-      "proposalNote": "Conditional N/A: CYBOU operates no public service. Becomes applicable when the update repository (CYBOU_UPDATE_URL) is published."
+      "proposalNote": "Conditional N/A: CYBOU operates no public service and, since 2026-10-28, has no update server. Becomes applicable if it ever operates one."
     },
     {
       "id": "ASVS:v5.0.0-12.3.1",

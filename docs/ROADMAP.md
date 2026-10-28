@@ -12,7 +12,7 @@
 | Network | Strict HTTPS, temporary HTTP access, NavigationGuard, categorized RuleEngine, tracker exceptions | DNS/PNA/redirect/WebRTC threat tests, list updates/false positives, engine sandbox proof |
 | Cloud | Provider-neutral C++ catalog/manager, Proton default and role overrides, Nextcloud HTTPS configuration, web app launcher and local icons | Real login/2FA compatibility, redirects, no-prefetch/permission regression, clarity of product vs web-link shortcuts |
 | Test support | `cybou_tests`, 14 native suites, `tools/security/owasp_gate.py`, machine-readable risk cases | Pinned ASVS/WSTG inventory and mappings, evidence and independent pentest |
-| Distribution | CMake Windows executable; release-candidate script with signing, CycloneDX SBOM, `/Brepro` reproducibility check, ZIP and IFW installer; online update checked with a local repository ([PACKAGING](PACKAGING.md)) | Trusted (non-self-signed) signing, published update server, rollback, independent review and response process |
+| Distribution | CMake Windows executable; release-candidate script with signing, CycloneDX SBOM, `/Brepro` reproducibility check, ZIP and offline IFW installer; no automatic or online update, new releases are installed by hand ([PACKAGING](PACKAGING.md)) | Trusted (non-self-signed) signing, installing a new release over the old one, an update mechanism that survives interruption and authenticates the publisher, independent review and response process |
 
 No third-party extension platform or partner-granted browser privileges are permitted.
 

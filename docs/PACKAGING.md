@@ -55,25 +55,13 @@ stage, makes the ZIP and the installer, signs the installer, writes `SHA256SUMS`
 signed by CYBOU. The installer's inner payload is the same signed stage. Not checked: installing from this installer after the change
 (the install/uninstall check above was done on the earlier, unsigned build).
 
-## Updates (Qt Installer Framework repository)
+## Updates: none, by decision (2026-10-28)
 
-```bash
-export CYBOU_UPDATE_URL=file:///C:/path/to/repo      # or https://updates.example/cybou (not set up)
-CYBOU_PKG_VERSION=0.4.0-alpha.1 bash tools/package/build_repo.sh build/upd-repo   # publish a version
-bash tools/package/build_installer.sh                                               # installer that knows the repository
-```
+CYBOU has **no automatic or online update**. Installers are built `--offline-only` and carry no repository address, so neither the browser nor its maintenance tool fetches anything; `build_repo.sh` and `CYBOU_UPDATE_URL` were removed. A new release is installed by hand by the user.
 
-An installer built with `CYBOU_UPDATE_URL` keeps the repository address; the installed `CYBOUUninstall.exe` then runs
-`ch` (check) and `up` (update). Checked end to end with a local `file:///` repository: installed 0.3.0-alpha.1, published
-0.3.0-alpha.2 (with an extra marker file), `CYBOUUninstall.exe up --confirm-command` exit 0, the marker appeared, the installed
-package version became 0.4.0-alpha.1, executable and uninstaller intact; purge afterwards left nothing behind. Building a repository
-takes about 10 minutes (7z compression of 400 MB).
+Why: the negative tests of the former Qt Installer Framework update channel (`docs/VALIDATION.md`, 2026-10-28) showed that an update killed mid-way left the installation without its files and could not repair itself, and that a substituted repository with self-consistent checksums was accepted. Until an update mechanism can keep the previous version until the new one is complete and authenticate the publisher, none is shipped.
 
-**Rollback is not automatic.** The framework cannot install an older version over a newer one, and the update replaces the files in place.
-Rollback means running the previous version's setup over the same folder (keep every release's `build/release/` output); the browser
-profile under `%APPDATA%` is untouched either way. A real rollback (keep the previous version aside, switch on failure to start) is not built.
-Not done: update over HTTPS (only `file:///` was tested), signing of the update metadata beyond the framework's SHA-1 checksums
-(weak: do not treat it as authenticity), delta updates, the application checking for updates by itself.
+**Open: installing a new release over the old one.** The framework refuses to install into a folder that already holds an installation (`TargetDirectoryInUse`, checked 2026-10-28 with two stand-in releases). The manual path today is to uninstall the old release (`CYBOUUninstall.exe`; the browser profile under `%APPDATA%` is kept) and run the new setup; how a new release should install over the old one is still to be decided.
 
 ## Checked
 

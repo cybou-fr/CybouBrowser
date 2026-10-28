@@ -651,7 +651,7 @@ CYBOU terminates no TLS and calls no back-end service. As a TLS client it is cov
 
 | Requirement | Title | Note |
 | --- | --- | --- |
-| ASVS:v5.0.0-12.2.2 | Verify that external facing services use publicly trusted TLS certificates. | Conditional N/A: CYBOU operates no public service. Becomes applicable when the update rep… |
+| ASVS:v5.0.0-12.2.2 | Verify that external facing services use publicly trusted TLS certificates. | Conditional N/A: CYBOU operates no public service and, since 2026-10-28, has no update se… |
 | ASVS:v5.0.0-12.3.3 | Verify that TLS or another appropriate transport encryption mechanism used for all connectivity between inter… |  |
 | ASVS:v5.0.0-12.3.4 | Verify that TLS connections between internal services use trusted certificates. Where internally generated or… |  |
 | ASVS:v5.0.0-12.3.5 | Verify that services communicating internally within a system (intra-service communications) use strong authe… |  |

@@ -676,29 +676,23 @@
     {
       "id": "CYB-UPD-003",
       "domain": "supply-chain",
-      "objective": "update integrity rollback and installer verification",
+      "objective": "manual installation of a new release: integrity of the installer and of the installed result, no automatic update",
       "method": "integration",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "in_progress",
+      "status": "planned",
       "kind": "execution",
       "remainingScenarios": [
-        "interrupted update: killing the maintenance tool mid-way leaves the product files missing, no version recorded in components.xml, and 'up' cannot repair it (reproduced twice, 2026-10-28); needs an update that keeps the previous version until the new one is complete",
-        "[rc] publisher authentication: a substituted repository with self-consistent checksums is accepted (no signature on the update metadata); needs signed metadata or a verified HTTPS channel",
-        "[rc] update of the real 400 MB browser package and rollback to the previous release"
+        "installing a new release over the old one: the framework refuses an occupied folder (TargetDirectoryInUse); decide the path and test it, including an interrupted installation and a tampered installer",
+        "[rc] signed installer verified before install (publisher authentication)"
       ],
       "testSources": [
-        "tools/package/update_integrity_test.py",
+        "tools/package/build_installer.sh",
         "tools/package/ifw_prepare.sh"
       ],
-      "evidence": [
-        {
-          "suite": "tool:tools/package/update_integrity_test.py",
-          "marker": "UPDATE_INTEGRITY PASS"
-        }
-      ],
+      "evidence": [],
       "coveredScenarios": [
-        "update_integrity_test.py on a stand-in product with the shipped mechanism (Qt Installer Framework 4.11 repository + maintenance tool 'up'): a genuine update is applied (control); a corrupted archive and an unreachable repository are refused with the installation unchanged"
+        "2026-10-28: the former online update channel was tested (interrupted update broke the installation, substituted repository accepted) and removed; installers are offline only"
       ]
     },
     {
