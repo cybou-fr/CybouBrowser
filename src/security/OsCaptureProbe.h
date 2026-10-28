@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QSettings>
 #include <QVariantMap>
+#include "OsMediaAccess.h"
 
 // What Windows itself records about camera and microphone use (the data behind the privacy indicator and
 // Settings > Privacy > Camera "recent activity"): per executable, LastUsedTimeStart/Stop as FILETIME; Stop is 0 while
@@ -10,6 +11,10 @@ class OsCaptureProbe : public QObject {
     Q_OBJECT
 public:
     using QObject::QObject;
+    // Test hook for OsMediaAccess: 0 = the system refuses camera and microphone, 1 = allows, -1 = read the real setting.
+    Q_INVOKABLE void setMediaAccessOverride(int state) {
+        if (state < 0) OsMediaAccess::testOverride().reset(); else OsMediaAccess::testOverride() = state == 1;
+    }
     // capability: "webcam" or "microphone". Entries whose executable path contains `match` (case-insensitive).
     Q_INVOKABLE QVariantMap state(const QString &capability, const QString &match = QStringLiteral("qtwebengineprocess")) const {
         QSettings store(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\")

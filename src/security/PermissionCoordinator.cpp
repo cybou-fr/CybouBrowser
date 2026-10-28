@@ -1,5 +1,6 @@
 #include "PermissionCoordinator.h"
 #include "GeolocationPolicy.h"
+#include "OsMediaAccess.h"
 #include <QVariant>
 #include <QDebug>
 #include <QCoreApplication>
@@ -158,7 +159,9 @@ bool PermissionCoordinator::submit(const QWebEnginePermission &permission, QObje
     // Refused before any position source exists; recorded like any other blocked request.
     const bool unsafePlatformFeature = permission.permissionType() == QWebEnginePermission::PermissionType::Geolocation
         && !GeolocationPolicy::available;
-    const bool blocked = policyDenied || unsafePlatformFeature || totalPending >= MaxQueuedRequests
+    // The system refuses this device to all desktop apps: a prompt could only lead to a grant nothing can use.
+    const bool systemDenied = !OsMediaAccess::allowedAll(keysFor(permission.permissionType()));
+    const bool blocked = policyDenied || unsafePlatformFeature || systemDenied || totalPending >= MaxQueuedRequests
         || !view || !transientProfile(profile)
         || view->property("profile").value<QObject *>() != profile
         || context.tabUid.isEmpty() || context.topOrigin.isEmpty() || context.requestingOrigin.isEmpty()
@@ -209,6 +212,7 @@ bool PermissionCoordinator::resolve(bool allow, QObject *activeView, QObject *ac
     if (!found) return false;
 
     const bool granted = allow && !target.deadline.expired() && target.permission.isValid()
+        && OsMediaAccess::allowedAll(keysFor(target.permission.permissionType())) // the setting may change while the prompt waits
         && target.context.matches(activeView, activeProfile)
         && transientProfile(activeProfile)
         && SiteContext::origin(target.permission.origin()) == target.context.requestingOrigin

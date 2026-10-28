@@ -31,8 +31,9 @@ Item {
     function expectNoCaptureClaim(capability, when) {
         for (const key of ["active", "recording", "inUse", "capturing", "live"])
             expect(!(key in capability) || !capability[key], when + ": the Control Bar claims capture through '" + key + "'")
-        expect(capability.reason === qsTr("Utilisation réelle non observable. Aucun indicateur d’enregistrement."),
-               when + ": the camera control does not state that real use is unobservable: " + capability.reason)
+        const unobservable = capability.reason === qsTr("Utilisation réelle non observable. Aucun indicateur d’enregistrement.")
+        const systemRefused = capability.reason.indexOf("Windows") >= 0
+        expect(unobservable || systemRefused, when + ": the camera control neither states that real use is unobservable nor that the system refuses it: " + capability.reason)
     }
     property int tabCount: 0
     property var requestView: null
@@ -372,6 +373,30 @@ Item {
             } else if (phase === 114 && settled(requestView.title)) {
                 expect(requestView.title !== "media-live", "denied background request produced a stream")
                 results.push("background tab: queued without a prompt for 2 s, asked when brought to the front, denied")
+                osCapture.setMediaAccessOverride(0); openTab(); phase = 120
+
+            // CYB-PERM-005: the system refuses the camera to desktop apps (simulated through the test hook; observed for
+            // real on 2026-10-29). CYBOU refuses at once: no prompt, no grant, and the camera control says why.
+            } else if (phase === 120 && ready(view)) {
+                tabUid = view.tabUid; view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 121
+            } else if (phase === 121) {
+                if (browserWindow.pendingPermission) throw new Error("a camera the system refuses was offered in a prompt")
+                if (!settled(view.title) && elapsed() < 6000) return 0
+                expect(settled(view.title) && view.title !== "media-live", "system-refused camera gave a stream: " + view.title)
+                expect(!view.grantedKeys.includes("camera"), "a grant was created for a camera the system refuses")
+                const camera = controller.capability("camera")
+                expect(camera.blocked && camera.reason.indexOf("Windows") >= 0, "the camera control does not explain the system refusal: " + camera.reason)
+                osCapture.setMediaAccessOverride(-1)
+                // After a deny the engine does not ask again in the same tab, even after a reload (as for the camera
+                // and the clipboard): the control runs in a fresh tab.
+                openTab(); phase = 122
+            } else if (phase === 122 && ready(view)) {
+                tabUid = view.tabUid
+                view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 123
+            } else if (phase === 123 && (browserWindow.pendingPermission || elapsed() > 6000)) {
+                expect(!!browserWindow.pendingPermission, "with the system allowing the camera again, the request is not asked")
+                browserWindow.resolvePermission(false)
+                results.push("system refusal: no prompt, no grant, reason shown; asked again once the system allows it")
                 phase = 50
             } else if (phase === 50) {
                 console.info("MEDIA_PERMISSION_TEST PASS", results.join(" | "))

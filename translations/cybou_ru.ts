@@ -455,6 +455,16 @@ Passés par exception : %5</source>
         <source>Échantillon des décisions du filtre, pas une preuve de chargement réussi. Origines et types uniquement, sans contenu ni chemin d’adresse. Dans un profil partagé, ces événements ne sont pas attribuables à un onglet.</source>
         <translation>Выборка решений фильтра не доказывает успешную загрузку. Только источники и типы, без содержимого и пути адреса. В общем профиле события нельзя достоверно отнести к отдельной вкладке.</translation>
     </message>
+    <message>
+        <location filename="../src/controlbar/ControlBarController.cpp" line="1"/>
+        <source>Caméra désactivée dans les paramètres de confidentialité de Windows. Les demandes sont refusées sans autorisation.</source>
+        <translation>Камера отключена в параметрах конфиденциальности Windows. Запросы отклоняются без выдачи доступа.</translation>
+    </message>
+    <message>
+        <location filename="../src/controlbar/ControlBarController.cpp" line="1"/>
+        <source>Microphone désactivé dans les paramètres de confidentialité de Windows. Les demandes sont refusées sans autorisation.</source>
+        <translation>Микрофон отключён в параметрах конфиденциальности Windows. Запросы отклоняются без выдачи доступа.</translation>
+    </message>
 </context>
 <context>
     <name>ControlBarIcon</name>

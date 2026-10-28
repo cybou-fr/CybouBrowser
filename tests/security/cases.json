@@ -137,13 +137,14 @@
       "status": "in_progress",
       "kind": "execution",
       "remainingScenarios": [
-        "[rc] sleep/resume and long calls",
-        "decide what the Control Bar shows when CYBOU granted the camera but the system refused it: today the grant stays listed for the document"
+        "[rc] sleep/resume and long calls"
       ],
       "testSources": [
         "qml/MediaPermissionHarness.qml",
-        "tests/test_main.cpp",
-        "src/security/PermissionCoordinator.cpp"
+        "src/controlbar/ControlBarController.cpp",
+        "src/security/OsMediaAccess.h",
+        "src/security/PermissionCoordinator.cpp",
+        "tests/test_main.cpp"
       ],
       "evidence": [
         {
@@ -158,7 +159,8 @@
       "coveredScenarios": [
         "--media-test: a camera request from a background tab is queued for 2 s with no prompt and no grant, is asked only when its tab is brought to the front, and a deny gives no stream",
         "--media-nodevice-test: with no camera the engine refuses before asking CYBOU (NotFoundError): no prompt, no lease, no claim of capture",
-        "2026-10-29 observed run, --media-osdeny-test with the real camera while the user had turned off Windows camera access (HKLM webcam = Deny): CYBOU asked, the test granted, the page got NotAllowedError 'Permission denied by system', no stream; the Control Bar claimed no capture but kept the camera as granted for the document"
+        "2026-10-29 observed run, --media-osdeny-test with the real camera while the user had turned off Windows camera access (HKLM webcam = Deny): CYBOU asked, the test granted, the page got NotAllowedError 'Permission denied by system', no stream; the Control Bar claimed no capture but kept the camera as granted for the document",
+        "--media-test (test hook): when the system refuses the camera, CYBOU refuses the request before any prompt, creates no grant and the camera control states the Windows refusal; once the system allows it again the request is asked. Observed with the real setting off (2026-10-29, --media-osdeny-test): no prompt, no lease"
       ]
     },
     {

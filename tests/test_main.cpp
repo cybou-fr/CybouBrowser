@@ -471,6 +471,10 @@ int main(int argc, char *argv[])
             QTest::mousePress(dragWindow, Qt::LeftButton, Qt::NoModifier, start.toPoint(), 20);
             for (int step = 1; step <= 8; ++step)
                 QTest::mouseMove(dragWindow, (start + (end - start) * step / 8.0).toPoint(), 20);
+            // Hold at the end as a person does: each reorder animates the strip, and a move that lands mid-animation
+            // sees the tabs in transit and cannot trigger the next reorder (the drag stopped at index 1 once).
+            for (int hold = 0; hold < 6; ++hold)
+                QTest::mouseMove(dragWindow, (end + QPointF(hold % 2, 0)).toPoint(), 100);
             QTest::mouseRelease(dragWindow, Qt::LeftButton, Qt::NoModifier, end.toPoint(), 20);
             const bool dragged = QTest::qWaitFor([root] {
                 QVariant ok; QMetaObject::invokeMethod(root, "verifyDragSmokeTest", Q_RETURN_ARG(QVariant, ok)); return ok.toBool();

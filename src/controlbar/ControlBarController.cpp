@@ -1,6 +1,7 @@
 #include "ControlBarController.h"
 #include "../browserstore.h"
 #include "../security/EffectivePermissionPolicy.h"
+#include "../security/OsMediaAccess.h"
 #include <QDateTime>
 
 using Type = QWebEnginePermission::PermissionType;
@@ -171,6 +172,9 @@ void ControlBarController::refresh() {
             explicitDeny = policyValue(m_url, key, 0).toInt() == 2;
             persistent = false;
         }
+        if ((key == "camera" || key == "mic") && valid && !OsMediaAccess::allowed(key))
+            reason = key == "camera" ? tr("Caméra désactivée dans les paramètres de confidentialité de Windows. Les demandes sont refusées sans autorisation.")
+                                     : tr("Microphone désactivé dans les paramètres de confidentialité de Windows. Les demandes sont refusées sans autorisation.");
         if (key == "screen") { canAct = false; reason = tr("Sélecteur de capture non intégré. Les demandes sont refusées, sans prétendre observer un partage."); }
         if (key == "notifications" && valid) reason = tr("Permission du site uniquement. Présentation des notifications sur le bureau non intégrée.");
         if (key == "clipboard" && valid) reason = tr("Autorisation Qt de lecture/écriture. Tous les accès au presse-papiers ne sont pas observables.");
