@@ -17,7 +17,7 @@ Visual C++ runtime next to the executable, and installs `licenses/` and the READ
 bash tools/package/build_installer.sh   # build/CYBOU-<version>-setup.exe, about 158 MB, from build/stage
 ```
 
-Per-user install to `%LOCALAPPDATA%\Programs\CYBOU` (no administrator), Start menu and desktop shortcuts, uninstaller
+Per-user install to `%LOCALAPPDATA%\Programs\CYBOU-<version>` (no administrator; one folder per release, see Updates), Start menu and desktop shortcuts, uninstaller
 `CYBOUUninstall.exe` (also listed in the Windows uninstall list). Sources: `installer/`.
 
 ## SBOM
