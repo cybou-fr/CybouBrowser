@@ -680,19 +680,29 @@
       "method": "integration",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned",
+      "status": "in_progress",
       "kind": "execution",
       "remainingScenarios": [
-        "installing a new release over the old one: the framework refuses an occupied folder (TargetDirectoryInUse); decide the path and test it, including an interrupted installation and a tampered installer",
+        "one observed run of the real CYBOU installers over a real installation (removes the installed release: needs the user's go)",
+        "[rc] a tampered setup should fail with an error instead of hanging",
         "[rc] signed installer verified before install (publisher authentication)"
       ],
       "testSources": [
+        "installer/packages/org.cybou.browser/meta/installscript.qs",
+        "installer/config/config.xml",
+        "tools/package/ifw_prepare.sh",
         "tools/package/build_installer.sh",
-        "tools/package/ifw_prepare.sh"
+        "tools/package/install_over_test.py"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "suite": "tool:tools/package/install_over_test.py",
+          "marker": "INSTALL_OVER PASS"
+        }
+      ],
       "coveredScenarios": [
-        "2026-10-28: the former online update channel was tested (interrupted update broke the installation, substituted repository accepted) and removed; installers are offline only"
+        "2026-10-28: the former online update channel was tested (interrupted update broke the installation, substituted repository accepted) and removed; installers are offline only",
+        "install_over_test.py (stand-in product, real install script): a new release installs over the old one, which is removed by its own tool only after the new files are extracted; a tampered installer leaves the installed release intact; an installation killed mid-way leaves the previous release usable and completes on rerun"
       ]
     },
     {

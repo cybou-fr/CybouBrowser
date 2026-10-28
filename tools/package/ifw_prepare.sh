@@ -14,4 +14,5 @@ prepare_ifw() {
   cp -r "${CYBOU_STAGE:-$root/build/stage}/." "$data/"
   sed -i "s#../../assets/cybou.png#$root/assets/cybou.png#; s#../../assets/cybou#$root/assets/cybou#" "$work/config/config.xml"
   sed -i "s#<Version>0.4.0-alpha.1</Version>#<Version>$pkgver</Version>#" "$work/packages/org.cybou.browser/meta/package.xml"
+  sed -i "s#<Version>0.4.0-alpha.1</Version>#<Version>$pkgver</Version>#" "$work/config/config.xml"  # installer version names the install folder
 }

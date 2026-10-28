@@ -543,3 +543,16 @@ CYB-UPD-003. `python tools/package/update_integrity_test.py` exercises the mecha
 The test exits 1 while the interrupted-update defect stands; r3 now requires its `UPDATE_INTEGRITY PASS` marker, so the gate blocks on it. The substitution is a known gap deferred to the release candidate (signed update metadata or a verified HTTPS channel). Two harness defects were fixed on the way: `--offline-only` drops the repository address (as `build_installer.sh` notes), and the first interruption came too late to interrupt anything.
 
 **Decision (same day): automatic update removed.** The online update channel is removed everywhere (installers are offline only, `build_repo.sh` and `CYBOU_UPDATE_URL` deleted, `update_integrity_test.py` removed with the channel it tested); a new release is installed by hand. The findings above stay as the record of why. A further check showed the framework refuses to install a new release into a folder holding the old one (`TargetDirectoryInUse`); the manual path is uninstall then install until an over-the-old-release install is decided.
+
+## New release installed by hand over the old one - 2026-10-28
+
+A first attempt removed the previous release from a control script before anything else; its test showed the danger: a tampered installer removed the installed release, then could not install its own, leaving no browser. Replaced by one folder per release and an install script that removes the previous release only after the new files are extracted (`docs/PACKAGING.md`). `python tools/package/install_over_test.py` on a stand-in product with the real install script:
+
+| Scenario | Result |
+| --- | --- |
+| v2 setup over installed v1 | v2 complete, v1 removed by its own tool, file outside the install folders kept |
+| Tampered v3 setup (one byte flipped) | installed v2 intact; the setup hung instead of failing and was stopped after 5 min |
+| v3 setup killed 4 s into a 300 MB install | v2 still complete and usable; running the same setup again installs v3 and removes v2 |
+| Cleanup | every test release removed |
+
+r3 now takes CYB-UPD-003's evidence from this tool. Open: the real CYBOU installers over a real installation (it removes the installed release, so it needs the user's go), and a tampered setup that fails instead of hanging.
