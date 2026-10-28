@@ -269,7 +269,7 @@
         "actual UI 302→307 cross-origin chain: three button consents, three exact hop requests, stale tokens rejected and all temporary profiles destroyed"
       ],
       "remainingScenarios": [
-        "DNS/CNAME public-to-private address transitions over time (local DoH server)",
+        "[rc] DNS/CNAME public-to-private address transitions over time (local DoH server) (deferred 2026-10-28: source-level evidence only, see VALIDATION)",
         "[rc] mixed TLS/downgrade error presentation through UI and renderer/download stress"
       ],
       "kind": "execution",
@@ -1059,7 +1059,7 @@
         "uncooperative WSS peer received three close frames, sent no replies and initiated no socket closes; reload and both UI revoke paths still disconnected all three"
       ],
       "remainingScenarios": [
-        "WebSocket endpoint across public-to-private DNS transitions (the connected address, not the URL)",
+        "[rc] WebSocket endpoint across public-to-private DNS transitions (the connected address, not the URL) (deferred 2026-10-28: source-level evidence only, see VALIDATION)",
         "[rc] suspended renderer and in-flight download stress",
         "[rc] TLS revocation and protocol/cipher qualification"
       ],

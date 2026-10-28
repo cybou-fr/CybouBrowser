@@ -570,3 +570,5 @@ With the user's go, two real offline setups were built from a fresh stage of the
 | Final `purge` (exit 0) | none | none | none |
 
 The 576 profile files under `%APPDATA%\CYBOU` and `%LOCALAPPDATA%\CYBOU` hashed identical before, after the three installs and after the final purge. The installed browser itself was not started in this run.
+
+**DNS rebinding deferred to the release candidate (2026-10-28, user decision).** The behavioural test with DNS answers that change over time is marked `[rc]` in CYB-HTTP-002 and CYB-WS-001. For 0.5.0 the protection rests on source inspection (the engine's private-network check uses the connected endpoint, `net::TransportInfo`) and on the static PNA suites; release notes must say so.
