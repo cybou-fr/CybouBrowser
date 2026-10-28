@@ -52,7 +52,7 @@
         "--media-test: a cross-origin iframe without allow=camera is refused by CYBOU before any prompt (BrowserTab.checkFrameDelegation reads the frame's document.featurePolicy in an isolated world), recorded for the framed requester, nothing shown as granted; the delegated iframe still prompts"
       ],
       "remainingScenarios": [
-        "sandboxed iframe and an iframe after navigation; frames whose permissions policy cannot be read (document.featurePolicy absent) take the prompt path"
+        "sandboxed iframe, iframe after navigation, and a frame whose permissions policy cannot be read take the safe path"
       ],
       "evidence": [
         {
@@ -118,7 +118,7 @@
         "--media-test: a refused screen capture is cancelled by BrowserTab.onDesktopMediaRequested and recorded once as blocked, with the requesting origin, in the Screen control"
       ],
       "remainingScenarios": [
-        "real hardware device and OS capture indicator"
+        "[rc] real hardware device and OS capture indicator on further machines (one observed run on 2026-10-22)"
       ],
       "evidence": [
         {
@@ -135,7 +135,12 @@
       "tier": "P0",
       "candidateSuite": "manual",
       "status": "planned",
-      "kind": "execution"
+      "kind": "execution",
+      "remainingScenarios": [
+        "system-level camera denial: no stream, no false grant in the Control Bar",
+        "request from a background tab: no prompt steals focus, no grant without a decision",
+        "[rc] sleep/resume and long calls"
+      ]
     },
     {
       "id": "CYB-PERM-006",
@@ -156,7 +161,8 @@
         "2026-10-22 observed run: the Windows camera indicator and tray icon went off at the Control Bar revoke while CYBOU stayed open (human observation, one machine)"
       ],
       "remainingScenarios": [
-        "an automatic OS-level witness of device release (the CapabilityAccessManager registry records no current use on Windows build 26300); repeat the observed run on other machines and Windows builds"
+        "automated with the fake device: the Control Bar never shows capture as active without a live track",
+        "[rc] automatic OS-level witness of device release and repeat of the observed run on other machines and Windows builds"
       ]
     },
     {
@@ -181,9 +187,9 @@
         "ten real HTTPS-to-HTTP redirects across 301/302/303/307/308 and GET/POST are denied before HTTP endpoint; live HTTPS and HTTP positive controls"
       ],
       "remainingScenarios": [
-        "OCSP/CRL revocation and TLS protocol/cipher matrix",
-        "multi-hop downgrade chains, UI presentation and DNS/network boundary changes",
-        "public-service and packaged-distribution qualification"
+        "multi-hop downgrade chains",
+        "[rc] OCSP/CRL revocation and TLS protocol/cipher matrix",
+        "[rc] public-service and packaged-distribution qualification"
       ],
       "kind": "execution",
       "evidence": [
@@ -232,8 +238,8 @@
         "actual UI 302→307 cross-origin chain: three button consents, three exact hop requests, stale tokens rejected and all temporary profiles destroyed"
       ],
       "remainingScenarios": [
-        "mixed TLS/downgrade chains and error presentation through UI",
-        "DNS/CNAME, public/private address transitions and renderer/download stress"
+        "DNS/CNAME public-to-private address transitions over time (local DoH server)",
+        "[rc] mixed TLS/downgrade error presentation through UI and renderer/download stress"
       ],
       "kind": "execution",
       "evidence": [
@@ -275,9 +281,9 @@
         "all six temporary profile objects retire after three streaming/WSS contexts and three redirected UI-consent contexts; peer tab preserved"
       ],
       "remainingScenarios": [
-        "suspended renderer and in-flight download stress",
-        "HTTPS downgrade, method-preserving redirects and public-to-private DNS boundary matrix",
-        "TLS revocation and protocol/cipher qualification"
+        "HTTPS downgrade and method-preserving redirects inside the temporary context",
+        "[rc] suspended renderer and in-flight download stress",
+        "[rc] TLS revocation and protocol/cipher qualification"
       ],
       "kind": "execution",
       "evidence": [
@@ -383,9 +389,9 @@
         "--sandbox-test: a product-configured child loads a page; every QtWebEngineProcess renderer below it runs at untrusted integrity, inside a job object, without --no-sandbox (read from Windows: token integrity, IsProcessInJob, process command line). Negative control with QTWEBENGINE_DISABLE_SANDBOX=1: the renderer runs at medium integrity, so the measurement distinguishes the two; job membership alone does not (both are in a job)"
       ],
       "remainingScenarios": [
-        "the packaged cybou.exe from the staged installer, not only cybou_tests",
-        "GPU and utility processes (none were spawned in this configuration: GPU and network run in the browser process)",
-        "token restrictions beyond integrity (restricted SIDs, job limits, win32k lockdown) and a renderer-escape negative test"
+        "token restrictions beyond integrity (restricted SIDs, job limits, win32k lockdown)",
+        "[rc] the packaged cybou.exe from the staged installer",
+        "[rc] GPU and utility processes if the configuration spawns them"
       ],
       "evidence": [
         {
@@ -414,9 +420,9 @@
       ],
       "remainingScenarios": [
         "temporary HTTP profile against normal and private",
-        "service workers and HTTP cache",
+        "service workers and HTTP cache across profiles",
         "history and permission decisions across profiles",
-        "session restore after a forced crash of the whole application"
+        "[rc] session restore after a forced crash of the whole application"
       ],
       "evidence": [
         {
@@ -455,10 +461,10 @@
         "smoke prefix: with a secret in the OS clipboard, execCommand('paste') reads nothing, navigator.clipboard.writeText without a gesture is refused and the OS clipboard is unchanged, readText without a gesture is refused, a clicked readText reaches the Control Bar and a deny refuses it; in a fresh tab a clicked, granted readText returns the secret (positive control) and both decisions are checked as applied"
       ],
       "remainingScenarios": [
-        "clipboard write with a user gesture (allowed by design: record the policy)",
         "a clipboard grant held as a lease and its revoke",
         "drag and drop of local files into a page",
-        "downloads of executables: block or warn per type"
+        "downloads of executables: block or warn per type",
+        "[rc] clipboard write with a user gesture: record the policy (allowed by design)"
       ],
       "evidence": [
         {
@@ -644,7 +650,10 @@
       "tier": "P0",
       "candidateSuite": "manual",
       "status": "planned",
-      "kind": "execution"
+      "kind": "execution",
+      "remainingScenarios": [
+        "negative update tests: corrupted package, substituted file, untrusted source, interrupted update, relaunch"
+      ]
     },
     {
       "id": "CYB-LOG-001",
@@ -961,9 +970,9 @@
         "credentials omit sends no cookie; credentials include plus wildcard denies response read"
       ],
       "remainingScenarios": [
-        "cross-site and third-party cookie policy",
         "null/sandboxed frame origins and redirect preflights",
-        "packaged production profile regression"
+        "cross-site and third-party cookie policy",
+        "[rc] packaged production profile regression"
       ],
       "testSources": [
         "src/security/NetworkBoundaryTests.h"
@@ -999,9 +1008,9 @@
         "uncooperative WSS peer received three close frames, sent no replies and initiated no socket closes; reload and both UI revoke paths still disconnected all three"
       ],
       "remainingScenarios": [
-        "suspended renderer and in-flight download stress",
-        "HTTPS downgrade, method-preserving redirects and public-to-private DNS boundary matrix",
-        "TLS revocation and protocol/cipher qualification"
+        "WebSocket endpoint across public-to-private DNS transitions (the connected address, not the URL)",
+        "[rc] suspended renderer and in-flight download stress",
+        "[rc] TLS revocation and protocol/cipher qualification"
       ],
       "additionalSuites": [
         "transport"
