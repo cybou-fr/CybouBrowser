@@ -473,12 +473,13 @@ ApplicationWindow {
         browserStore.toggleBookmark(url, "CYBOU suggestion test")
         address.forceActiveFocus(); address.selectAll()
     }
-    function verifySuggestionsSmokeTest() {
-        const url = smokeBaseUrl + "/cybou-suggest"
-        const valid = currentView.url.toString() === url && !suggestionsPopup.visible
-        browserStore.toggleBookmark(url, "")
-        return valid
+    // Read-only state for the test to wait on; the bookmark is removed separately once the check is over.
+    function suggestionsSmokeState() {
+        return { focused: address.activeFocus, text: address.text, popup: suggestionsPopup.visible,
+                 navigated: currentView.url.toString() === smokeBaseUrl + "/cybou-suggest" }
     }
+    function verifySuggestionsSmokeTest() { const s = suggestionsSmokeState(); return s.navigated && !s.popup }
+    function cleanSuggestionsSmokeTest() { browserStore.toggleBookmark(smokeBaseUrl + "/cybou-suggest", "") }
     function prepareFeaturePreview() {
         window.width = 1360; window.height = 900
         tabs.clear()

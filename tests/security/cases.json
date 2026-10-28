@@ -134,12 +134,30 @@
       "method": "hardware",
       "tier": "P0",
       "candidateSuite": "manual",
-      "status": "planned",
+      "status": "in_progress",
       "kind": "execution",
       "remainingScenarios": [
-        "system-level camera denial: no stream, no false grant in the Control Bar",
-        "request from a background tab: no prompt steals focus, no grant without a decision",
+        "system-level camera denial (Windows camera privacy off): the test needs that system setting changed by the user; the no-device run covers the refusal path but not the OS refusal itself",
         "[rc] sleep/resume and long calls"
+      ],
+      "testSources": [
+        "qml/MediaPermissionHarness.qml",
+        "tests/test_main.cpp",
+        "src/security/PermissionCoordinator.cpp"
+      ],
+      "evidence": [
+        {
+          "suite": "media",
+          "marker": "MEDIA_PERMISSION_TEST PASS"
+        },
+        {
+          "suite": "media-nodevice",
+          "marker": "MEDIA_NODEVICE_TEST PASS"
+        }
+      ],
+      "coveredScenarios": [
+        "--media-test: a camera request from a background tab is queued for 2 s with no prompt and no grant, is asked only when its tab is brought to the front, and a deny gives no stream",
+        "--media-nodevice-test: with no camera the engine refuses before asking CYBOU (NotFoundError): no prompt, no lease, no claim of capture"
       ]
     },
     {
@@ -158,11 +176,21 @@
       ],
       "coveredScenarios": [
         "--media-device-test (opt-in): real camera and microphone give live tracks that end after the Control Bar revoke; the Windows camera indicator and tray icon were observed lit during capture (2026-10-22)",
-        "2026-10-22 observed run: the Windows camera indicator and tray icon went off at the Control Bar revoke while CYBOU stayed open (human observation, one machine)"
+        "2026-10-22 observed run: the Windows camera indicator and tray icon went off at the Control Bar revoke while CYBOU stayed open (human observation, one machine)",
+        "--media-test and --media-nodevice-test: the camera control exposes no field claiming capture and states that real use is unobservable, with a live grant and with no device"
       ],
       "remainingScenarios": [
-        "automated with the fake device: the Control Bar never shows capture as active without a live track",
         "[rc] automatic OS-level witness of device release and repeat of the observed run on other machines and Windows builds"
+      ],
+      "evidence": [
+        {
+          "suite": "media",
+          "marker": "MEDIA_PERMISSION_TEST PASS"
+        },
+        {
+          "suite": "media-nodevice",
+          "marker": "MEDIA_NODEVICE_TEST PASS"
+        }
       ]
     },
     {

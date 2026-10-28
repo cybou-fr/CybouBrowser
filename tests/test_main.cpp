@@ -105,7 +105,8 @@ int main(int argc, char *argv[])
     if (hstsTest) qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --host-resolver-rules=\"MAP cybou-source.test 127.0.0.1\" --no-proxy-server");
     // --media-test: Chromium's fake camera gives the page a real stream without hardware; the permission prompt stays real.
     for (int i = 1; i < argc; ++i)
-        if (QByteArray(argv[i]) == "--media-test" || QByteArray(argv[i]) == "--media-probe") qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --use-fake-device-for-media-stream");
+        if (QByteArray(argv[i]) == "--media-nodevice-test") qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --use-fake-device-for-media-stream=device-count=0");
+        else if (QByteArray(argv[i]) == "--media-test" || QByteArray(argv[i]) == "--media-probe") qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --use-fake-device-for-media-stream");
     bool webRtcProbe = false;
     for (int i = 1; i < argc; ++i) webRtcProbe |= QByteArray(argv[i]) == "--webrtc-probe";
     // Probes measure the raw engine; the webrtc and wasm children measure one switch each; every other mode runs the
@@ -125,7 +126,9 @@ int main(int argc, char *argv[])
 
     // --media-device-test: the real camera and microphone, checked against what Windows records. Opt-in: not a gate suite.
     const bool mediaDeviceTest = app.arguments().contains("--media-device-test");
-    const bool mediaTest = app.arguments().contains("--media-test") || mediaDeviceTest;
+    // --media-nodevice-test: the fake device list is empty, as when no camera is present or the system refuses it.
+    const bool mediaNoDeviceTest = app.arguments().contains("--media-nodevice-test");
+    const bool mediaTest = app.arguments().contains("--media-test") || mediaDeviceTest || mediaNoDeviceTest;
     const bool controlBarTest = app.arguments().contains("--controlbar-test") || mediaTest;
     const bool transportTest = app.arguments().contains("--transport-test") || trackerTest;
     const bool surfaceTest = app.arguments().contains("--surface-test");
@@ -406,6 +409,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("trackerTestMode", trackerTest);
     engine.rootContext()->setContextProperty("mediaTestMode", mediaTest);
     engine.rootContext()->setContextProperty("mediaDeviceMode", mediaDeviceTest);
+    engine.rootContext()->setContextProperty("mediaNoDeviceMode", mediaNoDeviceTest);
     OsCaptureProbe osCapture;
     engine.rootContext()->setContextProperty("osCapture", &osCapture);
     engine.rootContext()->setContextProperty("smokeBaseUrl", QString("http://127.0.0.1:%1").arg(testServer.serverPort()));
@@ -684,13 +688,22 @@ int main(int argc, char *argv[])
                 qInfo() << "SURFACE_TEST PASS: glass hover tooltip; downloads/bookmarks/history/settings bounded below chrome at 1360 and 820";
                 app.exit(0); return;
             }
+            // Same discipline as the tab drag: wait for each state the next key depends on (focus, typed text, open
+            // suggestions), then for the navigation. Keys sent without waiting were lost once in a long gate run.
             QMetaObject::invokeMethod(root, "prepareSuggestionsSmokeTest");
-            for (const char character : QByteArray("cybou-suggest")) QTest::keyClick(dragWindow, character);
-            QTest::keyClick(dragWindow, Qt::Key_Down);
-            QTest::keyClick(dragWindow, Qt::Key_Return);
-            QVariant suggestionResult;
-            QMetaObject::invokeMethod(root, "verifySuggestionsSmokeTest", Q_RETURN_ARG(QVariant, suggestionResult));
-            if (!suggestionResult.toBool()) { qCritical() << "ADDRESS_SUGGESTIONS_TEST FAIL"; app.exit(2); return; }
+            auto suggestionState = [root] {
+                QVariant v; QMetaObject::invokeMethod(root, "suggestionsSmokeState", Q_RETURN_ARG(QVariant, v));
+                return v.value<QJSValue>().toVariant().toMap();
+            };
+            QTest::qWaitFor([&] { return suggestionState().value("focused").toBool(); }, 3000);
+            for (const char character : QByteArray("cybou-suggest")) QTest::keyClick(dragWindow, character, Qt::NoModifier, 10);
+            QTest::qWaitFor([&] { const auto s = suggestionState(); return s.value("text").toString().endsWith("cybou-suggest") && s.value("popup").toBool(); }, 3000);
+            QTest::keyClick(dragWindow, Qt::Key_Down, Qt::NoModifier, 20);
+            QTest::keyClick(dragWindow, Qt::Key_Return, Qt::NoModifier, 20);
+            const bool suggested = QTest::qWaitFor([root] { QVariant ok; QMetaObject::invokeMethod(root, "verifySuggestionsSmokeTest", Q_RETURN_ARG(QVariant, ok)); return ok.toBool(); }, 3000);
+            const auto lastSuggestionState = suggestionState();
+            QMetaObject::invokeMethod(root, "cleanSuggestionsSmokeTest");
+            if (!suggested) { qCritical() << "ADDRESS_SUGGESTIONS_TEST FAIL" << lastSuggestionState; app.exit(2); return; }
             qInfo() << "ADDRESS_SUGGESTIONS_TEST PASS";
             QVariant result;
             QMetaObject::invokeMethod(root, "runSmokeTest", Q_RETURN_ARG(QVariant, result));

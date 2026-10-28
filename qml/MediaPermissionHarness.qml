@@ -24,16 +24,27 @@ Item {
     property bool activationRead: false
     property bool activated: false
     property double staleId: 0
+    property int backgroundIndex: 0
+    readonly property bool noDeviceMode: typeof mediaNoDeviceMode !== "undefined" && mediaNoDeviceMode
+    // CYB-PERM-006: the Control Bar records grants, never observed recording. It must not expose any field or wording
+    // that claims a device is capturing, whether or not a stream exists.
+    function expectNoCaptureClaim(capability, when) {
+        for (const key of ["active", "recording", "inUse", "capturing", "live"])
+            expect(!(key in capability) || !capability[key], when + ": the Control Bar claims capture through '" + key + "'")
+        expect(capability.reason === qsTr("Utilisation réelle non observable. Aucun indicateur d’enregistrement."),
+               when + ": the camera control does not state that real use is unobservable: " + capability.reason)
+    }
     property int tabCount: 0
     property var requestView: null
     property var lifecycle: []
     property bool noAllowPrompted: false
+    property bool noDevicePrompted: false
     function expect(value, text) { if (!value) throw new Error(text) }
     function takeScreenshot() { return "" }
     function takeInput() { const value = input; input = null; return value }
     readonly property bool deviceMode: typeof mediaDeviceMode !== "undefined" && mediaDeviceMode
     property var os: ({})
-    function begin() { openTab(); phase = deviceMode ? 100 : 0 }
+    function begin() { openTab(); phase = deviceMode ? 100 : noDeviceMode ? 200 : 0 }
     function osState() { return {webcam: osCapture.state("webcam"), microphone: osCapture.state("microphone")} }
     function openTab() {
         browserWindow.addTab(smokeBaseUrl + "/media")
@@ -66,6 +77,23 @@ Item {
     function step() {
         try {
             const view = browserWindow.currentView
+            // --media-nodevice-test: the engine has no camera (fake device list empty). The request must end without a
+            // stream, nothing may claim capture, and a grant, if asked, stays a grant of permission only.
+            if (noDeviceMode) {
+                if (phase === 200 && ready(view)) {
+                    tabUid = view.tabUid; view.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 201
+                } else if (phase === 201) {
+                    if (browserWindow.pendingPermission && !noDevicePrompted) { noDevicePrompted = true; browserWindow.resolvePermission(true) }
+                    if (!settled(view.title) && elapsed() < 20000) return 0
+                    expect(settled(view.title), "the request never ended: " + view.title)
+                    expect(view.title !== "media-live", "a stream exists without a device")
+                    expectNoCaptureClaim(controller.capability("camera"), "no device")
+                    console.info("MEDIA_NODEVICE_TEST PASS", "no camera: request ended with " + view.title + ", prompted " + noDevicePrompted
+                                 + ", lease " + view.grantedKeys.includes("camera") + "; the Control Bar claims no capture")
+                    phase = 202; return 2
+                }
+                return phase === 202 ? 2 : 0
+            }
             // --media-device-test: real camera and microphone, checked against what Windows records for the engine.
             if (deviceMode) {
                 if (phase === 100 && ready(view)) {
@@ -124,6 +152,7 @@ Item {
                 expect(view.title === "media-live", "camera grant yields a live track, got " + view.title)
                 expect(view.grantedKeys.includes("camera") && !view.grantedKeys.includes("mic"), "camera lease only")
                 expect(browserWindow.activeProfile.listAllPermissions().length === 0, "grant is not stored as a persistent permission")
+                expectNoCaptureClaim(controller.capability("camera"), "live grant")
                 revoke(view, "camera"); phase = 6
             } else if (phase === 6 && elapsed() >= 1500) {
                 readTracks(view, ["video"]); phase = 7
@@ -322,6 +351,27 @@ Item {
                 if (browserWindow.pendingPermission) coordinator.cancel()
                 lifecycle.push("a decision from another tab does not grant a background request")
                 results.push("lifecycle: " + lifecycle.join(", "))
+                openTab(); phase = 110
+
+            // CYB-PERM-005: a request made by a tab in the background shows no prompt and grants nothing until the user
+            // brings that tab to the front; then it is asked for normally.
+            } else if (phase === 110 && ready(view)) {
+                tabUid = view.tabUid; requestView = view; backgroundIndex = browserWindow.activeTab
+                browserWindow.addTab(smokeBaseUrl + "/one"); phase = 111
+            } else if (phase === 111 && view !== requestView && !view.loading) {
+                requestView.runJavaScript("window.cybouStart('video')"); since = Date.now(); phase = 112
+            } else if (phase === 112) {
+                if (browserWindow.pendingPermission) throw new Error("a background tab's request was shown while another tab is in front")
+                if (elapsed() < 2000) return 0
+                expect(requestView.title === "media-ready" && !requestView.grantedKeys.includes("camera"), "the background tab got the camera without a decision")
+                browserWindow.activeTab = backgroundIndex; since = Date.now(); phase = 113
+            } else if (phase === 113 && browserWindow.pendingPermission) {
+                expect(browserWindow.pendingPermissionView === requestView, "the prompt belongs to the tab brought to the front")
+                expect(!browserWindow.resolvePermission(false), "deny never reports a grant")
+                phase = 114
+            } else if (phase === 114 && settled(requestView.title)) {
+                expect(requestView.title !== "media-live", "denied background request produced a stream")
+                results.push("background tab: queued without a prompt for 2 s, asked when brought to the front, denied")
                 phase = 50
             } else if (phase === 50) {
                 console.info("MEDIA_PERMISSION_TEST PASS", results.join(" | "))

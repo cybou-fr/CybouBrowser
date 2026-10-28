@@ -505,3 +505,17 @@ Which open scenarios are required for 0.5.0 and which are deferred to the releas
 **DNS rebinding.** Source inspection of the shipped engine: `PrivateNetworkAccessChecker::Check` (services/network/private_network_access_checker.cc) evaluates the IP address space of `net::TransportInfo`, the endpoint of the connection actually made, so a hostname that later resolves to a local address meets the same private-network check as a direct request. A behavioural test needs DNS answers that change over time; `--host-resolver-rules` is static and does not model it. The shipped Qt API `QWebEngineGlobalSettings::setDnsMode` accepts DNS-over-HTTPS templates, so a local DoH server can serve a public then a local answer; the open question is TLS trust of that server by the engine. Not built yet.
 
 **Scope of 0.5.0 decided (2026-10-28).** Rule: required for 0.5.0 is whatever lets an attacking page cross a boundary that CYBOU or its engine configuration decides; deferred to the release candidate (`[rc]`) is what depends on packaging and distribution, outside infrastructure (certificate revocation), observation on other machines, or reliability stress without a new attack surface. Applied in `cases.json`: **18 required, 15 `[rc]`**. Re-evaluated on the last run's logs, r3 blocks on 17 items: PERM-005, PERM-006 and UPD-003 have no executable evidence yet; the others have 1 to 3 required scenarios open; PERM-004 no longer blocks (its only open item is `[rc]`).
+
+## Background requests, no device, no claim of capture - 2026-10-28
+
+CYB-PERM-005 and CYB-PERM-006:
+
+| Scenario | Observed |
+| --- | --- |
+| Camera request from a tab in the background (`--media-test`) | queued for 2 s with no prompt and no grant; asked only when its tab is brought to the front, for that tab; deny gives no stream |
+| No camera (`--media-nodevice-test`, new gate suite, fake device list empty) | the engine refuses before asking CYBOU: `NotFoundError`, no prompt, no lease |
+| Claim of capture, with a live grant and with no device | the camera control has no field claiming capture (`active`, `recording`, `inUse`, `capturing`, `live`) and states "Utilisation réelle non observable. Aucun indicateur d’enregistrement." |
+
+**Open, needs the user:** a real system-level camera denial (Windows camera privacy turned off). Testing it means changing that system setting, which the test must not do on its own; the no-device run covers the refusal path but not the operating system's refusal itself.
+
+**Flaky test fixed.** `ADDRESS_SUGGESTIONS_TEST` failed once in the `tracker` suite of a full r3 run and passed 3 of 3 alone; like the tab drag, it sent keys without waiting for focus, the typed text and the open suggestion list, and checked the navigation at once. It now waits for each state, and the bookmark is removed only after the check.
