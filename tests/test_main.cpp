@@ -1,3 +1,4 @@
+#include <QClipboard>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
@@ -267,6 +268,24 @@ int main(int argc, char *argv[])
                 }
                 const bool download = request.startsWith("GET /download ");
                 const bool transport = request.startsWith("GET /transport-document?");
+                if (request.startsWith("GET /os-boundary ") || request.startsWith("GET /os-asset ")) {
+                    // CYB-SBX-003 fixture: a web page trying to reach local files and the OS clipboard.
+                    const QByteArray page = request.startsWith("GET /os-asset ") ? QByteArray("same-origin-ok") : QByteArray("<!doctype html><title>os-ready</title><body style='margin:0'><button id=clip style='position:fixed;inset:0;width:100%;height:100%' "
+                        "onclick=\"window.clip=null;navigator.clipboard.readText().then(t=>window.clip={read:t},e=>window.clip={error:e.name})\">read clipboard</button><script>"
+                        "const local='file:///C:/Windows/win.ini';"
+                        "window.cybouProbe=async(mode)=>{"
+                        "if(mode==='control')return {sameOrigin:await fetch('/os-asset').then(r=>r.text(),e=>'blocked:'+e.name)};"
+                        "if(mode==='file')return {fetch:await fetch(local).then(r=>r.text()).then(t=>'read:'+t.length,e=>'blocked:'+e.name),"
+                        "xhr:await new Promise(ok=>{const x=new XMLHttpRequest();try{x.open('GET',local);x.onload=()=>ok('read:'+x.responseText.length);x.onerror=()=>ok('blocked:error');x.send()}catch(e){ok('blocked:'+e.name)}})};"
+                        "if(mode==='navigate-file'){setTimeout(()=>{location.href=local},0);return {navigating:true}}"
+                        "if(mode==='paste'){const t=document.createElement('textarea');document.body.append(t);t.focus();const ok=document.execCommand('paste');return {execPaste:ok,value:t.value}}"
+                        "if(mode==='write')return navigator.clipboard.writeText('page-wrote').then(()=>({wrote:true}),e=>({error:e.name}));"
+                        "if(mode==='read')return navigator.clipboard.readText().then(t=>({read:t}),e=>({error:e.name}));"
+                        "if(mode==='clip-result')return window.clip||{waiting:true}};"
+                        "</script>");
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                    socket->disconnectFromHost(); return;
+                }
                 if (request.startsWith("GET /storage ")) {
                     // CYB-SBX-002 fixture: writes or reads one marker in cookies, localStorage, IndexedDB and Cache Storage.
                     const QByteArray page = "<!doctype html><title>storage-loading</title><script>"
@@ -715,7 +734,7 @@ int main(int argc, char *argv[])
                     return QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap();
                 };
                 auto open = [](QObject *window) {
-                    QMetaObject::invokeMethod(window, "storageProbeOpen");
+                    QMetaObject::invokeMethod(window, "storageProbeOpen", Q_ARG(QVariant, QStringLiteral("/storage")));
                     return QTest::qWaitFor([window] { QVariant v; QMetaObject::invokeMethod(window, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000);
                 };
                 const QStringList stores{"cookie", "localStorage", "indexedDB", "cacheStorage"};
@@ -761,6 +780,72 @@ int main(int argc, char *argv[])
                 }
                 qInfo() << "RENDERER_CRASH_RECOVERY PASS: killed renderers of a normal and a private tab; both reloaded once in a new renderer and kept their own profile data only";
                 idle(normal); idle(privateA); idle(privateB);
+                QMetaObject::invokeMethod(normal, "storageProbeClose");
+
+                // CYB-SBX-003: a web page against local files and the OS clipboard, in the normal window.
+                QMetaObject::invokeMethod(normal, "storageProbeOpen", Q_ARG(QVariant, QStringLiteral("/os-boundary")));
+                if (!QTest::qWaitFor([normal] { QVariant v; QMetaObject::invokeMethod(normal, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000)) {
+                    qCritical() << "OS_BOUNDARY FAIL: fixture did not load"; app.exit(2); return;
+                }
+                const QString secret = "cybou-clipboard-secret-" + marker;
+                QGuiApplication::clipboard()->setText(secret);
+                QStringList decisions;
+                auto pending = [normal] { return normal->property("pendingPermissionView").value<QObject *>() != nullptr; };
+                // readText() needs a user gesture and a focused document, or Chromium refuses it before any permission
+                // request: click the page's full-size button, then answer the prompt through the product's decision path.
+                auto decide = [&](bool allow, bool &prompted) {
+                    auto window = qobject_cast<QQuickWindow *>(normal);
+                    window->requestActivate();
+                    QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, QPoint(window->width() / 2, window->height() / 2 + 80));
+                    QVariantMap result; prompted = false;
+                    QTest::qWaitFor([&] {
+                        if (!prompted && pending()) {
+                            prompted = true; QVariant r; // requestId left undefined: resolvePermission then takes the pending request's ID, as the Control Bar does.
+                            QMetaObject::invokeMethod(normal, "resolvePermission", Q_RETURN_ARG(QVariant, r), Q_ARG(QVariant, allow), Q_ARG(QVariant, QVariant()));
+                            decisions << QString("%1->%2").arg(allow ? "grant" : "deny", r.toBool() ? "granted" : "refused");
+                        }
+                        result = probe(normal, "clip-result", "");
+                        return !result.contains("waiting");
+                    }, 20000);
+                    return result;
+                };
+                const auto control = probe(normal, "control", "");
+                const auto files = probe(normal, "file", "");
+                const auto paste = probe(normal, "paste", "");
+                const auto write = probe(normal, "write", "");
+                const QString clipboardAfterWrite = QGuiApplication::clipboard()->text();
+                bool deniedPrompt = false, grantedPrompt = false;
+                const auto readNoGesture = probe(normal, "read", "");
+                const auto readDenied = decide(false, deniedPrompt);
+                // After a deny the same document is not asked again (as for the camera): the positive control runs in a
+                // fresh tab of the same page.
+                idle(normal);
+                QMetaObject::invokeMethod(normal, "storageProbeClose");
+                QMetaObject::invokeMethod(normal, "storageProbeOpen", Q_ARG(QVariant, QStringLiteral("/os-boundary")));
+                QTest::qWaitFor([normal] { QVariant v; QMetaObject::invokeMethod(normal, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000);
+                const auto readGranted = decide(true, grantedPrompt);
+                idle(normal);
+                probe(normal, "navigate-file", "");
+                QTest::qWait(2500);
+                QVariant urlAfter; QMetaObject::invokeMethod(normal, "storageProbeUrl", Q_RETURN_ARG(QVariant, urlAfter));
+                qInfo().noquote() << "OS_BOUNDARY" << QJsonDocument(QJsonObject::fromVariantMap({{"control", control}, {"file", files}, {"paste", paste},
+                    {"write", write}, {"clipboardAfterWriteIsSecret", clipboardAfterWrite == secret}, {"readNoGesture", readNoGesture}, {"readDenied", readDenied}, {"deniedPrompted", deniedPrompt},
+                    {"readGranted", readGranted.value("read").toString() == secret ? QVariant("secret") : QVariant(readGranted)}, {"grantedPrompted", grantedPrompt}, {"decisions", decisions},
+                    {"urlAfterFileNavigation", urlAfter}})).toJson(QJsonDocument::Compact);
+                QStringList problems;
+                if (control.value("sameOrigin").toString() != "same-origin-ok") problems << "control: same-origin fetch failed, the probe proves nothing";
+                for (const auto &k : {"fetch", "xhr"}) if (!files.value(k).toString().startsWith("blocked")) problems << QString("file:// read by %1: %2").arg(k, files.value(k).toString());
+                if (urlAfter.toString().startsWith("file:")) problems << "a web page navigated the tab to a local file";
+                if (paste.value("value").toString().contains(secret)) problems << "execCommand('paste') read the OS clipboard";
+                if (clipboardAfterWrite != secret) problems << "a page overwrote the OS clipboard without user action";
+                if (readNoGesture.value("read").toString() == secret) problems << "clipboard read by script without a user gesture";
+                if (readDenied.value("read").toString() == secret) problems << "clipboard read after a deny";
+                if (!deniedPrompt || !grantedPrompt) problems << "a clicked clipboard read did not reach the Control Bar for a decision";
+                if (decisions != QStringList{"deny->refused", "grant->granted"}) problems << "the decisions were not applied as asked: " + decisions.join(", ");
+                if (readGranted.value("read").toString() != secret) problems << "control: granted clipboard read did not return the secret, the probe proves nothing";
+                QGuiApplication::clipboard()->clear();
+                if (!problems.isEmpty()) { qCritical() << "OS_BOUNDARY FAIL:" << problems; app.exit(2); return; }
+                qInfo() << "OS_BOUNDARY PASS: file:// unreachable from a web page (fetch, XHR, navigation); the OS clipboard was neither read (paste, readText without a gesture, a clicked readText after a deny) nor overwritten; same-origin fetch and a clicked, granted readText worked as controls";
                 QMetaObject::invokeMethod(normal, "storageProbeClose"); // the rest of the smoke run continues in the normal window
                 qInfo() << "PROFILE_STORAGE_ISOLATION PASS: cookies, localStorage, IndexedDB and Cache Storage of one origin stay in their profile: normal -> private, private -> private and private -> normal all empty; each profile reads its own write";
             }
@@ -779,7 +864,7 @@ int main(int argc, char *argv[])
                 }, 10000);
                 QVariantMap freshSees, freshOwn;
                 if (fresh) {
-                    QMetaObject::invokeMethod(fresh, "storageProbeOpen");
+                    QMetaObject::invokeMethod(fresh, "storageProbeOpen", Q_ARG(QVariant, QStringLiteral("/storage")));
                     if (QTest::qWaitFor([fresh] { QVariant v; QMetaObject::invokeMethod(fresh, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000)) {
                         QMetaObject::invokeMethod(fresh, "storageProbeRun", Q_ARG(QVariant, QStringLiteral("read")), Q_ARG(QVariant, QString()));
                         QString text;

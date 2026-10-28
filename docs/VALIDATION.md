@@ -468,3 +468,19 @@ Two more steps in the same smoke prefix:
 - **Private data after close.** After both private windows close and their profiles are destroyed, `newPrivateWindow()` opens a fresh one: it reads all four stores empty, then writes and reads back its own marker (positive control), and its profile is destroyed when it closes.
 
 **TAB_DRAG, still open.** The drag failed again after the first fix (1 of about 13 runs), with the window exposed at the right size and the coordinates right, so the press itself was lost. A first guess blamed the Control Bar's `interactionsEnabled`, which in fact does not govern the tab strip. The working hypothesis is a popup in the window overlay (a closing modal `Popup` keeps its dimmer during the exit transition) taking the press: the test now waits for the page-error dialog to be gone and for the overlay to be empty, and on failure prints the visible overlay items and the item under the press point. Since the overlay wait: 15 of 15 smoke runs and a full gate at 17/17 (the drag runs in six of its suites), no failure; the hypothesis is not proven, and the diagnostics will name the cause if it recurs.
+
+## OS boundaries: local files and the clipboard - 2026-10-28
+
+CYB-SBX-003. Downloads and external protocols already have their suites (`download`, `protocol`); the new checks run in the smoke prefix in the product window, on `/os-boundary`, with positive controls:
+
+| Probe | Result | Control |
+| --- | --- | --- |
+| `fetch` / XHR of `file:///C:/Windows/win.ini` | blocked (`TypeError` / error) | same-origin `fetch` returns its body |
+| Scripted navigation to that file | the tab stays on the page | |
+| `execCommand('paste')` with a secret in the OS clipboard | `false`, nothing read | |
+| `navigator.clipboard.writeText` without a gesture | `NotAllowedError`, OS clipboard unchanged | |
+| `readText()` without a gesture | `NotAllowedError` | |
+| `readText()` after a real click, Control Bar **deny** | prompt shown, `NotAllowedError` | |
+| `readText()` after a real click in a fresh tab, Control Bar **grant** | **returns the secret** | proves the probe can read, so the refusals above are real |
+
+The test checks that both decisions were applied as asked (`deny->refused`, `grant->granted`). Two test defects were caught on the way: without a gesture Chromium refuses `readText()` before any permission request, so the first version proved nothing about CYBOU; and a call to `resolvePermission` with one argument instead of two never ran, so the "deny" was really the 15 s request timeout. After a deny the same document is not asked again, as for the camera. Not yet covered: a clipboard write with a gesture, the clipboard grant as a lease and its revoke, dragging local files into a page, executable downloads.

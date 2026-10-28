@@ -334,8 +334,26 @@
       "method": "integration",
       "tier": "P0",
       "candidateSuite": "smoke",
-      "status": "planned",
-      "kind": "execution"
+      "status": "in_progress",
+      "kind": "execution",
+      "testSources": [
+        "tests/test_main.cpp",
+        "qml/Main.qml",
+        "src/security/DownloadFileTests.h",
+        "src/security/ExternalProtocolTests.h"
+      ],
+      "coveredScenarios": [
+        "download suite: hostile Content-Disposition names stay inside the download directory with a path-free name; completed files carry Mark-of-the-Web",
+        "protocol suite: with DisallowUnknownUrlSchemes no script trigger reaches an external protocol handler; control launches are observed",
+        "smoke prefix (/os-boundary in the product window): fetch and XHR of file:///C:/Windows/win.ini are blocked and a scripted navigation to it does not leave the page, while a same-origin fetch works (control)",
+        "smoke prefix: with a secret in the OS clipboard, execCommand('paste') reads nothing, navigator.clipboard.writeText without a gesture is refused and the OS clipboard is unchanged, readText without a gesture is refused, a clicked readText reaches the Control Bar and a deny refuses it; in a fresh tab a clicked, granted readText returns the secret (positive control) and both decisions are checked as applied"
+      ],
+      "remainingScenarios": [
+        "clipboard write with a user gesture (allowed by design: record the policy)",
+        "a clipboard grant held as a lease and its revoke",
+        "drag and drop of local files into a page",
+        "downloads of executables: block or warn per type"
+      ]
     },
     {
       "id": "CYB-INPUT-001",

@@ -412,10 +412,11 @@ ApplicationWindow {
     // Callbacks of view.runJavaScript still in flight: Qt WebEngine 6.140 crashes the process when a view is destroyed
     // before its runJavaScript callback returns (reproduced 2026-10-28), so the probe tab closes only at zero.
     property int storageProbeOutstanding: 0
-    function storageProbeOpen() { addTab(smokeBaseUrl + "/storage") }
+    function storageProbeOpen(path) { addTab(smokeBaseUrl + (path || "/storage")) }
     function storageProbeRendererPid() { return currentView ? currentView.renderProcessPid : 0 }
-    function storageProbeClose() { if (currentView && currentView.url.toString() === smokeBaseUrl + "/storage") closeTab(activeTab) }
-    function storageProbeReady() { return currentView && currentView.title === "storage-ready" && !currentView.loading }
+    function storageProbeClose() { if (currentView && currentView.url.toString().startsWith(smokeBaseUrl + "/")) closeTab(activeTab) }
+    function storageProbeReady() { return currentView && currentView.title.endsWith("-ready") && !currentView.loading }
+    function storageProbeUrl() { return currentView ? currentView.url.toString() : "" }
     // Each run is numbered and its result carries the number: a late answer from an earlier run is ignored.
     function storageProbeRun(mode, marker) {
         storageProbeResult = ""
