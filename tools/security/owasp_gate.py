@@ -453,6 +453,59 @@ def check_risk(sbom_file, vulns_dir, today, max_age=7, strict=False, qt_src=None
                    "open":sum(f["status"] not in VEX_STATUS+("patch-level",) or f["status"]=="under_investigation" for f in findings),
                    "findings":findings}
 
+def suite_markers(suites):
+    """suite name -> text of its log in this run, only for suites that passed."""
+    logs={}
+    for s in suites:
+        if s.get("status")!="PASS": continue
+        try: logs[s["suite"]]=Path(s["log"]).read_text(encoding="utf-8",errors="replace")
+        except OSError: pass
+    return logs
+
+def run_tool(script, timeout=120):
+    try:
+        r=subprocess.run([sys.executable,str(ROOT/script)],cwd=ROOT,capture_output=True,text=True,timeout=timeout)
+        return r.stdout+r.stderr if r.returncode==0 else ""
+    except (OSError,subprocess.SubprocessError):
+        return ""
+
+def check_r3(cases, suites, vulns_dir, tool_runner=run_tool):
+    """0.5.0 acceptance (R3): every P0 execution case is proven by its evidence markers in this run, has no open
+    required scenario (a scenario prefixed [rc] is deferred to the release candidate), and every CISA KEV match is
+    fixed, not affected, or affected with a mitigation in place by default. Framework and process cases do not gate."""
+    errors=[]; table={}
+    logs=suite_markers(suites)
+    tools={}
+    for cid,case in sorted(cases.items()):
+        if case.get("kind")!="execution" or case.get("tier")!="P0": continue
+        evidence=case.get("evidence",[])
+        missing=[]
+        for e in evidence:
+            source=e.get("suite","")
+            if source.startswith("tool:"):
+                if source not in tools: tools[source]=tool_runner(source[5:])
+                text=tools[source]
+            else:
+                text=logs.get(source,"")
+            if e.get("marker","") not in text: missing.append(f"{source}:{e.get('marker')}")
+        open_=[s for s in case.get("remainingScenarios",[]) if not s.startswith("[rc]")]
+        table[cid]={"status":case.get("status"),"evidence":len(evidence),"missing":missing,"open":len(open_)}
+        if not evidence: errors.append(f"{cid}: no executable evidence")
+        if missing: errors.append(f"{cid}: evidence not produced in this run: {', '.join(missing)}")
+        if open_: errors.append(f"{cid}: {len(open_)} required scenario(s) open")
+        if case.get("status") not in ("in_progress","verified"): errors.append(f"{cid}: status {case.get('status')}")
+    vulns_dir=Path(vulns_dir)
+    kev=set(read_json(vulns_dir/"kev.json").get("cveIds",[])) if (vulns_dir/"kev.json").exists() else set()
+    decisions={d.get("vulnId"):d for d in (read_json(vulns_dir/"triage.json").get("decisions",[]) if (vulns_dir/"triage.json").exists() else [])}
+    records=read_json(vulns_dir/"snapshot.json").get("records",[]) if (vulns_dir/"snapshot.json").exists() else []
+    if not kev or not records: errors.append("KEV or vulnerability snapshot missing: known exploited vulnerabilities cannot be checked")
+    for rid in sorted({r.get("id") for r in records if r.get("id") in kev or set(r.get("aliases",[]))&kev}):
+        d=decisions.get(rid,{})
+        ok=(d.get("status") in ("fixed","not_affected") and d.get("evidence")) or \
+           (d.get("status")=="affected" and (d.get("mitigation") or {}).get("status")=="in_place_by_default")
+        if not ok: errors.append(f"{rid}: CISA KEV match neither fixed, not affected nor mitigated by default")
+    return errors,{"cases":table}
+
 def reviewer_names(path):
     if not Path(path).exists(): return frozenset()
     return frozenset(x["name"] for x in read_json(path).get("reviewers",[]) if x.get("name"))
@@ -461,7 +514,8 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     # framework: the tooling is complete; test: suites run; risk: known vulnerabilities; release: all of them, strictly.
     # baseline and inventory are the earlier names of test and of the coverage/evidence check.
-    p.add_argument("--mode",choices=("framework","test","risk","release","baseline","inventory"),default="test")
+    # r3: the 0.5.0 acceptance gate (test suites + P0 execution evidence + known exploited vulnerabilities).
+    p.add_argument("--mode",choices=("framework","test","risk","r3","release","baseline","inventory"),default="test")
     p.add_argument("--exe",help="Path to cybou_tests executable")
     p.add_argument("--asvs-csv",default=str(ROOT/"tests/security/standards/asvs-5.0.0.csv"),help="Official OWASP ASVS 5.0.0 CSV (offline)")
     p.add_argument("--wstg-ids",default=str(ROOT/"tests/security/standards/wstg-4.2-ids.txt"),help="Pinned canonical WSTG v4.2 IDs, one per line")
@@ -500,7 +554,7 @@ def main():
         report["workingTreeDirty"]=None
     if a.mode=="release" and report["workingTreeDirty"] is not False:
         report["errors"].append("Release requires a verified clean working tree")
-    if a.mode in ("test","release"):
+    if a.mode in ("test","r3","release"):
         report["suites"]=run_suites(a.exe,out.parent/"security-logs",a.timeout)
         if any(x["status"]!="PASS" for x in report["suites"]):
             report["errors"].append("Baseline suites not all PASS")
@@ -526,6 +580,9 @@ def main():
         text,problems=na_report.build()
         if not na_report.REPORT.is_file() or na_report.REPORT.read_text(encoding="utf-8")!=text:
             problems.append("docs/NA_REPORT.md is stale: run tools/security/na_report.py")
+        report["errors"]+=problems
+    if a.mode=="r3":
+        problems,report["r3"]=check_r3(case_ids,report["suites"],a.vulns)
         report["errors"]+=problems
     if a.mode in ("risk","release"):
         qt_src=a.qt_src

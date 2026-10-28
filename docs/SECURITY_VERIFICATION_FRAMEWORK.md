@@ -37,6 +37,7 @@ The tool and the product are judged separately: a complete framework says nothin
 | `framework` | Is the testing toolkit complete and consistent? Every pinned OWASP control decided or carrying a reasoned proposal, every link to a case resolves, the threat catalog is well formed. Gaps (P0 cases without a threat, unlinked cases) are reported, not failed. | Repository only |
 | `test` (was `baseline`) | Do the native suites run and pass on this build? | `cybou_tests.exe` |
 | `risk` | Does a known vulnerability (NVD/OSV, CISA KEV) match a component version in the SBOM, and is each match triaged? Feeds older than `--max-snapshot-age` days (7) block. | SBOM, `tests/security/vulns/` |
+| `r3` | 0.5.0 acceptance: the test suites, then for every P0 `execution` case its `evidence` markers in this run's suite logs (or a `tool:` script), no open required scenario (one prefixed `[rc]` is deferred to the release candidate), and every CISA KEV match fixed, not affected, or affected with a mitigation in place by default. | `cybou_tests.exe`, SBOM, `tests/security/vulns/` |
 | `release` | All of the above, plus current-revision evidence for every case, verified applicable rows and reviewer-approved N/A rows. | Clean tree, candidate binary |
 
 ```powershell

@@ -484,3 +484,22 @@ CYB-SBX-003. Downloads and external protocols already have their suites (`downlo
 | `readText()` after a real click in a fresh tab, Control Bar **grant** | **returns the secret** | proves the probe can read, so the refusals above are real |
 
 The test checks that both decisions were applied as asked (`deny->refused`, `grant->granted`). Two test defects were caught on the way: without a gesture Chromium refuses `readText()` before any permission request, so the first version proved nothing about CYBOU; and a call to `resolvePermission` with one argument instead of two never ran, so the "deny" was really the 15 s request timeout. After a deny the same document is not asked again, as for the camera. Not yet covered: a clipboard write with a gesture, the clipboard grant as a lease and its revoke, dragging local files into a page, executable downloads.
+
+## R3 acceptance gate - 2026-10-28
+
+New mode `owasp_gate.py --mode r3 --exe build/Release/cybou_tests.exe --sbom build/CYBOU-sbom.cdx.json`. Each P0 `execution` case in `cases.json` now lists its `evidence`: the suite and the PASS marker that prove it (or `tool:tools/security/qml_text_lint.py` for CYB-UI-004). Self-tests cover missing evidence, a marker absent from the run, open scenarios, a planned status and uncovered KEV matches.
+
+First run: 17/17 suites PASS, **every evidence marker present in this run**, KEV check passed (CVE-2026-87491 counts as mitigated by default). **BLOCKED on 16 items**, the real remaining R3 work:
+
+| Case | Blocking |
+| --- | --- |
+| CYB-PERM-005 (system denial, background, sleep, long calls) | no executable evidence, planned |
+| CYB-PERM-006 (grant is not recording) | no automated evidence (`--media-device-test` is opt-in), 1 open |
+| CYB-UPD-003 (update integrity, rollback) | no executable evidence, planned |
+| CYB-HTTP-001/002/003, CYB-ORIGIN-001, CYB-WS-001 | 2 to 3 open scenarios each |
+| CYB-PERM-002, CYB-PERM-004 | 1 open each |
+| CYB-SBX-001/002/003 | 3 to 4 open each |
+
+Which open scenarios are required for 0.5.0 and which are deferred to the release candidate (`[rc]`) is a product decision still to be made; until then all of them block.
+
+**DNS rebinding.** Source inspection of the shipped engine: `PrivateNetworkAccessChecker::Check` (services/network/private_network_access_checker.cc) evaluates the IP address space of `net::TransportInfo`, the endpoint of the connection actually made, so a hostname that later resolves to a local address meets the same private-network check as a direct request. A behavioural test needs DNS answers that change over time; `--host-resolver-rules` is static and does not model it. The shipped Qt API `QWebEngineGlobalSettings::setDnsMode` accepts DNS-over-HTTPS templates, so a local DoH server can serve a public then a local answer; the open question is TLS trust of that server by the engine. Not built yet.

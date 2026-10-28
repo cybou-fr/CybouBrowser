@@ -299,6 +299,29 @@ class GateContractTests(unittest.TestCase):
                     errors,_=gate.engine_config_errors([suite("smoke",text)])
                     self.assertTrue(any(expected in e for e in errors),errors)
 
+    def test_r3_requires_evidence_closed_scenarios_and_kev_cover(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d); log=base/"media.log"; log.write_text("MEDIA_PERMISSION_TEST PASS\n",encoding="utf-8")
+            suites=[{"suite":"media","status":"PASS","log":str(log)}]
+            (base/"kev.json").write_text(json.dumps({"cveIds":["CVE-1","CVE-2"]}),encoding="utf-8")
+            (base/"snapshot.json").write_text(json.dumps({"records":[{"id":"CVE-1"},{"id":"CVE-2"},{"id":"CVE-3"}]}),encoding="utf-8")
+            (base/"triage.json").write_text(json.dumps({"decisions":[
+                {"vulnId":"CVE-1","status":"fixed","evidence":["x"]},
+                {"vulnId":"CVE-2","status":"affected","mitigation":{"status":"in_place_by_default"}}]}),encoding="utf-8")
+            good={"kind":"execution","tier":"P0","status":"in_progress","evidence":[{"suite":"media","marker":"MEDIA_PERMISSION_TEST PASS"},
+                  {"suite":"tool:lint.py","marker":"LINT PASS"}],"remainingScenarios":["[rc] packaged build"]}
+            tool=lambda script: "LINT PASS\n"
+            errors,report=gate.check_r3({"A":good,"P":{"kind":"process","tier":"P0"}},suites,base,tool)
+            self.assertEqual(errors,[]); self.assertEqual(list(report["cases"]),["A"])
+            cases={"A":{**good,"evidence":[]},"B":{**good,"evidence":[{"suite":"media","marker":"OTHER PASS"}]},
+                   "C":{**good,"remainingScenarios":["iframe"]},"D":{**good,"status":"planned"}}
+            errors,_=gate.check_r3(cases,suites,base,tool)
+            for text in ["A: no executable evidence","B: evidence not produced","C: 1 required scenario","D: status planned"]:
+                self.assertTrue(any(text in e for e in errors),text)
+            (base/"triage.json").write_text(json.dumps({"decisions":[{"vulnId":"CVE-2","status":"affected"}]}),encoding="utf-8")
+            errors,_=gate.check_r3({"A":good},suites,base,tool)
+            self.assertEqual(sorted(e.split(":")[0] for e in errors),["CVE-1","CVE-2"])
+
     def test_feed_edited_after_import_is_detected(self):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d)
