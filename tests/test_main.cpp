@@ -127,7 +127,9 @@ int main(int argc, char *argv[])
     // --media-device-test: the real camera and microphone, checked against what Windows records. Opt-in: not a gate suite.
     const bool mediaDeviceTest = app.arguments().contains("--media-device-test");
     // --media-nodevice-test: the fake device list is empty, as when no camera is present or the system refuses it.
-    const bool mediaNoDeviceTest = app.arguments().contains("--media-nodevice-test");
+    // --media-osdeny-test: the same checks with the real camera while Windows camera access is turned off by the user
+    // (opt-in, observed run; the test never changes that setting itself).
+    const bool mediaNoDeviceTest = app.arguments().contains("--media-nodevice-test") || app.arguments().contains("--media-osdeny-test");
     const bool mediaTest = app.arguments().contains("--media-test") || mediaDeviceTest || mediaNoDeviceTest;
     const bool controlBarTest = app.arguments().contains("--controlbar-test") || mediaTest;
     const bool transportTest = app.arguments().contains("--transport-test") || trackerTest;

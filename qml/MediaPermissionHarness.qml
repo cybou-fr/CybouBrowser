@@ -88,7 +88,7 @@ Item {
                     expect(settled(view.title), "the request never ended: " + view.title)
                     expect(view.title !== "media-live", "a stream exists without a device")
                     expectNoCaptureClaim(controller.capability("camera"), "no device")
-                    console.info("MEDIA_NODEVICE_TEST PASS", "no camera: request ended with " + view.title + ", prompted " + noDevicePrompted
+                    console.info("MEDIA_NODEVICE_TEST PASS", "camera unavailable: request ended with " + view.title + ", prompted " + noDevicePrompted
                                  + ", lease " + view.grantedKeys.includes("camera") + "; the Control Bar claims no capture")
                     phase = 202; return 2
                 }

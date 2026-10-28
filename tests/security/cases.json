@@ -137,8 +137,8 @@
       "status": "in_progress",
       "kind": "execution",
       "remainingScenarios": [
-        "system-level camera denial (Windows camera privacy off): the test needs that system setting changed by the user; the no-device run covers the refusal path but not the OS refusal itself",
-        "[rc] sleep/resume and long calls"
+        "[rc] sleep/resume and long calls",
+        "decide what the Control Bar shows when CYBOU granted the camera but the system refused it: today the grant stays listed for the document"
       ],
       "testSources": [
         "qml/MediaPermissionHarness.qml",
@@ -157,7 +157,8 @@
       ],
       "coveredScenarios": [
         "--media-test: a camera request from a background tab is queued for 2 s with no prompt and no grant, is asked only when its tab is brought to the front, and a deny gives no stream",
-        "--media-nodevice-test: with no camera the engine refuses before asking CYBOU (NotFoundError): no prompt, no lease, no claim of capture"
+        "--media-nodevice-test: with no camera the engine refuses before asking CYBOU (NotFoundError): no prompt, no lease, no claim of capture",
+        "2026-10-29 observed run, --media-osdeny-test with the real camera while the user had turned off Windows camera access (HKLM webcam = Deny): CYBOU asked, the test granted, the page got NotAllowedError 'Permission denied by system', no stream; the Control Bar claimed no capture but kept the camera as granted for the document"
       ]
     },
     {

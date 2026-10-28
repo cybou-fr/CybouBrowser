@@ -519,3 +519,7 @@ CYB-PERM-005 and CYB-PERM-006:
 **Open, needs the user:** a real system-level camera denial (Windows camera privacy turned off). Testing it means changing that system setting, which the test must not do on its own; the no-device run covers the refusal path but not the operating system's refusal itself.
 
 **Flaky test fixed.** `ADDRESS_SUGGESTIONS_TEST` failed once in the `tracker` suite of a full r3 run and passed 3 of 3 alone; like the tab drag, it sent keys without waiting for focus, the typed text and the open suggestion list, and checked the navigation at once. It now waits for each state, and the bookmark is removed only after the check.
+
+### Real system camera denial, observed run - 2026-10-29
+
+The user turned off camera access in Windows privacy settings (read back, not changed by the test: `HKLM ... ConsentStore\webcam = Deny`) and `cybou_tests.exe --media-osdeny-test` ran the no-device checks with the real camera (01:59 local): unlike the no-device case, the engine **did** ask CYBOU; the test granted; the page then got `NotAllowedError: Permission denied by system` and no stream; the camera control claimed no capture. **Finding:** the Control Bar kept the camera listed as granted for the document although the system refused the device, so the grant shown no longer matches anything the page can use. Not a leak, but a state the user may misread; what the Control Bar should show here is a product decision recorded as the remaining PERM-005 item.
