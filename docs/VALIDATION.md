@@ -556,3 +556,17 @@ A first attempt removed the previous release from a control script before anythi
 | Cleanup | every test release removed |
 
 r3 now takes CYB-UPD-003's evidence from this tool. Open: the real CYBOU installers over a real installation (it removes the installed release, so it needs the user's go), and a tampered setup that fails instead of hanging.
+
+### Real installers, observed run - 2026-10-28
+
+With the user's go, two real offline setups were built from a fresh stage of the current build (`0.4.0-alpha.1` and `0.4.0-alpha.1.test`, 158 MB each) and run silently on the user's machine, which had no CYBOU installation:
+
+| Step | Release folders in `%LOCALAPPDATA%\Programs` | `HKCU\Software\CYBOU\InstallDir` | Start menu and desktop shortcuts |
+| --- | --- | --- | --- |
+| Before | none | none | none |
+| A fresh (exit 0) | `CYBOU-0.4.0-alpha.1` | A | A |
+| B over A (exit 0) | `CYBOU-0.4.0-alpha.1.test` only; A removed by its own `purge` | B | B |
+| A over B (exit 0) | `CYBOU-0.4.0-alpha.1` only; B removed | A | A |
+| Final `purge` (exit 0) | none | none | none |
+
+The 576 profile files under `%APPDATA%\CYBOU` and `%LOCALAPPDATA%\CYBOU` hashed identical before, after the three installs and after the final purge. The installed browser itself was not started in this run.

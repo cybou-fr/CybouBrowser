@@ -683,9 +683,9 @@
       "status": "in_progress",
       "kind": "execution",
       "remainingScenarios": [
-        "one observed run of the real CYBOU installers over a real installation (removes the installed release: needs the user's go)",
         "[rc] a tampered setup should fail with an error instead of hanging",
-        "[rc] signed installer verified before install (publisher authentication)"
+        "[rc] signed installer verified before install (publisher authentication)",
+        "[rc] start the installed browser from each release folder after an install over an older one"
       ],
       "testSources": [
         "installer/packages/org.cybou.browser/meta/installscript.qs",
@@ -702,7 +702,8 @@
       ],
       "coveredScenarios": [
         "2026-10-28: the former online update channel was tested (interrupted update broke the installation, substituted repository accepted) and removed; installers are offline only",
-        "install_over_test.py (stand-in product, real install script): a new release installs over the old one, which is removed by its own tool only after the new files are extracted; a tampered installer leaves the installed release intact; an installation killed mid-way leaves the previous release usable and completes on rerun"
+        "install_over_test.py (stand-in product, real install script): a new release installs over the old one, which is removed by its own tool only after the new files are extracted; a tampered installer leaves the installed release intact; an installation killed mid-way leaves the previous release usable and completes on rerun",
+        "2026-10-28 observed run with the real CYBOU installers (stage of the current build, 158 MB offline setups 0.4.0-alpha.1 and 0.4.0-alpha.1.test) on the user's machine, which had no installation: A fresh, B over A, A over B. Each time exactly one release folder remained, HKCU\\Software\\CYBOU\\InstallDir and the Start menu and desktop shortcuts pointed at it, and the previous release was removed by its own purge; the 576 profile files under %APPDATA%\\CYBOU and %LOCALAPPDATA%\\CYBOU were unchanged after the installs and after the final purge, which left no folder, registry value or shortcut"
       ]
     },
     {
