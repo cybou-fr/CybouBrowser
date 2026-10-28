@@ -527,3 +527,17 @@ The user turned off camera access in Windows privacy settings (read back, not ch
 **Fix (same night): no grant for a device the system refuses.** Qt exposes no signal for whether capture actually started, so CYBOU reads the system refusal itself: `OsMediaAccess` (read only) checks the camera and microphone consent switches of Windows (device-wide, per user, desktop apps). If any refuses the device, `PermissionCoordinator` refuses the request before any prompt and creates no grant, and checks again when a decision is applied, in case the setting changed while the prompt waited; the camera or microphone control says "désactivé(e) dans les paramètres de confidentialité de Windows" (FR/RU). With the real setting still off, `--media-osdeny-test` now records `prompted false, lease false`. `--media-test` covers the same refusal through a test hook in `cybou_tests` (the real setting is never changed by a test) and checks that the request is asked again once the system allows the device.
 
 **TAB_DRAG, actual cause found.** The new diagnostics showed the drag moved the tab one place of two (`activeTab 1`), with a tab tooltip in the overlay that, as its binding shows (`containsMouse && !pressed`), only appears after release. The earlier eight-step drag ended while the strip was still animating its first reorder, so the last move saw tabs in transit and no move followed. The test now holds at the end for 0.6 s, as a person does. Engine behaviour seen on the way: after a deny the engine does not ask again in the same tab, even after a reload, so a tab refused while the camera was off in Windows will not ask again once it is turned back on; a new tab does. Recorded as a usability point for R4.
+
+## Update channel, negative tests - 2026-10-28
+
+CYB-UPD-003. `python tools/package/update_integrity_test.py` exercises the mechanism CYBOU ships (Qt Installer Framework 4.11 repository, installer with the repository baked in, maintenance tool `up`) on a stand-in product (version marker plus a filler file) installed only under `build/upd-test` and purged at the end; the real installation is not touched. Two runs, same results:
+
+| Scenario | Result |
+| --- | --- |
+| Genuine update v1 -> v2 (control) | applied |
+| One byte of the published archive flipped | refused (exit 3), installation unchanged |
+| Repository unreachable | refused (exit 3), installation unchanged |
+| **Repository substituted** by someone who can write it (own build, self-consistent checksums) | **accepted**: the framework checks only checksums the repository itself publishes |
+| **Update interrupted** (maintenance tool killed 0.8 s into a 300 MB incompressible update) | **installation broken**: the product files are gone (only the maintenance tool, a partial filler and metadata remain), `components.xml` records no version, and a rerun of `up` exits 3 without repairing it |
+
+The test exits 1 while the interrupted-update defect stands; r3 now requires its `UPDATE_INTEGRITY PASS` marker, so the gate blocks on it. The substitution is a known gap deferred to the release candidate (signed update metadata or a verified HTTPS channel). Two harness defects were fixed on the way: `--offline-only` drops the repository address (as `build_installer.sh` notes), and the first interruption came too late to interrupt anything.

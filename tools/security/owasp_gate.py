@@ -462,7 +462,7 @@ def suite_markers(suites):
         except OSError: pass
     return logs
 
-def run_tool(script, timeout=120):
+def run_tool(script, timeout=3600):
     try:
         r=subprocess.run([sys.executable,str(ROOT/script)],cwd=ROOT,capture_output=True,text=True,timeout=timeout)
         return r.stdout+r.stderr if r.returncode==0 else ""
