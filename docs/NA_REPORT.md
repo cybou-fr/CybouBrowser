@@ -8,7 +8,7 @@ It is an engineering report, not an approval. The rows stay `untriaged` proposal
 
 ## How the grounds are kept honest
 
-Each category names **architecture facts**: patterns the product sources must not contain. The facts are checked against 62 product files under `src/` and `qml/` (test fixtures and diagnostic probes excluded, since they are built only into `cybou_tests`). `owasp_gate.py --mode framework` runs the same check, so a change that breaks a fact fails the gate and reopens every category resting on it.
+Each category names **architecture facts**: patterns the product sources must not contain. The facts are checked against 63 product files under `src/` and `qml/` (test fixtures and diagnostic probes excluded, since they are built only into `cybou_tests`). `owasp_gate.py --mode framework` runs the same check, so a change that breaks a fact fails the gate and reopens every category resting on it.
 
 | Fact | Claim | Status |
 | --- | --- | --- |
