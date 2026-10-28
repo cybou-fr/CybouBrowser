@@ -62,13 +62,16 @@ Drawer {
                 text: librarySection === "bookmarks" ? qsTr("Favoris") : librarySection === "history" ? qsTr("Historique") : qsTr("Téléchargements")
                 font.pixelSize: 23; font.bold: true; color: CybouTheme.mainText; Layout.fillWidth: true
             }
+            // Section actions as icons with tooltips, next to closing the panel.
+            NavButton { icon.source: "qrc:/assets/ui/clear-history.svg"; hint: qsTr("Effacer l’historique"); visible: librarySection === "history"; onClicked: library.clearHistoryRequested() }
+            NavButton { icon.source: "qrc:/assets/ui/downloads-folder.svg"; hint: qsTr("Ouvrir le dossier Téléchargements"); visible: librarySection === "downloads"; onClicked: browserStore.openDownloads() }
             NavButton { text: "×"; hint: qsTr("Fermer"); onClicked: library.close() }
         }
         RowLayout {
-            spacing: 8
-            GlassButton { text: qsTr("Favoris"); highlighted: librarySection === "bookmarks"; onClicked: librarySection = "bookmarks" }
-            GlassButton { text: qsTr("Historique"); highlighted: librarySection === "history"; onClicked: librarySection = "history" }
-            GlassButton { text: qsTr("Fichiers"); highlighted: librarySection === "downloads"; onClicked: librarySection = "downloads" }
+            spacing: 6
+            NavButton { icon.source: "qrc:/assets/ui/bookmarks.svg"; hint: qsTr("Favoris"); highlighted: librarySection === "bookmarks"; implicitWidth: 38; implicitHeight: 32; onClicked: librarySection = "bookmarks" }
+            NavButton { icon.source: "qrc:/assets/ui/history.svg"; hint: qsTr("Historique"); highlighted: librarySection === "history"; implicitWidth: 38; implicitHeight: 32; onClicked: librarySection = "history" }
+            NavButton { icon.source: "qrc:/assets/ui/files.svg"; hint: qsTr("Fichiers"); highlighted: librarySection === "downloads"; implicitWidth: 38; implicitHeight: 32; onClicked: librarySection = "downloads" }
         }
         TextField {
             id: librarySearch; Layout.fillWidth: true; placeholderText: qsTr("Filtrer…")
@@ -84,8 +87,6 @@ Drawer {
                 border.width: 1
             }
         }
-        GlassButton { text: qsTr("Effacer l’historique"); visible: librarySection === "history"; onClicked: library.clearHistoryRequested() }
-        GlassButton { text: qsTr("Ouvrir le dossier Téléchargements"); visible: librarySection === "downloads"; onClicked: browserStore.openDownloads() }
         ListView {
             Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 8
             model: librarySection === "bookmarks" ? browserStore.bookmarks : librarySection === "history" ? browserStore.history : downloadItems
@@ -94,7 +95,7 @@ Drawer {
                 required property var modelData
                 property bool download: librarySection === "downloads"
                 property bool matches: download || (modelData.title + " " + modelData.url).toLowerCase().includes(librarySearch.text.toLowerCase())
-                width: ListView.view.width; height: matches ? (download ? 152 : 82) : 0; visible: matches
+                width: ListView.view.width; height: matches ? (download ? 92 : 64) : 0; visible: matches
                 radius: 10
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#60142F52" }
@@ -108,28 +109,30 @@ Drawer {
                 }
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 12; spacing: 4
-                    Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: CybouTheme.mainText; elide: Text.ElideRight; font.bold: true }
-                    Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: entry.download ? (browserWindow ? browserWindow.downloadStatus(entry.modelData) : "") : entry.modelData.url; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
-                    ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                     RowLayout {
-                        spacing: 8
-                        GlassButton {
-                            text: qsTr("Ouvrir")
+                        spacing: 2
+                        Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: entry.download ? entry.modelData.downloadFileName : entry.modelData.title; color: CybouTheme.mainText; elide: Text.ElideRight; font.bold: true }
+                        NavButton {
+                            icon.source: "qrc:/assets/ui/open.svg"; hint: entry.download ? qsTr("Ouvrir le fichier") : qsTr("Ouvrir")
                             visible: !entry.download || entry.modelData.state === WebEngineDownloadRequest.DownloadCompleted
                             onClicked: {
                                 if (entry.download) library.reviewDownloadRequested(entry.modelData)
                                 else { library.openUrlRequested(entry.modelData.url); library.close() }
                             }
                         }
-                        GlassButton { text: qsTr("Dossier"); visible: entry.download; onClicked: browserStore.showFileFolder(browserWindow ? browserWindow.downloadPath(entry.modelData) : "") }
-                        GlassButton { text: qsTr("Retirer"); visible: librarySection === "bookmarks"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
+                        NavButton { icon.source: "qrc:/assets/ui/folder.svg"; hint: qsTr("Afficher dans le dossier"); visible: entry.download; onClicked: browserStore.showFileFolder(browserWindow ? browserWindow.downloadPath(entry.modelData) : "") }
+                        NavButton {
+                            visible: entry.download && !entry.modelData.isFinished
+                            icon.source: entry.download && entry.modelData.isPaused ? "qrc:/assets/ui/resume.svg" : "qrc:/assets/ui/pause.svg"
+                            hint: entry.download && entry.modelData.isPaused ? qsTr("Reprendre") : qsTr("Pause")
+                            enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress
+                            onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause()
+                        }
+                        NavButton { icon.source: "qrc:/assets/ui/cancel.svg"; hint: qsTr("Annuler le téléchargement"); visible: entry.download && !entry.modelData.isFinished; onClicked: entry.modelData.cancel() }
+                        NavButton { icon.source: "qrc:/assets/ui/remove.svg"; hint: qsTr("Retirer des favoris"); visible: librarySection === "bookmarks"; onClicked: browserStore.toggleBookmark(entry.modelData.url, entry.modelData.title) }
                     }
-                    RowLayout {
-                        spacing: 8
-                        visible: entry.download && !entry.modelData.isFinished
-                        GlassButton { text: entry.download && entry.modelData.isPaused ? qsTr("Reprendre") : qsTr("Pause"); enabled: entry.download && entry.modelData.state === WebEngineDownloadRequest.DownloadInProgress; onClicked: entry.modelData.isPaused ? entry.modelData.resume() : entry.modelData.pause() }
-                        GlassButton { text: qsTr("Annuler"); onClicked: entry.modelData.cancel() }
-                    }
+                    Label { textFormat: Text.PlainText; Layout.fillWidth: true; text: entry.download ? (browserWindow ? browserWindow.downloadStatus(entry.modelData) : "") : entry.modelData.url; elide: Text.ElideRight; color: CybouTheme.secondaryText; font.pixelSize: 11 }
+                    ProgressBar { visible: entry.download; Layout.fillWidth: true; from: 0; to: entry.download ? Math.max(1, entry.modelData.totalBytes) : 1; value: entry.download ? entry.modelData.receivedBytes : 0; indeterminate: entry.download && entry.modelData.totalBytes <= 0 && !entry.modelData.isFinished }
                 }
             }
             Label { anchors.centerIn: parent; visible: parent.count === 0; text: qsTr("Rien ici pour le moment"); color: "#8491A5" }

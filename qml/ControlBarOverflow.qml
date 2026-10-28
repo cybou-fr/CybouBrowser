@@ -7,6 +7,8 @@ Menu {
     required property var controller
     property var frozenKeys: []
     signal chosen(string key)
+    // An in-scene popup: a native popup window would take the activation from the browser window.
+    popupType: Popup.Item
     width: 300
     padding: 8
     background: Rectangle {

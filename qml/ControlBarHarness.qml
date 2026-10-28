@@ -74,8 +74,19 @@ Item {
                 if (awaiting(m.editing && m.selectedText === m.rawUrl, function() { return {kind:"key", key:Qt.Key_L, modifiers:Qt.ControlModifier} })) return 0
                 console.info("OBSERVABLE_ADDRESS", JSON.stringify(m))
                 expect(m.editing && m.selectedText === m.rawUrl, "Ctrl+L selects complete URL")
-                expect(m.visibleKeys.length === 11 && m.controlWidth > 0, "URL editing preserves controls")
+                // Editing the address collapses the eleven controls into one summary button whose menu lists them all.
+                const s = bar.testSummary()
+                expect(s.editing && s.summaryVisible && !s.iconsVisible && m.controlWidth === 42, "URL editing collapses controls into the summary button")
                 screenshot = "observable-edit-" + sizes[sizeIndex][0]
+                input = bar.testSummaryPoint(); phase = 27
+            } else if (phase === 27) {
+                if (awaiting(bar.testOverflow().visible, function() { return bar.testSummaryPoint() })) return 0
+                expect(bar.testOverflow().visible && bar.testOverflow().keys.length === 11, "summary menu lists all eleven controls")
+                expect(bar.testSummary().editing, "opening the summary menu keeps the address expanded")
+                bar.dismiss()
+                // Move the pointer off the row: the icons are back under it and a hover card would open.
+                input = {kind:"move", x:browserWindow.width / 2, y:browserWindow.height - 40}; phase = 28
+            } else if (phase === 28) {
                 input = {kind:"key",key:Qt.Key_Escape}; phase = 5
             } else if (phase === 5) {
                 if (awaiting(!browserWindow.testOmnibox().editing, function() { return {kind:"key", key:Qt.Key_Escape} })) return 0
@@ -88,7 +99,7 @@ Item {
                 const m = browserWindow.testOmnibox()
                 if (awaiting(m.editing && m.addressWidth >= 120 && m.selectedText === m.rawUrl, function() { return browserWindow.testAddressPoint() })) return 0
                 expect(m.editing && m.addressWidth >= 120 && m.selectedText === m.rawUrl, "mouse selects complete URL")
-                expect(m.visibleKeys.length === 11, "mouse edit preserves capabilities")
+                expect(bar.testSummary().summaryVisible, "mouse edit collapses controls into the summary button")
                 input = {kind:"key",key:Qt.Key_Escape}; phase = 18
             } else if (phase === 18) {
                 hoverStarted = Date.now(); hoverStep = 0

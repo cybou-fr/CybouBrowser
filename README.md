@@ -32,7 +32,7 @@ Open source means the code can be inspected and contributed to. **It does not me
 
 ## Current implementation
 
-CYBOU runs as a Windows desktop browser with a two-row window header (tabs and navigation). The navigation row contains a URL field plus **11 permanently visible, individual capability controls**: Camera, Microphone, Screen, Location, Notifications, Clipboard, JavaScript, Popups, Cookies, Site Storage and Network. Glass hover cards provide context and relevant actions. A policy state, observed request, granted permission, confirmed block and actual hardware use are **different facts**.
+CYBOU runs as a Windows desktop browser with a two-row window header (tabs and navigation). The navigation row contains a URL field plus **11 individual capability controls**, visible whenever the address is not being edited: Camera, Microphone, Screen, Location, Notifications, Clipboard, JavaScript, Popups, Cookies, Site Storage and Network. Glass hover cards provide context and relevant actions. A policy state, observed request, granted permission, confirmed block and actual hardware use are **different facts**.
 
 **Alpine Dawn (new tab)** currently uses the mountain wallpaper, a compact floating brand/title, a separate glass search input, Favorites/History actions, and a top-right **Mail + nine-dot Cloud App Launcher**. The launcher uses Cloud Glass 2.0, local SVG icons and a provider-neutral catalog. It shows the selected cloud apps and opens their official websites as ordinary tabs. The screenshot above shows the current Windows new-tab UI with the cloud launcher closed.
 
@@ -56,7 +56,7 @@ CYBOU runs as a Windows desktop browser with a two-row window header (tabs and n
 
 ### Non-negotiable product rules
 
-- All eleven capability icons stay in **one existing navigation row**; do not hide or group them to create space for cloud apps.
+- All eleven capability icons stay in **one existing navigation row**. Only while the address is being edited do they collapse into one summary button whose menu lists all eleven; any click outside the address brings them back, and the address keeps all the remaining width. When the site holds a grant, a revoke-all button follows the icons (its tooltip summarises the site's state). Do not hide or group them for any other reason, such as making space for cloud apps.
 - No permanent positive grants or automatic privileged trust for previously visited websites.
 - A cloud partnership, including Proton, **does not change browser permissions or security policy**.
 - **No third-party browser extensions, extension store, side-loading or privileged userscripts.** Capabilities inspired by other browsers should be implemented in reviewed CYBOU-owned C++/Qt/QML. External executables and runtime dependencies are minimized.

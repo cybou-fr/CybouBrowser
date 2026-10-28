@@ -35,6 +35,9 @@ qt_add_resources(cybou_core "brand" PREFIX "/"
 file(GLOB CONTROL_BAR_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/controlbar/*.svg")
 qt_add_resources(cybou_core "controlbar_icons" PREFIX "/" FILES ${CONTROL_BAR_ICONS})
 
+file(GLOB UI_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/ui/*.svg")
+qt_add_resources(cybou_core "ui_icons" PREFIX "/" FILES ${UI_ICONS})
+
 file(GLOB CLOUD_ICONS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "assets/cloud/*.svg")
 qt_add_resources(cybou_core "cloud_icons" PREFIX "/" FILES ${CLOUD_ICONS})
 

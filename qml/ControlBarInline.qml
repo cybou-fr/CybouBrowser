@@ -13,7 +13,32 @@ Item {
     readonly property int slotWidth: 42
     readonly property int visibleCount: icons.count
     readonly property bool overflowVisible: !editing && visibleCount < icons.count
-    readonly property real effectiveWidth: editing ? 0 : (visibleCount + (overflowVisible ? 1 : 0)) * slotWidth
+    // While the address is being edited the eleven controls collapse into one summary button with a menu of all of
+    // them; otherwise they are all shown, followed by a summary of the site's state when the row has room for it.
+    readonly property real iconsWidth: (visibleCount + (overflowVisible ? 1 : 0)) * slotWidth
+    // Out of editing the row keeps only its own width (plus the revoke-all button when something is granted):
+    // the address takes all the rest.
+    readonly property real effectiveWidth: editing ? slotWidth : iconsWidth + (summary.granted > 0 ? slotWidth : 0)
+    readonly property var summary: {
+        controller.revision; readyRevision
+        let pending = 0, granted = 0, blocked = 0
+        for (let i = 0; i < icons.count; ++i) {
+            const item = icons.itemAt(i); if (!item) continue
+            const c = item.capability
+            if (c.pending) ++pending
+            else if (c.policy === 1) ++granted
+            else if (c.blocked) ++blocked
+        }
+        return {pending: pending, granted: granted, blocked: blocked}
+    }
+    function summaryText() {
+        const parts = []
+        if (summary.pending) parts.push(qsTr("%n en attente", "", summary.pending))
+        if (summary.granted) parts.push(qsTr("%n autorisé(s)", "", summary.granted))
+        if (summary.blocked) parts.push(qsTr("%n bloqué(s)", "", summary.blocked))
+        return parts.length ? parts.join(" · ") : qsTr("Aucun accès en cours")
+    }
+    function allKeys() { return keys(0, icons.count) }
     readonly property bool hasPopup: card.visible || overflow.visible
     property int readyRevision: 0
     readonly property var visibleKeys: { controller.revision; readyRevision; return keys(0, visibleCount) }
@@ -34,6 +59,13 @@ Item {
     signal allowAdsRequested(string token)
     signal revokeAdsRequested(string token)
     signal reloadRequested()
+    // The summary menu was used while the address had focus: leave the address so the controls expand.
+    signal leaveEditingRequested()
+    signal returnToEditingRequested()
+    // The summary menu takes the keyboard focus from the address; editing holds while it is open.
+    property bool holdEditing: false
+    property bool summaryChosen: false
+    signal revokeSiteRequested()
     implicitWidth: effectiveWidth; implicitHeight: 28
     function keys(first, last) {
         let result = []
@@ -107,6 +139,31 @@ Item {
         }
     }
     NavButton {
+        id: summaryButton
+        visible: control.editing
+        x: 0; width: control.slotWidth; height: 28
+        focusPolicy: Qt.NoFocus   // keeps the focus, and so the expanded address, while the menu is open
+        icon.source: "qrc:/assets/ui/shield.svg"
+        hint: qsTr("Contrôles du site : ") + control.summaryText()
+        hintEnabled: !overflow.visible
+        onClicked: { const point = mapToItem(control.popupHost, 0, height); overflow.x = Math.max(8, Math.min(control.popupHost.width - overflow.width - 8, point.x)); overflow.y = point.y + 4; control.holdEditing = true; control.summaryChosen = false; overflow.present(control.allKeys()) }
+        Rectangle {
+            visible: control.summary.pending + control.summary.granted > 0
+            anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 1
+            width: 15; height: 15; radius: 7.5
+            color: control.summary.pending ? "#F59E0B" : "#22C55E"
+            Text { anchors.centerIn: parent; textFormat: Text.PlainText; text: control.summary.pending + control.summary.granted; color: "#06121F"; font.pixelSize: 10; font.bold: true }
+        }
+    }
+    NavButton {
+        id: revokeAll
+        visible: !control.editing && control.summary.granted > 0
+        x: control.iconsWidth; width: control.slotWidth; height: 28
+        icon.source: "qrc:/assets/ui/revoke-all.svg"
+        hint: qsTr("Révoquer tous les accès de ce site") + " — " + control.summaryText()
+        onClicked: control.revokeSiteRequested()
+    }
+    NavButton {
         id: more
         x: control.visibleCount * control.slotWidth
         width: control.slotWidth; height: 28
@@ -121,7 +178,17 @@ Item {
     }
     ControlBarOverflow {
         id: overflow; parent: control.popupHost; controller: control.controller
-        onChosen: function(key) { control.openKey(key, more, true) }
+        onChosen: function(key) {
+            if (!control.holdEditing) { control.openKey(key, more, true); return }
+            control.summaryChosen = true
+            control.leaveEditingRequested()
+            Qt.callLater(function() { control.testOpen(key, true) })
+        }
+        onClosed: {
+            if (!control.holdEditing) return
+            control.holdEditing = false
+            if (!control.summaryChosen) control.returnToEditingRequested()
+        }
     }
     CapabilityPopover {
         id: card; parent: control.popupHost
@@ -168,6 +235,8 @@ Item {
         const point = item.mapToItem(null, item.width / 2, item.height / 2)
         return {kind:kind,x:point.x,y:point.y}
     }
+    function testSummary() { return {editing: editing, summaryVisible: summaryButton.visible, iconsVisible: !editing, revokeAllVisible: revokeAll.visible, text: summaryText(), width: effectiveWidth} }
+    function testSummaryPoint() { const p = summaryButton.mapToItem(null, summaryButton.width / 2, summaryButton.height / 2); return {kind: "click", x: p.x, y: p.y} }
     function testOverflow() { return {visible:overflow.visible,keys:overflow.frozenKeys,currentIndex:overflow.currentIndex} }
     function testChooseHidden() { if (overflow.frozenKeys.length) { const key = overflow.frozenKeys[0]; overflow.close(); openKey(key, more, true) } }
 }

@@ -28,7 +28,7 @@ ApplicationWindow {
         acceptedButtons: Qt.LeftButton
         property point pressPosition
         property bool moving: false
-        onPressed: function(mouse) { pressPosition = Qt.point(mouse.x, mouse.y); moving = false }
+        onPressed: function(mouse) { window.leaveAddress(); pressPosition = Qt.point(mouse.x, mouse.y); moving = false }
         onPositionChanged: function(mouse) {
             if (pressed && !moving && Math.abs(mouse.x - pressPosition.x) + Math.abs(mouse.y - pressPosition.y) >= Qt.application.styleHints.startDragDistance)
                 moving = window.startSystemMove()
@@ -327,6 +327,23 @@ ApplicationWindow {
             "} catch(e) {}" +
         "})(" + JSON.stringify(targetKey) + ");"
         view.runJavaScript(script)
+    }
+    // Any click outside the address ends editing: the address collapses and the Control Bar expands.
+    function leaveAddress() {
+        if (!address.activeFocus && !controlBar.holdEditing) return
+        suggestionsPopup.close()
+        address.focus = false
+        window.contentItem.forceActiveFocus()
+        refreshAddress()
+    }
+    // Revoke every capability granted to the current page at once: one fresh document ends them all, including a
+    // capture held by a frame of another origin.
+    function revokeSitePermissions() {
+        if (!currentView) return
+        for (const key of currentView.grantedKeys) controlState.setPermissionPolicy(key, 0)
+        permissionCoordinator.revokeLease(currentView, "all", false)
+        window.replaceGrantedView(currentView, currentView.url.toString())
+        window.showStatus(qsTr("Tous les accès de ce site ont été révoqués."))
     }
     // The Control Bar's revoke or block of one capability for the current page. Media keys are stopped in place
     // (see revokePermissionGracefully); any other grant ends with its document, replaced by a fresh load.
@@ -1026,6 +1043,7 @@ ApplicationWindow {
                             acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
                             property real pressX: 0
                             onPressed: function(mouse) {
+                                window.leaveAddress()
                                 pressX = mapToItem(tabStrip, mouse.x, mouse.y).x
                                 if (mouse.button === Qt.LeftButton) activeTab = tabItem.index
                             }
@@ -1203,7 +1221,7 @@ ApplicationWindow {
                     onRevokeAdsRequested: function(token) { window.revokeTemporaryAds(token) }
                     onAllowHttpRequested: function(token) { window.allowTemporaryHttp(token) }
                     onRevokeHttpRequested: function(token) { if (currentView && currentView.temporaryTransport && token === transportState.httpToken) window.replaceGrantedView(currentView) }
-                    editing: false
+                    editing: address.activeFocus || holdEditing
                     widthBudget: effectiveWidth
                     Layout.preferredWidth: effectiveWidth; Layout.minimumWidth: effectiveWidth; Layout.maximumWidth: effectiveWidth
                     visible: true
@@ -1225,6 +1243,9 @@ ApplicationWindow {
                         }
                     }
                     onPermissionResetRequested: function(key, mode) { window.resetPermission(key, mode) }
+                    onLeaveEditingRequested: window.leaveAddress()
+                    onReturnToEditingRequested: address.forceActiveFocus()
+                    onRevokeSiteRequested: window.revokeSitePermissions()
                     onDecisionRequested: function(allow, requestId) { window.resolvePermission(allow, requestId) }
                     onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
                 }
