@@ -1,4 +1,6 @@
 #include <QClipboard>
+#include <QMimeData>
+#include <QDropEvent>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
@@ -286,7 +288,11 @@ int main(int argc, char *argv[])
                         "if(mode==='paste'){const t=document.createElement('textarea');document.body.append(t);t.focus();const ok=document.execCommand('paste');return {execPaste:ok,value:t.value}}"
                         "if(mode==='write')return navigator.clipboard.writeText('page-wrote').then(()=>({wrote:true}),e=>({error:e.name}));"
                         "if(mode==='read')return navigator.clipboard.readText().then(t=>({read:t}),e=>({error:e.name}));"
-                        "if(mode==='clip-result')return window.clip||{waiting:true}};"
+                        "if(mode==='clip-result')return window.clip||{waiting:true};"
+                        "if(mode==='drop-result')return window.dropped||{waiting:true}};"
+                        "addEventListener('dragover',e=>e.preventDefault());"
+                        "addEventListener('drop',e=>{e.preventDefault();const f=[...e.dataTransfer.files];"
+                        "Promise.all(f.map(x=>x.text())).then(t=>{window.dropped={names:f.map(x=>x.name),texts:t}})});"
                         "</script>");
                     socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
                     socket->disconnectFromHost(); return;
@@ -843,6 +849,31 @@ int main(int argc, char *argv[])
                 QMetaObject::invokeMethod(normal, "storageProbeOpen", Q_ARG(QVariant, QStringLiteral("/os-boundary")));
                 QTest::qWaitFor([normal] { QVariant v; QMetaObject::invokeMethod(normal, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000);
                 const auto readGranted = decide(true, grantedPrompt);
+                // The grant is a lease of this document; the Control Bar's revoke (resetPermission) ends it with the
+                // document, and the fresh document must ask again.
+                QVariant leased; QMetaObject::invokeMethod(normal, "storageProbeGranted", Q_RETURN_ARG(QVariant, leased), Q_ARG(QVariant, QStringLiteral("clipboard")));
+                idle(normal);
+                QMetaObject::invokeMethod(normal, "resetPermission", Q_ARG(QVariant, QStringLiteral("clipboard")), Q_ARG(QVariant, 0));
+                QTest::qWaitFor([normal] { QVariant v; QMetaObject::invokeMethod(normal, "storageProbeReady", Q_RETURN_ARG(QVariant, v)); return v.toBool(); }, 15000);
+                QVariant leasedAfterRevoke; QMetaObject::invokeMethod(normal, "storageProbeGranted", Q_RETURN_ARG(QVariant, leasedAfterRevoke), Q_ARG(QVariant, QStringLiteral("clipboard")));
+                bool reaskPrompt = false;
+                const auto readAfterRevoke = decide(false, reaskPrompt);
+                // Dropping a local file hands the page that file only, by the user's gesture; nothing else on disk.
+                const QString dropDir = QDir::current().absoluteFilePath("build/os-drop");
+                QDir(dropDir).removeRecursively(); QDir().mkpath(dropDir);
+                { QFile f(dropDir + "/dropped.txt"); f.open(QIODevice::WriteOnly); f.write("dropped-by-user"); }
+                { QFile f(dropDir + "/neighbour.txt"); f.open(QIODevice::WriteOnly); f.write("not-dropped"); }
+                auto window = qobject_cast<QQuickWindow *>(normal);
+                const QPointF dropPoint(window->width() / 2, window->height() / 2 + 80);
+                QMimeData mime; mime.setUrls({QUrl::fromLocalFile(dropDir + "/dropped.txt")});
+                QDragEnterEvent enter(dropPoint.toPoint(), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(window, &enter);
+                for (int i = 0; i < 3; ++i) { QDragMoveEvent move(dropPoint.toPoint(), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier); QCoreApplication::sendEvent(window, &move); QTest::qWait(100); }
+                QDropEvent drop(dropPoint, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(window, &drop);
+                QVariantMap dropped;
+                QTest::qWaitFor([&] { dropped = probe(normal, "drop-result", ""); return !dropped.contains("waiting"); }, 8000);
+                const QString dropFile = QDir::fromNativeSeparators(dropDir);
                 idle(normal);
                 probe(normal, "navigate-file", "");
                 QTest::qWait(2500);
@@ -850,7 +881,9 @@ int main(int argc, char *argv[])
                 qInfo().noquote() << "OS_BOUNDARY" << QJsonDocument(QJsonObject::fromVariantMap({{"control", control}, {"file", files}, {"paste", paste},
                     {"write", write}, {"clipboardAfterWriteIsSecret", clipboardAfterWrite == secret}, {"readNoGesture", readNoGesture}, {"readDenied", readDenied}, {"deniedPrompted", deniedPrompt},
                     {"readGranted", readGranted.value("read").toString() == secret ? QVariant("secret") : QVariant(readGranted)}, {"grantedPrompted", grantedPrompt}, {"decisions", decisions},
-                    {"urlAfterFileNavigation", urlAfter}})).toJson(QJsonDocument::Compact);
+                    {"urlAfterFileNavigation", urlAfter}, {"leased", leased}, {"leasedAfterRevoke", leasedAfterRevoke}, {"reaskPrompt", reaskPrompt},
+                    {"readAfterRevoke", readAfterRevoke.value("read").toString() == secret ? QVariant("secret") : QVariant(readAfterRevoke)},
+                    {"dropped", dropped}})).toJson(QJsonDocument::Compact);
                 QStringList problems;
                 if (control.value("sameOrigin").toString() != "same-origin-ok") problems << "control: same-origin fetch failed, the probe proves nothing";
                 for (const auto &k : {"fetch", "xhr"}) if (!files.value(k).toString().startsWith("blocked")) problems << QString("file:// read by %1: %2").arg(k, files.value(k).toString());
@@ -860,11 +893,17 @@ int main(int argc, char *argv[])
                 if (readNoGesture.value("read").toString() == secret) problems << "clipboard read by script without a user gesture";
                 if (readDenied.value("read").toString() == secret) problems << "clipboard read after a deny";
                 if (!deniedPrompt || !grantedPrompt) problems << "a clicked clipboard read did not reach the Control Bar for a decision";
-                if (decisions != QStringList{"deny->refused", "grant->granted"}) problems << "the decisions were not applied as asked: " + decisions.join(", ");
+                if (decisions != QStringList{"deny->refused", "grant->granted", "deny->refused"}) problems << "the decisions were not applied as asked: " + decisions.join(", ");
                 if (readGranted.value("read").toString() != secret) problems << "control: granted clipboard read did not return the secret, the probe proves nothing";
+                if (!leased.toBool()) problems << "the clipboard grant is not held as a lease of the document";
+                if (leasedAfterRevoke.toBool()) problems << "the clipboard lease survived the Control Bar revoke";
+                if (!reaskPrompt || readAfterRevoke.value("read").toString() == secret) problems << "after revoke the page read the clipboard without being asked again";
+                if (dropped.contains("waiting") || dropped.value("names").toList() != QVariantList{QStringLiteral("dropped.txt")}
+                    || dropped.value("texts").toList() != QVariantList{QStringLiteral("dropped-by-user")})
+                    problems << "a dropped local file was not handed to the page as exactly that file: " + QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(dropped)).toJson(QJsonDocument::Compact));
                 QGuiApplication::clipboard()->clear();
                 if (!problems.isEmpty()) { qCritical() << "OS_BOUNDARY FAIL:" << problems; app.exit(2); return; }
-                qInfo() << "OS_BOUNDARY PASS: file:// unreachable from a web page (fetch, XHR, navigation); the OS clipboard was neither read (paste, readText without a gesture, a clicked readText after a deny) nor overwritten; same-origin fetch and a clicked, granted readText worked as controls";
+                qInfo() << "OS_BOUNDARY PASS: file:// unreachable from a web page (fetch, XHR, navigation); the OS clipboard was neither read (paste, readText without a gesture, a clicked readText after a deny) nor overwritten; same-origin fetch and a clicked, granted readText worked as controls; the clipboard grant is a lease that the Control Bar revoke ends, after which the page is asked again; a dropped local file reaches the page as exactly that file";
                 QMetaObject::invokeMethod(normal, "storageProbeClose"); // the rest of the smoke run continues in the normal window
                 qInfo() << "PROFILE_STORAGE_ISOLATION PASS: cookies, localStorage, IndexedDB and Cache Storage of one origin stay in their profile: normal -> private, private -> private and private -> normal all empty; each profile reads its own write";
             }

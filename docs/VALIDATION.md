@@ -572,3 +572,11 @@ With the user's go, two real offline setups were built from a fresh stage of the
 The 576 profile files under `%APPDATA%\CYBOU` and `%LOCALAPPDATA%\CYBOU` hashed identical before, after the three installs and after the final purge. The installed browser itself was not started in this run.
 
 **DNS rebinding deferred to the release candidate (2026-10-28, user decision).** The behavioural test with DNS answers that change over time is marked `[rc]` in CYB-HTTP-002 and CYB-WS-001. For 0.5.0 the protection rests on source inspection (the engine's private-network check uses the connected endpoint, `net::TransportInfo`) and on the static PNA suites; release notes must say so.
+
+### Clipboard revoke, dropped files, executable downloads - 2026-10-28
+
+CYB-SBX-003 completed for 0.5.0 (three smoke runs out of three):
+
+- **Clipboard grant as a lease.** After the clicked, granted read the document holds a `clipboard` lease; the Control Bar's revoke, now `window.resetPermission(key, mode)` called by the Control Bar and by the test alike, ends it with the document, and a clicked read in the fresh document is asked again (denied by the test, no secret read).
+- **Dropped local file.** Real drag enter, move and drop events with a local file: the page receives exactly `dropped.txt` and its content; its neighbour in the same folder stays out of reach.
+- **Executable downloads.** Policy "save, never launch", already covered: `DOWNLOAD_POLICY_TEST`, `DOWNLOAD_LAUNCH_GUARD_TEST`, `DOWNLOAD_BLOCKED_TYPE_TEST` and the `download` suite's Mark-of-the-Web; now listed as CYB-SBX-003 evidence. Only a `[rc]` item remains (clipboard write with a gesture: record the policy).

@@ -489,12 +489,12 @@
         "download suite: hostile Content-Disposition names stay inside the download directory with a path-free name; completed files carry Mark-of-the-Web",
         "protocol suite: with DisallowUnknownUrlSchemes no script trigger reaches an external protocol handler; control launches are observed",
         "smoke prefix (/os-boundary in the product window): fetch and XHR of file:///C:/Windows/win.ini are blocked and a scripted navigation to it does not leave the page, while a same-origin fetch works (control)",
-        "smoke prefix: with a secret in the OS clipboard, execCommand('paste') reads nothing, navigator.clipboard.writeText without a gesture is refused and the OS clipboard is unchanged, readText without a gesture is refused, a clicked readText reaches the Control Bar and a deny refuses it; in a fresh tab a clicked, granted readText returns the secret (positive control) and both decisions are checked as applied"
+        "smoke prefix: with a secret in the OS clipboard, execCommand('paste') reads nothing, navigator.clipboard.writeText without a gesture is refused and the OS clipboard is unchanged, readText without a gesture is refused, a clicked readText reaches the Control Bar and a deny refuses it; in a fresh tab a clicked, granted readText returns the secret (positive control) and both decisions are checked as applied",
+        "smoke prefix: the clipboard grant is held as a lease of the document; the Control Bar revoke (window.resetPermission) ends it with the document, and the fresh document is asked again before any read",
+        "smoke prefix: a local file dropped onto the page (real drag enter, move and drop events) reaches it as exactly that file and content; nothing else in its folder",
+        "executable downloads, policy 'save, never launch': security suite DOWNLOAD_POLICY_TEST (exe, msi, ps1, js, bat, lnk, url, desktop, html, svg, docm, zip, unknown, trailing dot or space, alternate data streams never opened), DOWNLOAD_LAUNCH_GUARD_TEST (the store refuses to open document.pdf.exe), smoke DOWNLOAD_BLOCKED_TYPE_TEST (the open dialog refuses), download suite (Mark-of-the-Web on completed files, so Windows warns on launch)"
       ],
       "remainingScenarios": [
-        "a clipboard grant held as a lease and its revoke",
-        "drag and drop of local files into a page",
-        "downloads of executables: block or warn per type",
         "[rc] clipboard write with a user gesture: record the policy (allowed by design)"
       ],
       "evidence": [
@@ -509,6 +509,18 @@
         {
           "suite": "protocol",
           "marker": "EXTERNAL_PROTOCOL_TEST PASS"
+        },
+        {
+          "suite": "security",
+          "marker": "DOWNLOAD_POLICY_TEST PASS"
+        },
+        {
+          "suite": "security",
+          "marker": "DOWNLOAD_LAUNCH_GUARD_TEST PASS"
+        },
+        {
+          "suite": "smoke",
+          "marker": "DOWNLOAD_BLOCKED_TYPE_TEST PASS"
         }
       ]
     },

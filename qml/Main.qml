@@ -328,6 +328,18 @@ ApplicationWindow {
         "})(" + JSON.stringify(targetKey) + ");"
         view.runJavaScript(script)
     }
+    // The Control Bar's revoke or block of one capability for the current page. Media keys are stopped in place
+    // (see revokePermissionGracefully); any other grant ends with its document, replaced by a fresh load.
+    function resetPermission(key, mode) {
+        const targetMode = mode === undefined ? 0 : mode
+        if (!currentView) return
+        if (["camera", "mic", "screen"].includes(key)) {
+            window.revokePermissionGracefully(currentView, key, targetMode)
+        } else {
+            if (controlState.setPermissionPolicy(key, targetMode))
+                window.replaceGrantedView(currentView, currentView.url.toString())
+        }
+    }
     function revokePermissionGracefully(view, key, targetMode) {
         if (!view) return
         const isDeny = (targetMode === 2)
@@ -416,6 +428,7 @@ ApplicationWindow {
     function storageProbeRendererPid() { return currentView ? currentView.renderProcessPid : 0 }
     function storageProbeClose() { if (currentView && currentView.url.toString().startsWith(smokeBaseUrl + "/")) closeTab(activeTab) }
     function storageProbeReady() { return currentView && currentView.title.endsWith("-ready") && !currentView.loading }
+    function storageProbeGranted(key) { return currentView ? currentView.grantedKeys.includes(key) : false }
     function storageProbeUrl() { return currentView ? currentView.url.toString() : "" }
     // Each run is numbered and its result carries the number: a late answer from an earlier run is ignored.
     function storageProbeRun(mode, marker) {
@@ -1211,16 +1224,7 @@ ApplicationWindow {
                             }
                         }
                     }
-                    onPermissionResetRequested: function(key, mode) {
-                        const targetMode = mode === undefined ? 0 : mode
-                        if (!currentView) return
-                        if (["camera", "mic", "screen"].includes(key)) {
-                            window.revokePermissionGracefully(currentView, key, targetMode)
-                        } else {
-                            if (controlState.setPermissionPolicy(key, targetMode))
-                                window.replaceGrantedView(currentView, currentView.url.toString())
-                        }
-                    }
+                    onPermissionResetRequested: function(key, mode) { window.resetPermission(key, mode) }
                     onDecisionRequested: function(allow, requestId) { window.resolvePermission(allow, requestId) }
                     onReloadRequested: if (currentView) { window.applyViewPolicy(currentView, currentView.url); currentView.reload(); controlBar.dismiss() }
                 }
